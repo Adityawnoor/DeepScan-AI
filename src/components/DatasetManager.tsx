@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink } from "lucide-react"
+import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -33,6 +34,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
   const [isScanningLocal, setIsScanningLocal] = React.useState(false)
   const [datasets, setDatasets] = React.useState<any[]>([])
   const [scans, setScans] = React.useState<any[]>([])
+  const [browserError, setBrowserError] = React.useState<string | null>(null)
 
   // Load from Local PC Database (LocalStorage)
   React.useEffect(() => {
@@ -72,6 +74,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
 
   const handleConnectLocalPC = async () => {
+    setBrowserError(null)
     try {
       if (!('showDirectoryPicker' in window)) {
         toast({
@@ -102,7 +105,12 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       }
       onRefresh(handle.name)
     } catch (err: any) {
-      if (err.name !== 'AbortError') console.error(err)
+      console.error("Picker Error:", err)
+      if (err.name === 'SecurityError') {
+        setBrowserError("Browser Restriction: The PC Folder Picker is blocked in this preview window. To use your PC as a database, run this app in a full browser tab (Top-level window) on your local machine.")
+      } else if (err.name !== 'AbortError') {
+        toast({ variant: "destructive", title: "Connection Failed", description: err.message })
+      }
     }
   }
 
@@ -133,7 +141,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       label: datasetLabel,
       notes: datasetNotes.trim(),
       isLocal: true,
-      localPath: localFolderHandle?.name + "/" + fileName
+      localPath: (localFolderHandle?.name || "Local") + "/" + fileName
     }
     
     const updated = [newDataset, ...datasets]
@@ -170,6 +178,16 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
   return (
     <div className="space-y-6">
+      {browserError && (
+        <Alert variant="destructive" className="bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Browser Permission Error</AlertTitle>
+          <AlertDescription>
+            {browserError}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="pt-6">
@@ -283,7 +301,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                 <div className="flex flex-col items-center gap-1">
                   <FolderOpen className="w-6 h-6 text-primary" />
                   <span className="font-bold text-primary">Pick Your PC Vault</span>
-                  <span className="text-[10px] text-muted-foreground">Choose ANY folder on your PC</span>
+                  <span className="text-[10px] text-muted-foreground text-center">Requires Top-level Browser Window</span>
                 </div>
               </Button>
             ) : (
