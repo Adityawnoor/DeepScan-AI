@@ -18,6 +18,20 @@
         "mediaUrl": { "type": "string" }
       },
       "required": ["timestamp", "mediaType", "aiVerdict"]
+    },
+    "DatasetFile": {
+      "title": "Dataset File",
+      "description": "Information about uploaded training datasets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fileName": { "type": "string" },
+        "uploadDate": { "type": "string", "format": "date-time" },
+        "size": { "type": "number" },
+        "fileType": { "type": "string" },
+        "status": { "type": "string", "enum": ["queued", "processed", "failed"] }
+      },
+      "required": ["fileName", "uploadDate", "size"]
     }
   },
   "auth": {
@@ -27,6 +41,10 @@
     "/scans/{scanId}": {
       "schema": "ScanResult",
       "description": "Collection of analyzed media and user feedback."
+    },
+    "/datasets/{datasetId}": {
+      "schema": "DatasetFile",
+      "description": "Metadata for uploaded training datasets."
     }
   }
 }

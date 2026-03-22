@@ -10,9 +10,10 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
+import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { doc, setDoc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
@@ -179,6 +180,13 @@ export default function DeepScanHome() {
                     </span>
                   )}
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="datasets" 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  Datasets
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -222,6 +230,10 @@ export default function DeepScanHome() {
                   })
                 }}
               />
+            </TabsContent>
+
+            <TabsContent value="datasets" className="mt-6">
+              <DatasetManager />
             </TabsContent>
           </Tabs>
         </div>
