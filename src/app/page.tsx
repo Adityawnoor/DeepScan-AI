@@ -345,9 +345,9 @@ export default function DeepScanHome() {
                           <p>Database File: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong></p>
                         ) : (
                           <div className="flex flex-col gap-2">
-                             <p>No folder linked. Metadata is currently saved only in your browser's private cache.</p>
+                             <p>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</p>
                              <Button variant="link" onClick={() => setActiveTab("datasets")} className="p-0 h-auto text-primary font-bold justify-start">
-                               Link Folder <ArrowRight className="w-4 h-4 ml-1" />
+                               Go to PC Database <ArrowRight className="w-4 h-4 ml-1" />
                              </Button>
                           </div>
                         )}
@@ -363,6 +363,7 @@ export default function DeepScanHome() {
                       result={currentResult.output} 
                       mediaUrl={currentResult.mediaUrl} 
                       mediaType={currentResult.mediaType}
+                      vaultHandle={localFolderHandle}
                       onUpdate={() => {
                         const savedDatasets = localStorage.getItem("deepscan-datasets")
                         const savedScans = localStorage.getItem("deepscan-scans-metadata")
@@ -410,7 +411,7 @@ export default function DeepScanHome() {
       </main>
 
       <footer className="border-t bg-card mt-auto">
-        <div className="container mx-auto max-w-7xl px-4 py-8">
+        <div className="container mx-auto max-max-w-7xl px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 opacity-60">
               <ShieldCheck className="w-5 h-5" />
