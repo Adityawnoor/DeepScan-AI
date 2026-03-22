@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ShieldCheck, History, Info, Zap, Database } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { doc, setDoc } from "firebase/firestore"
-import { useFirestore } from "@/firebase"
+import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
@@ -69,14 +69,25 @@ export default function DeepScanHome() {
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
       if (db) {
-        setDoc(doc(db, "scans", scanId), {
+        const scanRef = doc(db, "scans", scanId);
+        const scanData = {
           timestamp: new Date().toISOString(),
           mediaType,
           aiVerdict: output.isDeepfake,
           aiConfidence: output.confidence,
           explanation: output.explanation,
           mediaUrl: dataUri.length < 100000 ? dataUri : "Omitted (Too Large)"
-        })
+        };
+
+        setDoc(scanRef, scanData)
+          .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: scanRef.path,
+              operation: 'create',
+              requestResourceData: scanData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
       }
 
       const newHistoryItem: HistoryItem = {

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { doc, updateDoc } from "firebase/firestore"
-import { useFirestore } from "@/firebase"
+import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { useToast } from "@/hooks/use-toast"
 
 interface AnalysisResultProps {
@@ -46,16 +46,26 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
     setFeedbackSubmitted(userVerdict)
     const scanRef = doc(db, "scans", scanId)
     const isCorrect = userVerdict === result.isDeepfake
-
-    updateDoc(scanRef, {
+    const updateData = {
       userFeedback: userVerdict,
       isCorrect: isCorrect
-    })
+    }
 
-    toast({
-      title: "Verdict Saved",
-      description: isCorrect ? "Thank you! AI correctly identified this." : "Correction received. This helps us improve.",
-    })
+    updateDoc(scanRef, updateData)
+      .then(() => {
+        toast({
+          title: "Verdict Saved",
+          description: isCorrect ? "Thank you! AI correctly identified this." : "Correction received. This helps us improve.",
+        })
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: scanRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   const handleSaveComment = () => {
@@ -63,18 +73,26 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
     
     setIsSavingComment(true)
     const scanRef = doc(db, "scans", scanId)
+    const updateData = { userComment: userComment.trim() }
 
-    updateDoc(scanRef, {
-      userComment: userComment.trim()
-    }).then(() => {
-      toast({
-        title: "Feedback Updated",
-        description: "Your detailed notes have been saved.",
+    updateDoc(scanRef, updateData)
+      .then(() => {
+        toast({
+          title: "Feedback Updated",
+          description: "Your detailed notes have been saved.",
+        })
       })
-      setIsSavingComment(false)
-    }).catch(() => {
-      setIsSavingComment(false)
-    })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: scanRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsSavingComment(false)
+      });
   }
 
   const isFake = result.isDeepfake

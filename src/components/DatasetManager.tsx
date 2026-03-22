@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { collection, addDoc, deleteDoc, doc, query, orderBy, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -48,7 +48,7 @@ export function DatasetManager() {
     notes?: string;
   }>(datasetQuery)
   
-  const { data: scans, loading: scansLoading } = useCollection(scansQuery)
+  const { data: scans } = useCollection(scansQuery)
 
   const chartData = React.useMemo(() => {
     if (!scans || scans.length === 0) return []
@@ -97,51 +97,58 @@ export function DatasetManager() {
     if (!files || !files[0] || !db) return
 
     const file = files[0]
+    const datasetData = {
+      fileName: file.name,
+      uploadDate: new Date().toISOString(),
+      size: file.size,
+      fileType: file.type || "application/zip",
+      status: "processed",
+      label: datasetLabel,
+      notes: datasetNotes.trim()
+    }
     
     setIsUploading(true)
-    try {
-      await addDoc(collection(db, "datasets"), {
-        fileName: file.name,
-        uploadDate: new Date().toISOString(),
-        size: file.size,
-        fileType: file.type || "application/zip",
-        status: "processed",
-        label: datasetLabel,
-        notes: datasetNotes.trim()
+    
+    addDoc(collection(db, "datasets"), datasetData)
+      .then(() => {
+        toast({
+          title: "Dataset Indexed",
+          description: `${file.name} cataloged with your notes.`,
+        })
+        setDatasetNotes("")
       })
-
-      toast({
-        title: "Dataset Indexed",
-        description: `${file.name} cataloged with your notes.`,
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'datasets',
+          operation: 'create',
+          requestResourceData: datasetData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       })
-      setDatasetNotes("") // Reset notes after successful upload
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Index Failed",
-        description: "Could not save dataset metadata.",
-      })
-    } finally {
-      setIsUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
-    }
+      .finally(() => {
+        setIsUploading(false)
+        if (fileInputRef.current) fileInputRef.current.value = ""
+      });
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!db) return
-    try {
-      await deleteDoc(doc(db, "datasets", id))
-      toast({
-        title: "Dataset Removed",
-        description: "Metadata deleted from repository.",
+    const docRef = doc(db, "datasets", id);
+    
+    deleteDoc(docRef)
+      .then(() => {
+        toast({
+          title: "Dataset Removed",
+          description: "Metadata deleted from repository.",
+        })
       })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete dataset.",
-      })
-    }
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   const handleStartTraining = () => {
