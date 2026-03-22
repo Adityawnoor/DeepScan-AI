@@ -11,7 +11,7 @@ import { useFirestore, useCollection } from "@/firebase"
 import { collection, addDoc, deleteDoc, doc, query, orderBy, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 export function DatasetManager() {
   const { toast } = useToast()
@@ -50,6 +50,34 @@ export function DatasetManager() {
   }, [scans])
 
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
+
+  // Effect to handle the training simulation
+  React.useEffect(() => {
+    if (!isTraining) return
+
+    const interval = setInterval(() => {
+      setTrainingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          return 100
+        }
+        return prev + 5
+      })
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [isTraining])
+
+  // Effect to handle simulation completion side-effects
+  React.useEffect(() => {
+    if (isTraining && trainingProgress >= 100) {
+      setIsTraining(false)
+      toast({
+        title: "Fine-Tuning Complete",
+        description: "The model weights have been updated based on your feedback.",
+      })
+    }
+  }, [isTraining, trainingProgress, toast])
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -111,28 +139,13 @@ export function DatasetManager() {
   }
 
   const handleStartTraining = () => {
+    if (isTraining) return
     setIsTraining(true)
     setTrainingProgress(0)
-    
-    const interval = setInterval(() => {
-      setTrainingProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsTraining(false)
-          toast({
-            title: "Fine-Tuning Complete",
-            description: "The model weight weights have been updated based on your feedback.",
-          })
-          return 100
-        }
-        return prev + 2
-      })
-    }, 100)
   }
 
   return (
     <div className="space-y-6">
-      {/* Top Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="pt-6">
@@ -189,7 +202,6 @@ export function DatasetManager() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main Chart */}
         <Card className="lg:col-span-8">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -237,7 +249,6 @@ export function DatasetManager() {
           </CardContent>
         </Card>
 
-        {/* Upload Side Panel */}
         <Card className="lg:col-span-4 border-primary/20">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -270,7 +281,6 @@ export function DatasetManager() {
         </Card>
       </div>
 
-      {/* Dataset Repository */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
