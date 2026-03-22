@@ -173,11 +173,11 @@ export default function DeepScanHome() {
                   <Button 
                     variant="default" 
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90"
+                    className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white"
                     onClick={handleBeginInvestigation}
                   >
                     <MicroscopeIcon className="w-5 h-5 mr-3" />
-                    Begin Investigation
+                    BEGIN INVESTIGATION
                   </Button>
                   <Button 
                     variant="outline" 
@@ -186,7 +186,7 @@ export default function DeepScanHome() {
                     onClick={() => setActiveTab("protect")}
                   >
                     <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
-                    Vaccinate Identity
+                    VACCINATE IDENTITY
                   </Button>
                 </div>
               </div>
