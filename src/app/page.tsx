@@ -163,19 +163,19 @@ export default function DeepScanHome() {
         description: output.isDeepfake ? "Potential manipulation detected." : "Media appears to be authentic.",
       })
     } catch (error: any) {
-      const errorMessage = String(error?.message || error || "")
-      if (errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("429")) {
+      const errorMessage = String(error?.message || error || "").toUpperCase()
+      if (errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("429") || errorMessage.includes("QUOTA")) {
         toast({
           variant: "destructive",
           title: "Service Busy",
-          description: "API quota reached. Please wait 30-60 seconds.",
+          description: "AI API quota reached. Please wait 30-60 seconds for the limit to reset.",
         })
       } else {
         console.error("Analysis Error:", error)
         toast({
           variant: "destructive",
           title: "Analysis Failed",
-          description: "There was an error processing the media.",
+          description: "There was an error processing the media. Please try again.",
         })
       }
     } finally {
