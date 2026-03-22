@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -14,7 +13,7 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder, ExternalLink } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder, ExternalLink, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
@@ -196,10 +195,15 @@ export default function DeepScanHome() {
           <DeepScanLogo />
           
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
-              <Lock className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">
-                {connectedFolderName ? `PC Vault: ${connectedFolderName}` : "Private PC Mode"}
+            <div className={cn(
+              "hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border transition-all",
+              connectedFolderName 
+                ? "bg-primary/5 border-primary/10" 
+                : "bg-destructive/5 border-destructive/20 animate-pulse"
+            )}>
+              {connectedFolderName ? <Lock className="w-4 h-4 text-primary" /> : <ShieldCheck className="w-4 h-4 text-destructive" />}
+              <span className={cn("text-xs font-bold", connectedFolderName ? "text-primary" : "text-destructive")}>
+                {connectedFolderName ? `PC Vault: ${connectedFolderName}` : "Unsecured PC Mode"}
               </span>
             </div>
             <ThemeToggle />
@@ -219,17 +223,33 @@ export default function DeepScanHome() {
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
                 Forensic <span className="text-primary">Privacy</span> Mode
               </h1>
-              <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally on your hard drive. 
+              <div className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+                <p>Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally on your hard drive.</p>
                 {connectedFolderName ? (
                   <span className="block mt-2 font-semibold text-primary">
                     <Folder className="inline w-4 h-4 mr-1 text-primary" /> 
                     Actively saving to folder: <span className="underline decoration-primary/30">"{connectedFolderName}"</span>
                   </span>
                 ) : (
-                  <span className="block mt-2 italic">No folder linked yet. Database is temporary.</span>
+                  <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 space-y-3">
+                    <p className="text-destructive font-bold flex items-center gap-2">
+                      <Lock className="w-5 h-5" /> 
+                      ACTION REQUIRED: Your Database is Temporary
+                    </p>
+                    <p className="text-sm text-destructive/80 leading-snug">
+                      Data is currently only saved in your browser's temporary cache. To make it permanent and safe on your hard drive, you must link a folder.
+                    </p>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => setActiveTab("datasets")}
+                      className="font-bold shadow-lg"
+                    >
+                      Link a PC Folder Now <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
                 )}
-              </p>
+              </div>
             </div>
             <div className="flex flex-col gap-3">
                <Button variant="outline" size="sm" onClick={transferFromCloud} disabled={isMigrating} className="bg-background">
@@ -283,13 +303,18 @@ export default function DeepScanHome() {
                     <HardDrive className="w-5 h-5 text-primary shrink-0" />
                     <div>
                       <p className="font-bold text-primary mb-1">Your Database Location:</p>
-                      <p>
+                      <div className="space-y-2">
                         {connectedFolderName ? (
-                          <>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong>. Open this folder in your computer's file explorer to see the file.</>
+                          <p>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong>. Open this folder in your computer's file explorer to see the file.</p>
                         ) : (
-                          <>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</>
+                          <div className="flex flex-col gap-2">
+                             <p>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</p>
+                             <Button variant="link" onClick={() => setActiveTab("datasets")} className="p-0 h-auto text-primary font-bold justify-start">
+                               Go to PC Database <ArrowRight className="w-4 h-4 ml-1" />
+                             </Button>
+                          </div>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </div>
