@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -201,7 +200,7 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <Info className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      Files are processed securely. We support JPG, PNG, MP3, MP4, and WAV formats up to 25MB.
+                      Files are processed securely. We support JPG, PNG, MP3, MP4, and WAV formats up to 2.5GB.
                     </p>
                   </div>
                 </div>

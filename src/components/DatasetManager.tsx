@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -58,11 +57,12 @@ export function DatasetManager() {
 
     const file = files[0]
     
-    if (file.size > 25 * 1024 * 1024) {
+    // Increased browser upload threshold to 2.5GB (2500MB)
+    if (file.size > 2500 * 1024 * 1024) {
       toast({
         variant: "destructive",
         title: "File Too Large",
-        description: "Browser uploads are limited to 25MB. For large datasets, please use the DeepScan CLI.",
+        description: "Browser uploads are limited to 2.5GB. For larger datasets, please use the DeepScan CLI.",
       })
       return
     }
@@ -253,7 +253,7 @@ export function DatasetManager() {
             >
               <FileArchive className="w-10 h-10 text-primary mb-2 opacity-40" />
               <p className="text-sm font-medium">Click to select ZIP</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 25MB via Web</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB via Web</p>
               <input 
                 type="file" 
                 ref={fileInputRef} 
