@@ -16,6 +16,7 @@ const AnalyzeAudioForDeepfakeInputSchema = z.object({
     .describe(
       "The audio to analyze, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  learnedContext: z.string().optional().describe('Contextual knowledge learned from previously labeled datasets and user feedback.'),
 });
 export type AnalyzeAudioForDeepfakeInput = z.infer<typeof AnalyzeAudioForDeepfakeInputSchema>;
 
@@ -53,15 +54,19 @@ const audioDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'audioDeepfakeDetectionPrompt',
   input: { schema: AnalyzeAudioForDeepfakeInputSchema },
   output: { schema: AnalyzeAudioForDeepfakeOutputSchema },
-  prompt: `You are an expert in vocal forensics. Your task is to detect AI-synthesized speech while avoiding false positives from low-quality recordings or background noise.
+  prompt: `You are an expert in vocal forensics. Your task is to detect AI-synthesized speech.
 
-Search for corroborating evidence of synthesis:
-1. **Robotic Resonances**: Identify metallic or "tinny" textures that indicate a neural vocoder failing to replicate human vocal tract resonance.
-2. **Prosodic Unnaturalness**: Detect micro-fluctuations in pitch or tempo that do not align with natural human emotional emphasis or breathing patterns.
-3. **Spectral Inconsistencies**: Look for "ghosting" frequencies or unnatural silence gaps that are common in concatenated or generated speech.
-4. **Transition Artifacts**: Check for "clicks" or "warps" between words where a generative model may have struggled with co-articulation.
+{{#if learnedContext}}
+### LEARNED KNOWLEDGE BASE
+Incorporate the following user-verified observations and dataset labels into your analysis:
+{{{learnedContext}}}
+{{/if}}
 
-BE CAREFUL: Do not mistake compression artifacts from a phone call or internet stream for AI artifacts. Only flag as deepfake if you see clear signs of algorithmic synthesis.
+Search for:
+1. **Robotic Resonances**: Metallic textures from failing neural vocoders.
+2. **Prosodic Unnaturalness**: Micro-fluctuations in pitch not aligning with human breath.
+3. **Spectral Inconsistencies**: "Ghosting" frequencies or unnatural silence.
+4. **Transition Artifacts**: Clicks or warps between words.
 
 Audio to analyze: {{media url=audioDataUri}}`,
 });

@@ -16,6 +16,7 @@ const AnalyzeImageForDeepfakeInputSchema = z.object({
     .describe(
       "The image to analyze, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  learnedContext: z.string().optional().describe('Contextual knowledge learned from previously labeled datasets and user feedback.'),
 });
 export type AnalyzeImageForDeepfakeInput = z.infer<typeof AnalyzeImageForDeepfakeInputSchema>;
 
@@ -57,15 +58,19 @@ const deepfakeDetectionPrompt = ai.definePrompt({
   output: { schema: AnalyzeImageForDeepfakeOutputSchema },
   prompt: `You are an objective forensic image analyst. Your goal is to accurately determine if an image is authentic or AI-generated.
 
-Distinguish between natural digital artifacts (ISO noise, JPEG compression, motion blur) and generative AI artifacts.
+{{#if learnedContext}}
+### LEARNED KNOWLEDGE BASE
+Use the following insights from previously analyzed and human-verified datasets to inform your decision. This data represents "Ground Truth" learned from the specific environment:
+{{{learnedContext}}}
+{{/if}}
 
 Analyze for:
-1. **Structural Integrity**: Check for physical impossibilities in anatomy, geometry, or environment that diffusion models often miss.
-2. **Lighting Consistency**: Verify that shadows, highlights, and catchlights in eyes follow a singular, logical light source.
-3. **Boundary Analysis**: Look for "seams" or unnatural blurring where subjects meet backgrounds, which often occurs in GAN-based compositing.
-4. **Texture Frequency**: Search for the "checkerboard" pattern of GANs or the hyper-smooth "uncanny valley" texture of certain Diffusion models.
+1. **Structural Integrity**: Check for physical impossibilities in anatomy, geometry, or environment.
+2. **Lighting Consistency**: Verify shadows and highlights follow a singular source.
+3. **Boundary Analysis**: Look for "seams" or unnatural blurring where subjects meet backgrounds.
+4. **Texture Frequency**: Search for GAN checkerboards or Diffusion "uncanny valley" smoothness.
 
-IMPORTANT: Do not flag an image as fake just because it is low quality. Only flag if you find specific evidence of AI generation. Use normalized PERCENTAGES (0 to 100) for highlightedRegions coordinates.
+IMPORTANT: Use the Learned Knowledge Base above to prioritize specific artifacts mentioned by forensic researchers (the user).
 
 Image to analyze: {{media url=imageDataUri}}`,
 });

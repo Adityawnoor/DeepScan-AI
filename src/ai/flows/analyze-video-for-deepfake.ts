@@ -16,6 +16,7 @@ const AnalyzeVideoForDeepfakeInputSchema = z.object({
     .describe(
       "The video to analyze, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  learnedContext: z.string().optional().describe('Contextual knowledge learned from previously labeled datasets and user feedback.'),
 });
 export type AnalyzeVideoForDeepfakeInput = z.infer<typeof AnalyzeVideoForDeepfakeInputSchema>;
 
@@ -52,15 +53,19 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'videoDeepfakeDetectionPrompt',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are a forensic video expert. Analyze the provided video for sophisticated temporal manipulations while distinguishing them from camera motion or low-bitrate artifacts.
+  prompt: `You are a forensic video expert. Analyze the provided video for sophisticated temporal manipulations.
 
-Look for specific "tells" of AI manipulation:
-1. **Temporal Jitter**: Watch for "shimmering" or "flutter" around facial boundaries, teeth, and hair that indicates a neural mask losing track of the subject's pose.
-2. **Sync Discrepancies**: Detect micro-latencies between mouth shapes (visemes) and audio sounds (phonemes) that exceed natural human variation.
-3. **Lighting De-synchronization**: Check if facial shadows respond correctly to head movements relative to background light sources.
-4. **Blink and Micro-expression Patterns**: Look for "static" or "frozen" eyes, or eye movements that appear "drawn" rather than muscular.
+{{#if learnedContext}}
+### LEARNED KNOWLEDGE BASE
+Apply the following rules and patterns learned from previously verified training data:
+{{{learnedContext}}}
+{{/if}}
 
-NOTE: Low resolution or motion blur are NOT evidence of a deepfake. Only flag when you see clear algorithmic inconsistencies in temporal or spatial mapping.
+Look for:
+1. **Temporal Jitter**: "Shimmering" around facial boundaries.
+2. **Sync Discrepancies**: Micro-latencies between mouth shapes and audio.
+3. **Lighting De-synchronization**: Check if facial shadows respond correctly to head movements.
+4. **Blink Patterns**: Look for static or muscularly impossible eye movements.
 
 Video to analyze: {{media url=videoDataUri}}`,
 });

@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -13,9 +12,9 @@ import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistor
 import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { doc, setDoc } from "firebase/firestore"
+import { doc, setDoc, collection, getDocs, query, limit, orderBy } from "firebase/firestore"
 import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase"
 
 export default function DeepScanHome() {
@@ -25,6 +24,7 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
+  const [isLearning, setIsLearning] = React.useState(false)
 
   React.useEffect(() => {
     const saved = localStorage.getItem("deepscan-history")
@@ -46,21 +46,62 @@ export default function DeepScanHome() {
     })
   }
 
+  const getLearnedKnowledge = async () => {
+    if (!db) return ""
+    setIsLearning(true)
+    try {
+      // Fetch latest datasets with user notes and labels
+      const datasetQuery = query(collection(db, "datasets"), orderBy("uploadDate", "desc"), limit(10))
+      const datasetSnap = await getDocs(datasetQuery)
+      
+      let context = "Below are notes from recent verified datasets analyzed by experts:\n"
+      datasetSnap.forEach(doc => {
+        const data = doc.data()
+        if (data.notes) {
+          context += `- Dataset [${data.label.toUpperCase()}]: ${data.notes}\n`
+        }
+      })
+
+      // Fetch latest scans where AI was wrong (user corrected)
+      const correctionQuery = query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(5))
+      const correctionSnap = await getDocs(correctionQuery)
+      
+      if (!correctionSnap.empty) {
+        context += "\nImportant user-provided corrections from previous scans:\n"
+        correctionSnap.forEach(doc => {
+          const data = doc.data()
+          if (data.userComment) {
+            context += `- User Insight: ${data.userComment}\n`
+          }
+        })
+      }
+
+      return context
+    } catch (e) {
+      console.error("Knowledge retrieval error", e)
+      return ""
+    } finally {
+      setIsLearning(false)
+    }
+  }
+
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
+      const learnedContext = await getLearnedKnowledge()
+      
       let output: any
       let mediaType: 'image' | 'audio' | 'video' = 'image'
 
       if (dataUri.startsWith('data:image/')) {
         mediaType = 'image'
-        output = await analyzeImageForDeepfake({ imageDataUri: dataUri })
+        output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext })
       } else if (dataUri.startsWith('data:audio/')) {
         mediaType = 'audio'
-        output = await analyzeAudioForDeepfake({ audioDataUri: dataUri })
+        output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext })
       } else if (dataUri.startsWith('data:video/')) {
         mediaType = 'video'
-        output = await analyzeVideoForDeepfake({ videoDataUri: dataUri })
+        output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext })
       } else {
         throw new Error("Unsupported media type")
       }
@@ -109,24 +150,18 @@ export default function DeepScanHome() {
       })
     } catch (error: any) {
       const errorMessage = String(error?.message || error || "")
-      const isQuotaError = 
-        errorMessage.includes("429") || 
-        errorMessage.includes("quota") || 
-        errorMessage.includes("RESOURCE_EXHAUSTED") ||
-        errorMessage.includes("Too Many Requests")
-      
-      if (isQuotaError) {
+      if (errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("429")) {
         toast({
           variant: "destructive",
           title: "Service Busy",
-          description: "The AI service has reached its temporary limit. Please try again in about 30-60 seconds.",
+          description: "API quota reached. Please wait 30-60 seconds.",
         })
       } else {
         console.error("Analysis Error:", error)
         toast({
           variant: "destructive",
           title: "Analysis Failed",
-          description: "There was an error processing the media. Please try again.",
+          description: "There was an error processing the media.",
         })
       }
     } finally {
@@ -157,14 +192,14 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 bg-primary/5 rounded-2xl border border-primary/10 overflow-hidden relative">
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-                <Zap className="w-3.5 h-3.5" />
-                Multi-Modal Detection
+                <Brain className={cn("w-3.5 h-3.5", isLearning && "animate-pulse")} />
+                {isLearning ? "Retrieving Learned Knowledge..." : "Few-Shot Knowledge Loop Enabled"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
                 Detect <span className="text-primary">Deepfakes</span> across all Media
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Advanced neural analysis for Images, Audio, and Video. Verify authenticity with industry-leading precision.
+                Our AI continuously learns from your verified datasets. Every note you type improves detection accuracy.
               </p>
             </div>
             <div className="hidden lg:block absolute -right-20 -top-20 opacity-10 rotate-12 scale-150">
@@ -215,7 +250,7 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <Info className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      Files are processed securely. We support JPG, PNG, MP3, MP4, and WAV formats up to 2.5GB.
+                      Analysis is powered by <strong>Few-Shot Prompting</strong>. Your dataset labels and feedback are injected into the AI's reasoning engine in real-time.
                     </p>
                   </div>
                 </div>
