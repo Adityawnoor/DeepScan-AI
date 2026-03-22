@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Camera, X, Image as ImageIcon, Loader2 } from "lucide-react"
+import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -14,6 +14,7 @@ interface MediaUploadProps {
 export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   const [dragActive, setDragActive] = React.useState(false)
   const [preview, setPreview] = React.useState<string | null>(null)
+  const [mediaType, setMediaType] = React.useState<'image' | 'audio' | 'video' | null>(null)
   const [isWebcamOpen, setIsWebcamOpen] = React.useState(false)
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -31,11 +32,18 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   const handleFiles = (files: FileList | null) => {
     if (files && files[0]) {
       const file = files[0]
-      if (!file.type.startsWith('image/')) return
+      let type: 'image' | 'audio' | 'video' | null = null
+
+      if (file.type.startsWith('image/')) type = 'image'
+      else if (file.type.startsWith('audio/')) type = 'audio'
+      else if (file.type.startsWith('video/')) type = 'video'
+      
+      if (!type) return
       
       const reader = new FileReader()
       reader.onloadend = () => {
         setPreview(reader.result as string)
+        setMediaType(type)
       }
       reader.readAsDataURL(file)
     }
@@ -55,6 +63,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   const openWebcam = async () => {
     setIsWebcamOpen(true)
     setPreview(null)
+    setMediaType(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true })
       if (videoRef.current) {
@@ -75,6 +84,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
       ctx?.drawImage(videoRef.current, 0, 0)
       const dataUri = canvas.toDataURL("image/png")
       setPreview(dataUri)
+      setMediaType('image')
       closeWebcam()
     }
   }
@@ -87,6 +97,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
 
   const clearPreview = () => {
     setPreview(null)
+    setMediaType(null)
   }
 
   const handleStartAnalysis = () => {
@@ -113,15 +124,23 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             ref={inputRef}
             type="file"
             className="hidden"
-            accept="image/*"
+            accept="image/*,audio/*,video/*"
             onChange={handleInputChange}
           />
-          <div className="p-4 bg-primary/10 rounded-full mb-4">
-            <Upload className="w-8 h-8 text-primary" />
+          <div className="flex gap-2 mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <ImageIcon className="w-5 h-5 text-primary" />
+            </div>
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Music className="w-5 h-5 text-primary" />
+            </div>
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Video className="w-5 h-5 text-primary" />
+            </div>
           </div>
-          <h3 className="font-headline font-semibold text-lg mb-1">Upload Media</h3>
+          <h3 className="font-headline font-semibold text-lg mb-1">Analyze Media</h3>
           <p className="text-muted-foreground text-sm mb-6 px-4 text-center">
-            Drag and drop an image here, or click to browse
+            Upload Image, Audio, or Video for Deepfake detection
           </p>
           <div className="flex gap-3">
             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openWebcam(); }}>
@@ -142,8 +161,19 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
         </div>
       ) : (
         <div className="flex flex-col items-center gap-6">
-          <div className="relative w-full max-w-md aspect-square rounded-xl overflow-hidden bg-muted shadow-inner group">
-            <img src={preview!} alt="Preview" className="w-full h-full object-contain" />
+          <div className="relative w-full max-w-md aspect-square rounded-xl overflow-hidden bg-muted shadow-inner group flex items-center justify-center">
+            {mediaType === 'image' && (
+              <img src={preview!} alt="Preview" className="w-full h-full object-contain" />
+            )}
+            {mediaType === 'video' && (
+              <video src={preview!} controls className="w-full h-full object-contain" />
+            )}
+            {mediaType === 'audio' && (
+              <div className="flex flex-col items-center gap-4 p-8 w-full">
+                <Music className="w-20 h-20 text-primary opacity-20" />
+                <audio src={preview!} controls className="w-full" />
+              </div>
+            )}
             <button
               onClick={clearPreview}
               className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
@@ -165,13 +195,13 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
                 </>
               ) : (
                 <>
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Run Deepfake Analysis
+                  <Zap className="w-4 h-4 mr-2" />
+                  Run Analysis
                 </>
               )}
             </Button>
             <Button variant="outline" size="lg" onClick={clearPreview} disabled={isAnalyzing}>
-              Change File
+              Change
             </Button>
           </div>
         </div>

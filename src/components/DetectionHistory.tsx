@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { History, FileText, CheckCircle2, XCircle, Search, Trash2 } from "lucide-react"
+import { History, FileText, CheckCircle2, XCircle, Search, Trash2, Image as ImageIcon, Music, Video } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ export interface HistoryItem {
   fileName: string
   isDeepfake: boolean
   confidence: number
+  type: 'image' | 'audio' | 'video'
 }
 
 interface DetectionHistoryProps {
@@ -30,6 +31,14 @@ export function DetectionHistory({ items, onClear, onSelectItem }: DetectionHist
     item.fileName.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'audio': return <Music className="w-4 h-4 text-primary" />
+      case 'video': return <Video className="w-4 h-4 text-primary" />
+      default: return <ImageIcon className="w-4 h-4 text-primary" />
+    }
+  }
+
   return (
     <Card className="border-none shadow-none bg-transparent">
       <CardHeader className="px-0">
@@ -39,13 +48,13 @@ export function DetectionHistory({ items, onClear, onSelectItem }: DetectionHist
               <History className="w-6 h-6 text-primary" />
               Recent Scans
             </CardTitle>
-            <CardDescription>Your detection history for the current session</CardDescription>
+            <CardDescription>Multi-modal detection history</CardDescription>
           </div>
           <div className="flex gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search history..."
+                placeholder="Search scans..."
                 className="pl-9 h-9 w-full sm:w-[250px]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -63,14 +72,14 @@ export function DetectionHistory({ items, onClear, onSelectItem }: DetectionHist
           <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl border border-dashed text-muted-foreground">
             <FileText className="w-12 h-12 mb-4 opacity-20" />
             <p className="font-medium">No detection history yet</p>
-            <p className="text-sm">Run an analysis to see results here</p>
+            <p className="text-sm">Upload media to see results here</p>
           </div>
         ) : (
           <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="font-semibold">Media File</TableHead>
+                  <TableHead className="font-semibold">Media Type & Name</TableHead>
                   <TableHead className="font-semibold">Analyzed At</TableHead>
                   <TableHead className="font-semibold">Verdict</TableHead>
                   <TableHead className="font-semibold text-right">Confidence</TableHead>
@@ -84,9 +93,9 @@ export function DetectionHistory({ items, onClear, onSelectItem }: DetectionHist
                     onClick={() => onSelectItem(item.id)}
                   >
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        {item.fileName}
+                      <div className="flex items-center gap-3">
+                        {getTypeIcon(item.type)}
+                        <span className="truncate max-w-[200px]">{item.fileName}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">

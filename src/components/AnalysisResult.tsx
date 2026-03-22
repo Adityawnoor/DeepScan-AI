@@ -1,24 +1,24 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, CheckCircle2, Info } from "lucide-react"
+import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { type AnalyzeImageForDeepfakeOutput } from "@/ai/flows/analyze-image-for-deepfake"
 import { cn } from "@/lib/utils"
 
 interface AnalysisResultProps {
-  result: AnalyzeImageForDeepfakeOutput
-  imageUrl: string
+  result: any
+  mediaUrl: string
+  mediaType: 'image' | 'audio' | 'video'
 }
 
-export function AnalysisResult({ result, imageUrl }: AnalysisResultProps) {
+export function AnalysisResult({ result, mediaUrl, mediaType }: AnalysisResultProps) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 })
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight, clientWidth, clientHeight } = e.currentTarget
+    const { clientWidth, clientHeight } = e.currentTarget
     setDimensions({ width: clientWidth, height: clientHeight })
   }
 
@@ -31,7 +31,12 @@ export function AnalysisResult({ result, imageUrl }: AnalysisResultProps) {
         <Card className="overflow-hidden border-2 border-primary/20">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
-              <CardTitle className="font-headline text-xl">Analysis Overview</CardTitle>
+              <CardTitle className="font-headline text-xl flex items-center gap-2">
+                {mediaType === 'image' && <ImageIcon className="w-5 h-5" />}
+                {mediaType === 'audio' && <Music className="w-5 h-5" />}
+                {mediaType === 'video' && <Video className="w-5 h-5" />}
+                Analysis Results
+              </CardTitle>
               <Badge 
                 variant={isFake ? "destructive" : "default"} 
                 className={cn("text-sm px-3 py-1", !isFake && "bg-green-500 hover:bg-green-600")}
@@ -39,7 +44,7 @@ export function AnalysisResult({ result, imageUrl }: AnalysisResultProps) {
                 {isFake ? "LIKELY MANIPULATED" : "LIKELY AUTHENTIC"}
               </Badge>
             </div>
-            <CardDescription>Visual summary of the AI findings</CardDescription>
+            <CardDescription>Comprehensive AI verification summary</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -68,56 +73,93 @@ export function AnalysisResult({ result, imageUrl }: AnalysisResultProps) {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden relative flex flex-col items-center justify-center p-4 bg-muted/30">
-          <div className="relative w-full max-h-[400px] flex items-center justify-center rounded-lg overflow-hidden border bg-white" ref={containerRef}>
-            <img 
-              src={imageUrl} 
-              alt="Analyzed Media" 
-              className="max-w-full max-h-full object-contain"
-              onLoad={handleImageLoad}
-            />
-            {/* Highlights Overlay */}
-            {result.highlightedRegions?.map((region, idx) => (
-              <div
-                key={idx}
-                className="absolute border-2 border-red-500 bg-red-500/10 pointer-events-none group"
-                style={{
-                  left: `${(region.x / 100) * dimensions.width}px`,
-                  top: `${(region.y / 100) * dimensions.height}px`,
-                  width: `${(region.width / 100) * dimensions.width}px`,
-                  height: `${(region.height / 100) * dimensions.height}px`,
-                }}
-              >
-                <div className="hidden group-hover:block absolute -top-8 left-0 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-10">
-                  {region.reason}
-                </div>
+        <Card className="overflow-hidden relative flex flex-col items-center justify-center p-4 bg-muted/30 min-h-[300px]">
+          <div className="relative w-full h-full flex items-center justify-center rounded-lg overflow-hidden border bg-white" ref={containerRef}>
+            {mediaType === 'image' && (
+              <>
+                <img 
+                  src={mediaUrl} 
+                  alt="Analyzed Media" 
+                  className="max-w-full max-h-full object-contain"
+                  onLoad={handleImageLoad}
+                />
+                {result.highlightedRegions?.map((region: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="absolute border-2 border-red-500 bg-red-500/10 pointer-events-none group"
+                    style={{
+                      left: `${(region.x / 100) * dimensions.width}px`,
+                      top: `${(region.y / 100) * dimensions.height}px`,
+                      width: `${(region.width / 100) * dimensions.width}px`,
+                      height: `${(region.height / 100) * dimensions.height}px`,
+                    }}
+                  >
+                    <div className="hidden group-hover:block absolute -top-8 left-0 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-10">
+                      {region.reason}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            {mediaType === 'video' && (
+              <video src={mediaUrl} controls className="max-w-full max-h-full object-contain" />
+            )}
+            {mediaType === 'audio' && (
+              <div className="p-8 w-full flex flex-col items-center gap-4">
+                <Music className="w-16 h-16 text-primary opacity-20" />
+                <audio src={mediaUrl} controls className="w-full" />
               </div>
-            ))}
+            )}
           </div>
           <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
             <Info className="w-3 h-3" />
-            Highlighted regions indicate areas of suspicious visual patterns.
+            {mediaType === 'image' ? 'Visual anomalies highlighted above.' : 'Temporal anomalies listed below.'}
           </p>
         </Card>
       </div>
 
-      {result.highlightedRegions && result.highlightedRegions.length > 0 && (
+      {(result.suspiciousSegments || result.suspiciousTimestamps || result.highlightedRegions) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Detailed Irregularities</CardTitle>
+            <CardTitle className="text-lg">Detected Irregularities</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {result.highlightedRegions.map((region, idx) => (
+              {/* Image Regions */}
+              {result.highlightedRegions?.map((region: any, idx: number) => (
                 <div key={idx} className="flex gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-destructive/10 text-destructive font-bold text-xs shrink-0">
                     {idx + 1}
                   </div>
                   <div>
                     <p className="text-sm font-medium">{region.reason}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Spatial Anomaly Detected</p>
+                  </div>
+                </div>
+              ))}
+              {/* Audio Segments */}
+              {result.suspiciousSegments?.map((segment: any, idx: number) => (
+                <div key={idx} className="flex gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-destructive/10 text-destructive font-bold text-xs shrink-0">
+                    <Clock className="w-3 h-3" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{segment.reason}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Coordinates: {region.x}x, {region.y}y | Area: {region.width}w x {region.height}h
+                      Segment: {segment.startTime}s - {segment.endTime}s
                     </p>
+                  </div>
+                </div>
+              ))}
+              {/* Video Timestamps */}
+              {result.suspiciousTimestamps?.map((ts: any, idx: number) => (
+                <div key={idx} className="flex gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-destructive/10 text-destructive font-bold text-xs shrink-0">
+                    <Clock className="w-3 h-3" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{ts.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">At timestamp: {ts.timestamp}s</p>
                   </div>
                 </div>
               ))}
