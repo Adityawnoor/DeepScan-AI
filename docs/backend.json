@@ -30,7 +30,8 @@
         "size": { "type": "number" },
         "fileType": { "type": "string" },
         "status": { "type": "string", "enum": ["queued", "processed", "failed"] },
-        "label": { "type": "string", "enum": ["real", "fake", "mixed", "unlabeled"], "description": "The primary truth label for the contents of the dataset." }
+        "label": { "type": "string", "enum": ["real", "fake", "mixed", "unlabeled"], "description": "The primary truth label for the contents of the dataset." },
+        "notes": { "type": "string", "description": "User-provided description or notes for the dataset." }
       },
       "required": ["fileName", "uploadDate", "size", "label"]
     }

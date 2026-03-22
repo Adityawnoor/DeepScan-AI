@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useFirestore, useCollection } from "@/firebase"
 import { collection, addDoc, deleteDoc, doc, query, orderBy, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
@@ -23,6 +24,7 @@ export function DatasetManager() {
   const [isTraining, setIsTraining] = React.useState(false)
   const [trainingProgress, setTrainingProgress] = React.useState(0)
   const [datasetLabel, setDatasetLabel] = React.useState<string>("unlabeled")
+  const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetQuery = React.useMemo(() => {
@@ -36,12 +38,14 @@ export function DatasetManager() {
   }, [db])
 
   const { data: datasets, loading: datasetsLoading } = useCollection<{
+    id: string;
     fileName: string;
     uploadDate: string;
     size: number;
     fileType: string;
     status: string;
     label: string;
+    notes?: string;
   }>(datasetQuery)
   
   const { data: scans, loading: scansLoading } = useCollection(scansQuery)
@@ -102,13 +106,15 @@ export function DatasetManager() {
         size: file.size,
         fileType: file.type || "application/zip",
         status: "processed",
-        label: datasetLabel
+        label: datasetLabel,
+        notes: datasetNotes.trim()
       })
 
       toast({
         title: "Dataset Indexed",
-        description: `${file.name} cataloged as ${datasetLabel.toUpperCase()}.`,
+        description: `${file.name} cataloged with your notes.`,
       })
+      setDatasetNotes("") // Reset notes after successful upload
     } catch (error) {
       toast({
         variant: "destructive",
@@ -286,11 +292,22 @@ export function DatasetManager() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="dataset-notes" className="text-xs font-bold uppercase text-muted-foreground">Dataset Description / Notes</Label>
+              <Textarea 
+                id="dataset-notes"
+                placeholder="Details about this dataset..."
+                className="text-xs min-h-[80px] resize-none"
+                value={datasetNotes}
+                onChange={(e) => setDatasetNotes(e.target.value)}
+              />
+            </div>
+
             <div 
-              className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
+              className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
-              <FileArchive className="w-10 h-10 text-primary mb-2 opacity-40" />
+              <FileArchive className="w-8 h-8 text-primary mb-2 opacity-40" />
               <p className="text-sm font-medium">Click to select ZIP</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB</p>
               <input 
@@ -332,7 +349,7 @@ export function DatasetManager() {
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead>Filename</TableHead>
+                    <TableHead>Filename & Notes</TableHead>
                     <TableHead>Label</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Size</TableHead>
@@ -342,9 +359,19 @@ export function DatasetManager() {
                 <TableBody>
                   {datasets.map((ds) => (
                     <TableRow key={ds.id}>
-                      <TableCell className="font-medium flex items-center gap-2">
-                        <FileArchive className="w-4 h-4 text-primary/60" />
-                        {ds.fileName}
+                      <TableCell className="font-medium max-w-[300px]">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <FileArchive className="w-4 h-4 text-primary/60" />
+                            {ds.fileName}
+                          </div>
+                          {ds.notes && (
+                            <div className="flex gap-1.5 text-xs text-muted-foreground font-normal italic">
+                              <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+                              <span className="truncate">{ds.notes}</span>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {getLabelBadge(ds.label)}
@@ -355,7 +382,7 @@ export function DatasetManager() {
                           Ready
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {(ds.size / (1024 * 1024)).toFixed(2)} MB
                       </TableCell>
                       <TableCell className="text-right">
