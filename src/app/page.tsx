@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -12,23 +11,28 @@ import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useFirestore } from "@/firebase"
+import { collection, getDocs } from "firebase/firestore"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
+  const db = useFirestore()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [isLearning, setIsLearning] = React.useState(false)
 
-  // Local Knowledge State (Simulating Firestore collections)
+  // Private PC Database State
   const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
   const [localScans, setLocalScans] = React.useState<any[]>([])
+  const [isMigrating, setIsMigrating] = React.useState(false)
 
-  // Initialize from LocalStorage
+  // Initialize from LocalStorage (Secondary backup)
   React.useEffect(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
@@ -39,8 +43,41 @@ export default function DeepScanHome() {
     if (savedScans) setLocalScans(JSON.parse(savedScans))
   }, [])
 
-  // Total lessons stored on the PC/Browser
   const knowledgeCount = localDatasets.length + localScans.filter(s => s.userComment).length
+
+  const transferFromCloud = async () => {
+    if (!db) return
+    setIsMigrating(true)
+    try {
+      toast({ title: "Connecting to Cloud...", description: "Pulling data for local migration." })
+      
+      const scansSnap = await getDocs(collection(db, "scans"))
+      const datasetsSnap = await getDocs(collection(db, "datasets"))
+
+      const cloudScans = scansSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      const cloudDatasets = datasetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+
+      // Merge with local
+      const mergedScans = [...cloudScans, ...localScans]
+      const mergedDatasets = [...cloudDatasets, ...localDatasets]
+
+      setLocalScans(mergedScans)
+      setLocalDatasets(mergedDatasets)
+      
+      localStorage.setItem("deepscan-scans-metadata", JSON.stringify(mergedScans))
+      localStorage.setItem("deepscan-datasets", JSON.stringify(mergedDatasets))
+
+      toast({
+        title: "Migration Successful",
+        description: `${cloudScans.length + cloudDatasets.length} items moved from Cloud to PC.`,
+      })
+    } catch (e) {
+      console.error(e)
+      toast({ variant: "destructive", title: "Migration Failed", description: "Check cloud permissions." })
+    } finally {
+      setIsMigrating(false)
+    }
+  }
 
   const handleClearHistory = () => {
     setHistory([])
@@ -48,27 +85,26 @@ export default function DeepScanHome() {
     localStorage.removeItem("deepscan-history")
     localStorage.removeItem("deepscan-scans-metadata")
     toast({
-      title: "Local Database Cleared",
-      description: "All private scan records have been removed.",
+      title: "Private Database Cleared",
+      description: "All local forensic records have been removed.",
     })
   }
 
   const getLearnedKnowledge = async () => {
     setIsLearning(true)
     try {
-      // Retrieving the lessons stored in the Private Local Database
-      let context = "Below are notes from recent verified datasets on your PC:\n"
-      localDatasets.slice(0, 10).forEach(ds => {
+      let context = "Below are notes from your private PC Knowledge Base:\n"
+      localDatasets.slice(0, 15).forEach(ds => {
         if (ds.notes) {
           context += `- Dataset [${ds.label.toUpperCase()}]: ${ds.notes}\n`
         }
       })
 
-      const corrections = localScans.filter(s => s.userComment).slice(0, 5)
+      const corrections = localScans.filter(s => s.userComment).slice(0, 10)
       if (corrections.length > 0) {
-        context += "\nUser-provided corrections from your local history:\n"
+        context += "\nUser Insights from History:\n"
         corrections.forEach(s => {
-          context += `- User Insight: ${s.userComment}\n`
+          context += `- Observed Artifact: ${s.userComment}\n`
         })
       }
 
@@ -106,7 +142,6 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      // Save to Local PC Metadata Database
       const newScanMetadata = {
         id: scanId,
         timestamp: new Date().toISOString(),
@@ -114,7 +149,7 @@ export default function DeepScanHome() {
         aiVerdict: output.isDeepfake,
         aiConfidence: output.confidence,
         explanation: output.explanation,
-        mediaUrl: dataUri.length < 50000 ? dataUri : "Omitted (Stored Locally)"
+        mediaUrl: "Stored Locally"
       }
 
       const updatedScans = [newScanMetadata, ...localScans]
@@ -124,7 +159,7 @@ export default function DeepScanHome() {
       const newHistoryItem: HistoryItem = {
         id: scanId,
         timestamp: new Date().toISOString(),
-        fileName: "Scan_" + new Date().getTime(),
+        fileName: "Private_Scan_" + new Date().getTime(),
         isDeepfake: output.isDeepfake,
         confidence: output.confidence,
         type: mediaType
@@ -135,7 +170,7 @@ export default function DeepScanHome() {
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
 
       toast({
-        title: "Local Analysis Complete",
+        title: "Private Analysis Complete",
         description: output.isDeepfake ? "Potential manipulation detected." : "Media appears authentic.",
       })
     } catch (error: any) {
@@ -143,7 +178,7 @@ export default function DeepScanHome() {
       toast({
         variant: "destructive",
         title: "Analysis Failed",
-        description: "Check your internet connection or API quota.",
+        description: "Verify internet connection for AI processing.",
       })
     } finally {
       setIsAnalyzing(false)
@@ -157,9 +192,9 @@ export default function DeepScanHome() {
           <DeepScanLogo />
           
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/5 border border-green-500/10 mr-4">
-              <Monitor className="w-4 h-4 text-green-600" />
-              <span className="text-xs font-bold text-green-600">Local Database Mode Active</span>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
+              <Monitor className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-primary">Local PC Database Mode</span>
             </div>
             <ThemeToggle />
           </div>
@@ -173,17 +208,20 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Recalling Private PC Lessons..." : "Local Neural Brain Active"}
+                {isLearning ? "Accessing PC Memory..." : "Private Intelligence Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
-                Truly Private <span className="text-primary">Deepfake</span> Analysis
+                Forensic <span className="text-primary">Privacy</span> First
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI is currently remembering <strong>{knowledgeCount} private lessons</strong> stored on your PC. No cloud database is being used for your forensic history.
+                Your AI is powered by <strong>{knowledgeCount} private lessons</strong> stored locally on this machine. No cloud storage is being used for your scan metadata.
               </p>
             </div>
-            <div className="hidden lg:block absolute -right-20 -top-20 opacity-10 rotate-12 scale-150">
-               <ShieldCheck className="w-64 h-64 text-primary" />
+            <div className="flex flex-col gap-3">
+               <Button variant="outline" size="sm" onClick={transferFromCloud} disabled={isMigrating} className="bg-background">
+                  {isMigrating ? <Sparkles className="w-4 h-4 mr-2 animate-spin" /> : <DownloadCloud className="w-4 h-4 mr-2" />}
+                  Drain Data from Cloud
+               </Button>
             </div>
           </div>
 
@@ -230,7 +268,7 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <HardDrive className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      <strong>Local Mode:</strong> All scan history and notes are stored in your browser's private storage. Clearing your browser cache will erase this "Brain," but your datasets on your hard drive remain safe.
+                      <strong>Local PC Database:</strong> Your history is stored in your browser's persistent storage. Mount a folder in the "Knowledge Base" tab to create a physical <code>metadata.json</code> backup on your hard drive.
                     </p>
                   </div>
                 </div>
@@ -243,7 +281,6 @@ export default function DeepScanHome() {
                       mediaUrl={currentResult.mediaUrl} 
                       mediaType={currentResult.mediaType}
                       onUpdate={() => {
-                        // Refresh local state when feedback is saved
                         const savedDatasets = localStorage.getItem("deepscan-datasets")
                         const savedScans = localStorage.getItem("deepscan-scans-metadata")
                         if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
@@ -261,8 +298,8 @@ export default function DeepScanHome() {
                 onClear={handleClearHistory}
                 onSelectItem={(id) => {
                   toast({
-                    title: "Retrieving Private Data",
-                    description: "Loading metadata from PC storage...",
+                    title: "Accessing PC Storage",
+                    description: "Loading private metadata...",
                   })
                 }}
               />
@@ -286,11 +323,11 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 opacity-60">
               <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-medium">DeepScan Private - 100% PC Database © {new Date().getFullYear()}</span>
+              <span className="text-sm font-medium">DeepScan Private PC Database © {new Date().getFullYear()}</span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary">Data Privacy</a>
-              <a href="#" className="hover:text-primary">PC Mount Guide</a>
+              <a href="#" className="hover:text-primary">Local Storage Guide</a>
+              <a href="#" className="hover:text-primary">CORS Policy</a>
             </div>
           </div>
         </div>

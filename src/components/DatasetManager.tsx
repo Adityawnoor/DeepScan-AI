@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw, Info } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw, Info, Cloud } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -24,31 +24,40 @@ interface DatasetManagerProps {
 
 export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProps) {
   const { toast } = useToast()
-  const [isUploading, setIsUploading] = React.useState(false)
   const [isTraining, setIsTraining] = React.useState(false)
   const [trainingProgress, setTrainingProgress] = React.useState(0)
   const [datasetLabel, setDatasetLabel] = React.useState<string>("unlabeled")
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [editingDataset, setEditingDataset] = React.useState<{ id: string, notes: string } | null>(null)
-  const [isUpdatingNotes, setIsUpdatingNotes] = React.useState(false)
-  const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   
-  // Local PC Repository State
+  // PC Repository State
   const [localFolderHandle, setLocalFolderHandle] = React.useState<any>(null)
   const [localFiles, setLocalFiles] = React.useState<{ name: string, size: number, lastModified: number }[]>([])
   const [isScanningLocal, setIsScanningLocal] = React.useState(false)
   const [datasets, setDatasets] = React.useState<any[]>([])
   const [scans, setScans] = React.useState<any[]>([])
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-
-  // Load from LocalStorage
+  // Load from Local PC Database (LocalStorage)
   React.useEffect(() => {
     const savedDatasets = localStorage.getItem("deepscan-datasets")
     const savedScans = localStorage.getItem("deepscan-scans-metadata")
     if (savedDatasets) setDatasets(JSON.parse(savedDatasets))
     if (savedScans) setScans(JSON.parse(savedScans))
   }, [])
+
+  const syncToPCFile = async (data: any) => {
+    if (!localFolderHandle) return
+    try {
+      const fileHandle = await localFolderHandle.getFileHandle('deepscan-private-metadata.json', { create: true })
+      const writable = await fileHandle.createWritable()
+      await writable.write(JSON.stringify(data, null, 2))
+      await writable.close()
+      toast({ title: "PC Sync Complete", description: "Metadata saved to your hard drive." })
+    } catch (err) {
+      console.error("PC Write Error:", err)
+      toast({ variant: "destructive", title: "PC Sync Failed", description: "Allow file write permissions." })
+    }
+  }
 
   const chartData = React.useMemo(() => {
     if (scans.length === 0) return []
@@ -71,7 +80,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
         toast({
           variant: "destructive",
           title: "Browser Not Supported",
-          description: "Use Chrome or Edge for the Local PC Database feature.",
+          description: "Use Chrome or Edge for the PC Database feature.",
         })
         return
       }
@@ -80,10 +89,20 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       setLocalFolderHandle(handle)
       scanLocalFolder(handle)
       
-      toast({
-        title: "PC Database Connected",
-        description: `Treating '${handle.name}' as your private vault.`,
-      })
+      // Try to load existing local metadata from folder
+      try {
+        const fileHandle = await handle.getFileHandle('deepscan-private-metadata.json')
+        const file = await fileHandle.getFile()
+        const content = await file.text()
+        const meta = JSON.parse(content)
+        if (meta.datasets) {
+          setDatasets(meta.datasets)
+          localStorage.setItem("deepscan-datasets", JSON.stringify(meta.datasets))
+        }
+        toast({ title: "Private Vault Opened", description: "Loaded your PC metadata file." })
+      } catch (e) {
+        toast({ title: "New Vault Created", description: `Database established in '${handle.name}'.` })
+      }
     } catch (err: any) {
       if (err.name !== 'AbortError') console.error(err)
     }
@@ -94,7 +113,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     const files: any[] = []
     try {
       for await (const entry of handle.values()) {
-        if (entry.kind === 'file' && entry.name.endsWith('.zip')) {
+        if (entry.kind === 'file' && (entry.name.endsWith('.zip') || entry.name.endsWith('.7z'))) {
           const file = await entry.getFile()
           files.push({ name: entry.name, size: file.size, lastModified: file.lastModified })
         }
@@ -122,17 +141,20 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     const updated = [newDataset, ...datasets]
     setDatasets(updated)
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
+    syncToPCFile({ datasets: updated, scans: scans })
+    
     setDatasetNotes("")
     onRefresh()
-    toast({ title: "Local File Indexed", description: "Metadata saved to your PC database." })
+    toast({ title: "File Indexed Locally", description: "AI has learned your notes." })
   }
 
   const handleDelete = (id: string) => {
     const updated = datasets.filter(ds => ds.id !== id)
     setDatasets(updated)
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
+    syncToPCFile({ datasets: updated, scans: scans })
     onRefresh()
-    toast({ title: "Index Removed", description: "File reference deleted from local database." })
+    toast({ title: "Index Removed" })
   }
 
   const handleUpdateNotes = () => {
@@ -142,9 +164,10 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     )
     setDatasets(updated)
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
+    syncToPCFile({ datasets: updated, scans: scans })
     setEditingDataset(null)
     onRefresh()
-    toast({ title: "Private Notes Updated" })
+    toast({ title: "PC Notes Updated" })
   }
 
   return (
@@ -172,7 +195,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">PC Labeled Samples</p>
+                <p className="text-sm font-medium text-muted-foreground">PC Labeled Lessons</p>
                 <p className="text-3xl font-bold tracking-tight">{knowledgeCount}</p>
               </div>
               <div className="p-3 bg-secondary/10 rounded-xl">
@@ -180,24 +203,17 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
               </div>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              Lessons stored exclusively on your PC.
+              Lessons stored in your private <code>metadata.json</code>.
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-dashed flex items-center justify-center p-6 text-center group cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setIsTraining(true)}>
-           {isTraining ? (
-            <div className="w-full space-y-3">
-              <Progress value={trainingProgress} className="h-2" />
-              <p className="text-[10px] font-bold uppercase">Optimizing Local Weights...</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Play className="w-8 h-8 text-primary mx-auto opacity-40 group-hover:opacity-100" />
-              <p className="text-sm font-bold">Local Training</p>
-              <p className="text-xs text-muted-foreground">Train AI on PC data.</p>
-            </div>
-          )}
+        <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
+          <div className="space-y-2">
+             <Cloud className="w-10 h-10 text-primary mx-auto opacity-20" />
+             <p className="text-sm font-bold text-primary">Local Storage Active</p>
+             <p className="text-xs text-muted-foreground">Data is persistent on this machine.</p>
+          </div>
         </Card>
       </div>
 
@@ -206,7 +222,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardHeader>
              <CardTitle className="text-lg flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-primary" />
-                Accuracy Trend (Local)
+                Accuracy Trend (PC Only)
               </CardTitle>
           </CardHeader>
           <CardContent>
@@ -223,7 +239,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                 </ChartContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm border-2 border-dashed rounded-xl">
-                  Run private scans to see accuracy trends.
+                  Analyze media to populate local performance trends.
                 </div>
               )}
             </div>
@@ -234,27 +250,27 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <HardDrive className="w-5 h-5 text-primary" />
-              PC Database Ingest
+              PC Database Catalog
             </CardTitle>
-            <CardDescription>Catalog ZIPs from your hard drive.</CardDescription>
+            <CardDescription>Index local files into your private brain.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Dataset Label</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Truth Label</Label>
               <Select value={datasetLabel} onValueChange={setDatasetLabel}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="real">Real Content</SelectItem>
-                  <SelectItem value="fake">Fake Content</SelectItem>
-                  <SelectItem value="mixed">Mixed Content</SelectItem>
+                  <SelectItem value="real">Real Media</SelectItem>
+                  <SelectItem value="fake">AI Generated</SelectItem>
+                  <SelectItem value="mixed">Mixed/Training</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Observations</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Private Notes</Label>
               <Textarea 
-                placeholder="What should the AI learn from this?"
+                placeholder="Observed artifacts or anomalies..."
                 className="text-xs min-h-[80px]"
                 value={datasetNotes}
                 onChange={(e) => setDatasetNotes(e.target.value)}
@@ -294,7 +310,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Private Training Repository</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Private Repository</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader className="bg-muted/50">
@@ -333,14 +349,14 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
       <Dialog open={!!editingDataset} onOpenChange={() => setEditingDataset(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit PC Note</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Edit PC Metadata</DialogTitle></DialogHeader>
           <Textarea 
             className="min-h-[150px]"
             value={editingDataset?.notes}
             onChange={(e) => setEditingDataset(p => p ? {...p, notes: e.target.value} : null)}
           />
           <DialogFooter>
-            <Button onClick={handleUpdateNotes}>Save to Local Database</Button>
+            <Button onClick={handleUpdateNotes}>Save to Hard Drive</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
