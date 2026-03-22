@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, ClipboardPaste, Link as LinkIcon, Database } from "lucide-react"
+import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, Link as LinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -86,9 +86,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
       else if (blob.type.startsWith('audio/')) type = 'audio'
       else if (blob.type.startsWith('video/')) type = 'video'
 
-      if (!type) {
-        throw new Error("URL does not point to a supported media type.")
-      }
+      if (!type) throw new Error("URL does not point to supported media.")
 
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -98,57 +96,29 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
         setUrlInput("")
       }
       reader.readAsDataURL(blob)
-    } catch (err: any) {
-      console.error("URL Load error:", err)
+    } catch (err) {
       toast({
         variant: "destructive",
         title: "URL Error",
-        description: "Could not load media from this URL. It may be restricted by CORS or the link is invalid.",
+        description: "Could not load media from this URL.",
       })
       setIsLoadingUrl(false)
     }
   }
 
-  React.useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      if (preview || isWebcamOpen || isAnalyzing) return
-
-      const items = e.clipboardData?.items
-      if (!items) return
-
-      const files: File[] = []
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].kind === 'file') {
-          const file = items[i].getAsFile()
-          if (file) files.push(file)
-        }
-      }
-
-      if (files.length > 0) {
-        handleFiles(files)
-      }
-    }
-
-    window.addEventListener('paste', handlePaste)
-    return () => window.removeEventListener('paste', handlePaste)
-  }, [preview, isWebcamOpen, isAnalyzing])
-
   const openWebcam = async () => {
     setIsWebcamOpen(true)
-    setPreview(null)
-    setMediaType(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true })
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
     } catch (err) {
-      console.error("Webcam error:", err)
       setIsWebcamOpen(false)
       toast({
         variant: "destructive",
         title: "Webcam Error",
-        description: "Could not access camera. Please check permissions.",
+        description: "Could not access camera.",
       })
     }
   }
@@ -179,19 +149,17 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   }
 
   const handleStartAnalysis = () => {
-    if (preview) {
-      onUpload(preview)
-    }
+    if (preview) onUpload(preview)
   }
 
   return (
-    <Card className="p-8 overflow-hidden border-dashed border-2 bg-card/40 backdrop-blur-xl rounded-[3rem] shadow-2xl relative perspective-1000 preserve-3d">
+    <Card className="p-8 border-dashed border-2 bg-card/40 backdrop-blur-xl rounded-[2rem] shadow-xl">
       {!preview && !isWebcamOpen ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center min-h-[350px]">
           <div
             className={cn(
-              "flex flex-col items-center justify-center w-full flex-1 border-4 border-dashed rounded-[2.5rem] transition-all cursor-pointer group mb-6 relative overflow-hidden preserve-3d",
-              dragActive ? "border-primary bg-primary/5 scale-[1.02]" : "border-muted-foreground/10 hover:border-primary/40 hover:bg-primary/5"
+              "flex flex-col items-center justify-center w-full flex-1 border-4 border-dashed rounded-[1.5rem] transition-all cursor-pointer group mb-6",
+              dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/10 hover:border-primary/40 hover:bg-primary/5"
             )}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -199,7 +167,6 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
             <input
               ref={inputRef}
               type="file"
@@ -207,103 +174,85 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               accept="image/*,audio/*,video/*"
               onChange={handleInputChange}
             />
-            <div className="flex gap-4 mb-6 translate-z-10">
-              <div className="p-4 bg-primary/10 rounded-[1.5rem] group-hover:scale-110 transition-transform duration-500 shadow-lg rotate-x-12">
-                <ImageIcon className="w-6 h-6 text-primary" />
-              </div>
-              <div className="p-4 bg-primary/10 rounded-[1.5rem] group-hover:scale-110 transition-transform duration-500 delay-75 shadow-lg rotate-y-12">
-                <Music className="w-6 h-6 text-primary" />
-              </div>
-              <div className="p-4 bg-primary/10 rounded-[1.5rem] group-hover:scale-110 transition-transform duration-500 delay-150 shadow-lg -rotate-x-12">
-                <Video className="w-6 h-6 text-primary" />
-              </div>
+            <div className="flex gap-4 mb-4">
+              <ImageIcon className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+              <Music className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+              <Video className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
             </div>
-            <h3 className="font-headline font-black text-2xl mb-2 text-center uppercase tracking-tighter translate-z-10">Deploy Evidence</h3>
-            <p className="text-muted-foreground text-xs mb-6 px-4 text-center max-w-[320px] font-bold uppercase tracking-widest opacity-60 translate-z-10">
-              Drag & drop or <span className="text-primary font-black">Ctrl + V</span> to analyze
+            <h3 className="font-black text-xl mb-1 uppercase tracking-tighter">Deploy Evidence</h3>
+            <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest opacity-60">
+              Drag & drop or <span className="text-primary font-black">Browse</span>
             </p>
-            <div className="flex flex-wrap justify-center gap-4 translate-z-10">
-              <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openWebcam(); }} className="rounded-2xl border-primary/30 h-11 px-6 font-black uppercase tracking-widest hover:bg-primary/10 backdrop-blur-md transition-all shadow-md">
-                <Camera className="w-4 h-4 mr-2" />
-                Live Capture
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openWebcam(); }} className="mt-6 rounded-xl border-primary/20 h-10 px-6 font-black uppercase tracking-widest hover:bg-primary/5">
+              <Camera className="w-4 h-4 mr-2" />
+              Live Capture
+            </Button>
           </div>
 
-          <div className="w-full max-w-sm flex gap-3 translate-z-10">
+          <div className="w-full max-w-sm flex gap-2">
             <div className="relative flex-1">
-              <LinkIcon className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
+              <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Paste remote URL..."
-                className="pl-12 h-11 rounded-2xl bg-muted/30 border-none shadow-inner"
+                className="pl-10 h-10 rounded-xl bg-muted/30 border-none"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}
               />
             </div>
-            <Button size="sm" onClick={handleUrlUpload} disabled={!urlInput || isLoadingUrl} className="rounded-2xl h-11 px-6 font-black uppercase tracking-widest shadow-lg">
+            <Button size="sm" onClick={handleUrlUpload} disabled={!urlInput || isLoadingUrl} className="rounded-xl h-10 px-6 font-black uppercase tracking-widest">
               {isLoadingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load"}
             </Button>
           </div>
         </div>
       ) : isWebcamOpen ? (
         <div className="flex flex-col items-center gap-6">
-          <div className="relative w-full aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-primary/20 preserve-3d">
+          <div className="relative w-full aspect-video bg-black rounded-[1.5rem] overflow-hidden shadow-2xl border-2 border-primary/20">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            <div className="absolute inset-0 border-[20px] border-primary/5 pointer-events-none" />
           </div>
           <div className="flex gap-4">
-            <Button onClick={captureWebcam} className="rounded-2xl h-14 px-10 font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all">Capture DNA</Button>
-            <Button variant="outline" onClick={closeWebcam} className="rounded-2xl h-14 px-10 font-black uppercase tracking-widest hover:bg-destructive/10">Abort</Button>
+            <Button onClick={captureWebcam} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest">Capture DNA</Button>
+            <Button variant="outline" onClick={closeWebcam} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest">Cancel</Button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-8 animate-in zoom-in-95 duration-500 perspective-1000">
-          <div className="relative w-full max-w-lg aspect-square rounded-[3rem] overflow-hidden bg-black shadow-[0_40px_80px_rgba(0,0,0,0.4)] flex items-center justify-center border-8 border-primary/10 transition-all duration-700 hover:rotate-y-3 hover:rotate-x-3 preserve-3d">
-            {isAnalyzing && <div className="scan-line-3d" />}
-            
-            {mediaType === 'image' && (
-              <img src={preview!} alt="Preview" className="w-full h-full object-contain transition-all duration-1000" />
-            )}
-            {mediaType === 'video' && (
-              <video src={preview!} controls className="w-full h-full object-contain" />
-            )}
+        <div className="flex flex-col items-center gap-8">
+          <div className="relative w-full max-w-lg aspect-square rounded-[2rem] overflow-hidden bg-black shadow-2xl flex items-center justify-center border-4 border-primary/10">
+            {mediaType === 'image' && <img src={preview!} alt="Preview" className="w-full h-full object-contain" />}
+            {mediaType === 'video' && <video src={preview!} controls className="w-full h-full object-contain" />}
             {mediaType === 'audio' && (
               <div className="flex flex-col items-center gap-6 p-12 w-full">
-                <div className="p-12 rounded-full bg-primary/10 animate-neural-pulse">
-                  <Music className="w-24 h-24 text-primary" />
-                </div>
-                <audio src={preview!} controls className="w-full shadow-2xl" />
+                <Music className="w-20 h-20 text-primary opacity-50" />
+                <audio src={preview!} controls className="w-full" />
               </div>
             )}
-            
             <button
               onClick={clearPreview}
-              className="absolute top-6 right-6 p-3 bg-black/60 text-white rounded-full hover:bg-primary transition-all backdrop-blur-xl z-50 border border-white/20 shadow-2xl"
+              className="absolute top-4 right-4 p-2 bg-black/60 text-white rounded-full hover:bg-destructive transition-all"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
           <div className="flex gap-4">
             <Button 
               size="lg" 
-              className="px-14 h-16 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(0,123,255,0.4)] bg-primary hover:bg-primary/90 hover:scale-[1.05] active:scale-[0.98] transition-all"
+              className="px-10 h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90"
               onClick={handleStartAnalysis}
               disabled={isAnalyzing}
             >
               {isAnalyzing ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-3 animate-spin" />
                   Mapping Neural DNA...
                 </>
               ) : (
                 <>
-                  <Zap className="w-5 h-5 mr-3" />
+                  <Zap className="w-4 h-4 mr-3" />
                   Run Forensic Scan
                 </>
               )}
             </Button>
-            <Button variant="outline" size="lg" onClick={clearPreview} disabled={isAnalyzing} className="h-16 rounded-[2rem] font-black uppercase tracking-widest px-10 border-2 hover:bg-primary/10">
+            <Button variant="outline" size="lg" onClick={clearPreview} disabled={isAnalyzing} className="h-14 rounded-2xl font-black uppercase tracking-widest px-8 border-2">
               New Case
             </Button>
           </div>

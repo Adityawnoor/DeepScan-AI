@@ -18,35 +18,9 @@ import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Zap, 
   Network, Microscope as MicroscopeIcon,
-  ShieldAlert, Gavel, Brain, Activity, Cpu, Layers
+  ShieldAlert, Brain, Activity, Cpu, Layers
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const NeuralCore3D = () => (
-  <div className="relative w-80 h-80 perspective-1000 hidden lg:flex items-center justify-center pointer-events-none scale-110">
-    <div className="absolute inset-0 preserve-3d animate-rotate-y">
-      {/* Outer Rotating Wireframe */}
-      <div className="absolute inset-0 border-[3px] border-primary/20 rounded-full animate-rotate-x" />
-      <div className="absolute inset-8 border-[2px] border-primary/30 rounded-full rotate-y-45 rotate-x-45" />
-      
-      {/* Inner Data Rings */}
-      <div className="absolute inset-16 border border-primary/40 rounded-full animate-pulse flex items-center justify-center">
-        <div className="w-full h-1 bg-primary/20 animate-spin" />
-      </div>
-      
-      {/* Core Energy Field */}
-      <div className="absolute inset-24 bg-primary/10 rounded-full blur-3xl animate-neural-pulse" />
-      
-      {/* Central Identity Shield */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-        <ShieldCheck className="w-20 h-20 text-primary drop-shadow-[0_0_20px_rgba(0,123,255,0.5)] animate-float-3d" />
-        <div className="mt-4 px-3 py-1 bg-primary/20 rounded-full border border-primary/30 backdrop-blur-md">
-           <span className="text-[8px] font-black tracking-widest text-primary uppercase">Singularity Active</span>
-        </div>
-      </div>
-    </div>
-  </div>
-)
 
 export default function DeepScanHome() {
   const { toast } = useToast()
@@ -158,16 +132,14 @@ export default function DeepScanHome() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white">
-      <div className="spatial-grid" />
-      
       <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="hidden md:flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span>Neural Engine: Online</span>
+                <span>Engine: Online</span>
               </div>
               <div className="flex items-center gap-2">
                 <Network className="w-3 h-3 text-primary" />
@@ -182,74 +154,64 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
         <div className="flex flex-col gap-12">
           
-          <section className="relative group perspective-1000">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-purple-500/30 rounded-[3rem] blur-3xl opacity-30 transition duration-1000 group-hover:opacity-50" />
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-12 p-12 bg-card/40 border-2 border-primary/10 rounded-[4rem] backdrop-blur-3xl overflow-hidden min-h-[550px] transition-all duration-700 hover:rotate-x-1 hover:rotate-y-1 hover:scale-[1.01] shadow-2xl preserve-3d">
-              
-              <div className="flex-1 space-y-8 relative z-10 translate-z-10">
-                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.3em] border border-primary/20 animate-holographic">
-                  <Cpu className="w-5 h-5" />
+          <section className="relative">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-12 p-12 bg-card border border-primary/10 rounded-[2.5rem] shadow-xl overflow-hidden">
+              <div className="flex-1 space-y-6">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
+                  <Cpu className="w-4 h-4" />
                   FORENSIC SINGULARITY ENGINE V3.1
                 </div>
-                <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.85]">
-                  STOP THE <br />
-                  <span className="text-primary italic">AI GHOST.</span>
+                <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">
+                  Stop the <br />
+                  <span className="text-primary italic">AI Ghost.</span>
                 </h1>
-                <p className="text-muted-foreground text-xl max-w-2xl leading-relaxed font-medium">
-                  Deploy the ultimate forensic workstation to detect, <span className="text-foreground font-bold underline decoration-primary/30">Neutralize</span>, and <span className="text-foreground font-bold underline decoration-primary/30">Vaccinate</span> digital identities.
+                <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+                  Deploy the ultimate forensic workstation to detect, neutralize, and vaccinate digital identities against synthetic manipulation.
                 </p>
                 
-                <div className="flex flex-wrap gap-6 pt-6">
-                  <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-muted/50 border-2 border-primary/5 backdrop-blur-sm shadow-inner transition-transform hover:translate-y--1 cursor-default">
-                    <ShieldAlert className="w-5 h-5 text-primary" />
-                    <span className="text-xs font-black uppercase tracking-widest">Biometric: Pulse Scan</span>
-                  </div>
-                  <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-muted/50 border-2 border-primary/5 backdrop-blur-sm shadow-inner transition-transform hover:translate-y--1 cursor-default">
-                    <Layers className="w-5 h-5 text-primary" />
-                    <span className="text-xs font-black uppercase tracking-widest">Spectral: Noise Floor</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="relative z-20 flex flex-col items-center gap-8 translate-z-20">
-                <NeuralCore3D />
-                <div className="flex flex-col gap-4 w-full md:w-auto">
+                <div className="flex flex-wrap gap-4 pt-4">
                   <Button 
                     variant="default" 
                     size="lg" 
-                    className="h-20 px-12 rounded-[2.5rem] font-black uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(0,123,255,0.3)] hover:scale-[1.05] active:scale-[0.98] transition-all bg-primary hover:bg-primary/90"
+                    className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90"
                     onClick={handleBeginInvestigation}
                   >
-                    <MicroscopeIcon className="w-6 h-6 mr-4" />
+                    <MicroscopeIcon className="w-5 h-5 mr-3" />
                     Begin Investigation
                   </Button>
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="h-20 px-12 rounded-[2.5rem] font-black uppercase tracking-[0.2em] border-2 border-primary/20 hover:bg-primary/10 transition-all backdrop-blur-md"
+                    className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5"
                     onClick={() => setActiveTab("protect")}
                   >
-                    <ShieldCheck className="w-6 h-6 mr-4 text-primary" />
+                    <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
                     Vaccinate Identity
                   </Button>
+                </div>
+              </div>
+
+              <div className="hidden lg:flex flex-col items-center gap-6 p-8 bg-muted/30 rounded-[2rem] border border-dashed border-primary/20">
+                <div className="p-8 bg-primary/10 rounded-full">
+                  <ShieldAlert className="w-20 h-20 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-black uppercase tracking-widest text-primary">Biometric rPPG Active</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">Real-time Pulse Extraction</p>
                 </div>
               </div>
             </div>
           </section>
 
-          <div ref={workstationRef} className="animate-in fade-in slide-in-from-bottom-12 duration-1000">
+          <div ref={workstationRef} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-transparent border-b-2 rounded-none w-full justify-start h-auto p-0 mb-12 gap-12 overflow-x-auto no-scrollbar pb-2">
+              <TabsList className="bg-muted/50 p-1 rounded-2xl mb-12 h-14 gap-2">
                 {["analyze", "protect", "history", "datasets"].map((tab) => (
                   <TabsTrigger 
                     key={tab}
                     value={tab} 
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-4 data-[state=active]:border-primary rounded-none px-0 pb-6 font-black uppercase text-sm tracking-[0.3em] transition-all opacity-40 data-[state=active]:opacity-100"
+                    className="flex-1 rounded-xl font-black uppercase text-xs tracking-widest data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md"
                   >
-                    {tab === "analyze" && <Zap className="w-4 h-4 mr-3" />}
-                    {tab === "protect" && <ShieldCheck className="w-4 h-4 mr-3" />}
-                    {tab === "history" && <History className="w-4 h-4 mr-3" />}
-                    {tab === "datasets" && <Database className="w-4 h-4 mr-3" />}
                     {tab}
                   </TabsTrigger>
                 ))}
@@ -258,26 +220,26 @@ export default function DeepScanHome() {
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
                 <div className="space-y-12">
                   <div className={cn(
-                    "grid grid-cols-1 gap-12 transition-all duration-1000",
+                    "grid grid-cols-1 gap-12 transition-all duration-700",
                     currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
                   )}>
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
-                      <Card className="bg-primary/5 border-2 border-dashed border-primary/20 p-8 rounded-[3rem] space-y-6 shadow-lg transition-transform hover:scale-[1.02]">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-[2rem] space-y-6">
                         <div className="flex items-center gap-4">
-                          <div className="p-3 bg-primary/20 rounded-2xl animate-neural-pulse">
-                            <Brain className="w-6 h-6 text-primary" />
+                          <div className="p-2.5 bg-primary/20 rounded-xl">
+                            <Brain className="w-5 h-5 text-primary" />
                           </div>
-                          <h4 className="font-black uppercase text-sm tracking-[0.2em]">Forensic Singularity Core</h4>
+                          <h4 className="font-black uppercase text-sm tracking-widest">Forensic Core Active</h4>
                         </div>
                         <ul className="space-y-4">
                           {[
-                            "Microscopic rPPG Extraction",
-                            "Neural Origin Coordinate Mapping",
+                            "Microscopic rPPG Pulse Scanning",
+                            "Neural Origin DNA Mapping",
                             "Spectral High-Pass Fingerprinting",
-                            "Immune Protocol Ready"
+                            "Adversarial Immune Protection"
                           ].map(item => (
-                            <li key={item} className="flex items-center gap-3 text-xs font-black uppercase text-muted-foreground">
+                            <li key={item} className="flex items-center gap-3 text-xs font-bold text-muted-foreground uppercase">
                               <ShieldCheck className="w-4 h-4 text-primary" />
                               {item}
                             </li>
@@ -322,16 +284,16 @@ export default function DeepScanHome() {
         </div>
       </main>
 
-      <footer className="border-t py-16 bg-card/30 mt-auto backdrop-blur-md">
-        <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-12">
+      <footer className="border-t py-12 bg-card/30 mt-auto">
+        <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
-          <div className="flex gap-16 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+          <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
-            <a href="#" className="hover:text-primary transition-colors">Privacy manifest</a>
+            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
             <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
           </div>
-          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-30">
-            V3.1.0 FORENSIC SINGULARITY ENGINE
+          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">
+            V3.1.0 FORENSIC ENGINE
           </div>
         </div>
       </footer>
