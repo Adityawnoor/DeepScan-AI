@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2 } from "lucide-react"
+import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
