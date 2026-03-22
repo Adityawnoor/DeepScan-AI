@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -19,7 +19,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { cn } from "@/lib/utils"
 
-export function DatasetManager() {
+interface DatasetManagerProps {
+  knowledgeCount: number
+}
+
+export function DatasetManager({ knowledgeCount }: DatasetManagerProps) {
   const { toast } = useToast()
   const db = useFirestore()
   const [isUploading, setIsUploading] = React.useState(false)
@@ -108,7 +112,6 @@ export function DatasetManager() {
 
   const handleConnectLocalPC = async () => {
     try {
-      // Check for browser support
       if (!('showDirectoryPicker' in window)) {
         toast({
           variant: "destructive",
@@ -558,6 +561,35 @@ export function DatasetManager() {
               Local PC mode allows tracking files up to <strong>3GB+</strong> without bandwidth limits.
             </div>
           </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="bg-card shadow-sm border-primary/10">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Info className="w-4 h-4 text-primary" />
+              Cloud vs. Local Database
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              When running on <strong>localhost</strong>, your app syncs metadata to the <strong>Firebase Cloud Database</strong>.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><strong>Metadata</strong> (Notes, Labels, History) stays in the cloud forever.</li>
+              <li><strong>Heavy Files</strong> (ZIP datasets) stay on your PC in "Local Mode".</li>
+              <li><strong>Shared Brain</strong>: Your local and deployed apps share the same {knowledgeCount} lessons.</li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
+          <div className="space-y-2">
+             <Cloud className="w-10 h-10 text-primary mx-auto opacity-20" />
+             <p className="text-sm font-bold text-primary">Live Sync Enabled</p>
+             <p className="text-xs text-muted-foreground">Data is persistent between Localhost and Web.</p>
+          </div>
         </Card>
       </div>
 
