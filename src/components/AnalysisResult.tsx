@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -110,9 +109,8 @@ I reserve all legal rights to further action.
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* LEFT PANEL: ELITE FORENSICS */}
         <Card className="border-2 border-primary/20 shadow-2xl flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="border-b bg-muted/20 relative z-10">
+          <CardHeader className="border-b bg-muted/20">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
                 <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter text-foreground">
@@ -129,7 +127,7 @@ I reserve all legal rights to further action.
             </div>
           </CardHeader>
 
-          <CardContent className="p-6 space-y-8 flex-1 relative z-10">
+          <CardContent className="p-6 space-y-8 flex-1">
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
@@ -291,7 +289,7 @@ I reserve all legal rights to further action.
             </Tabs>
           </CardContent>
 
-          <CardFooter className="border-t p-6 bg-muted/5 gap-3 relative z-10">
+          <CardFooter className="border-t p-6 bg-muted/5 gap-3">
             <Button className="flex-1 h-12 font-black uppercase tracking-widest shadow-xl group" onClick={exportEvidence}>
               <FileJson className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" /> Export Proof to Vault
             </Button>
@@ -301,26 +299,22 @@ I reserve all legal rights to further action.
           </CardFooter>
         </Card>
 
-        {/* RIGHT PANEL: VISUAL EVIDENCE WITH PRECISION OVERLAYS */}
         <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex flex-col items-center justify-center p-0 rounded-3xl min-h-[500px]">
-          {/* Spectral Overlay Filter */}
           <div className={cn(
             "absolute inset-0 z-20 pointer-events-none transition-all duration-700",
-            showSpectralMode ? "opacity-100 backdrop-grayscale mix-blend-difference" : "opacity-0"
+            showSpectralMode ? "opacity-100 grayscale invert brightness-200" : "opacity-0"
           )}>
             <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-30 mix-blend-overlay animate-pulse" />
           </div>
 
           <div className="relative flex items-center justify-center p-4 w-full h-full">
-            {/* THIS WRAPPER ENSURES OVERLAYS SCALE WITH THE IMAGE */}
             <div className="relative inline-block max-w-full max-h-full">
               {mediaType === 'image' && (
                 <div className="relative">
                   <img 
                     src={mediaUrl} 
-                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "brightness-150 contrast-200 blur-[1px]")} 
+                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "blur-[1px]")} 
                   />
-                  {/* Precise Bounding Boxes */}
                   {result.highlightedRegions?.map((region: any, i: number) => (
                     <div 
                       key={i}
@@ -336,7 +330,6 @@ I reserve all legal rights to further action.
                         <ShieldAlert className="w-3 h-3" />
                         ARTIFACT #{i+1}
                       </div>
-                      <div className="absolute inset-0 bg-destructive/10 hidden group-hover:block" title={region.reason} />
                     </div>
                   ))}
                 </div>
@@ -346,7 +339,7 @@ I reserve all legal rights to further action.
               
               {mediaType === 'audio' && (
                 <div className="flex flex-col items-center gap-8 p-12">
-                  <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5 animate-pulse">
+                  <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5">
                     <Music className="w-32 h-32 text-primary" />
                   </div>
                   <audio ref={mediaRef as any} src={mediaUrl} controls className="w-80 shadow-2xl" />
@@ -355,7 +348,6 @@ I reserve all legal rights to further action.
             </div>
           </div>
 
-          {/* Indicator badges */}
           <div className="absolute bottom-6 right-6 z-30 flex gap-2">
             <Badge className="bg-primary/90 text-white font-black text-[10px] px-3 py-1 uppercase tracking-tighter backdrop-blur-md">
               <Zap className="w-3 h-3 mr-1.5" /> Singularity Engine
