@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -155,50 +156,40 @@ export default function DeepScanHome() {
         <div className="flex flex-col gap-12">
           
           <section className="relative">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-12 p-12 bg-card border border-primary/10 rounded-[2.5rem] shadow-xl overflow-hidden">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-12 bg-card/50 backdrop-blur-xl border border-primary/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
                   <Cpu className="w-4 h-4" />
                   FORENSIC SINGULARITY ENGINE V3.1
                 </div>
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-tight">
                   Stop the <br />
                   <span className="text-primary italic">AI Ghost.</span>
                 </h1>
-                <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+                <p className="text-muted-foreground text-base max-w-xl leading-relaxed">
                   Deploy the ultimate forensic workstation to detect, neutralize, and vaccinate digital identities against synthetic manipulation.
                 </p>
-                
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Button 
-                    variant="default" 
-                    size="lg" 
-                    className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white"
-                    onClick={handleBeginInvestigation}
-                  >
-                    <MicroscopeIcon className="w-5 h-5 mr-3" />
-                    BEGIN INVESTIGATION
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="h-14 px-8 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5"
-                    onClick={() => setActiveTab("protect")}
-                  >
-                    <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
-                    VACCINATE IDENTITY
-                  </Button>
-                </div>
               </div>
 
-              <div className="hidden lg:flex flex-col items-center gap-6 p-8 bg-muted/30 rounded-[2rem] border border-dashed border-primary/20">
-                <div className="p-8 bg-primary/10 rounded-full">
-                  <ShieldAlert className="w-20 h-20 text-primary" />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-black uppercase tracking-widest text-primary">Biometric rPPG Active</p>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">Real-time Pulse Extraction</p>
-                </div>
+              <div className="flex flex-col gap-4 w-full lg:w-auto">
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90 text-white"
+                  onClick={handleBeginInvestigation}
+                >
+                  <MicroscopeIcon className="w-5 h-5 mr-3" />
+                  BEGIN INVESTIGATION
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5"
+                  onClick={() => setActiveTab("protect")}
+                >
+                  <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
+                  VACCINATE IDENTITY
+                </Button>
               </div>
             </div>
           </section>
