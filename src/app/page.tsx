@@ -19,7 +19,7 @@ import {
   ShieldCheck, History, Database, Sparkles, Folder, 
   ArrowRight, RefreshCw, Fingerprint, Microscope, Zap,
   Dna, Network, Activity, Brain, ShieldAlert, ShieldX,
-  FileText, Gavel, LifeBuoy, Box
+  FileText, Gavel, LifeBuoy, Box, Layers, Cpu
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -47,8 +47,6 @@ export default function DeepScanHome() {
     if (savedScans) setLocalScans(JSON.parse(savedScans))
     if (savedFolderName) setConnectedFolderName(savedFolderName)
   }, [])
-
-  const knowledgeCount = localDatasets.length + localScans.filter(s => s.userFeedback !== undefined).length
 
   const syncToPCFile = async (data: { datasets: any[], scans: any[] }) => {
     if (!localFolderHandle) return
@@ -128,7 +126,7 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white perspective-2000">
       {/* ELITE HEADER */}
       <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
@@ -152,54 +150,63 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
         <div className="flex flex-col gap-12">
           
-          {/* HERO FORENSIC STATUS WITH 3D ANIMATION */}
-          <section className="relative group">
+          {/* HERO FORENSIC STATUS WITH NESTED 3D ANIMATION */}
+          <section className="relative group perspective-2000">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-[2rem] blur-2xl opacity-50 transition duration-1000 group-hover:opacity-70" />
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-10 bg-card/40 border-2 border-primary/10 rounded-[2rem] backdrop-blur-3xl overflow-hidden min-h-[400px]">
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-10 bg-card/40 border-2 border-primary/10 rounded-[2rem] backdrop-blur-3xl overflow-hidden min-h-[450px] hover-tilt-card preserve-3d">
               
-              {/* 3D NEURAL CORE ANIMATION */}
-              <div className="absolute right-[-100px] top-[-50px] opacity-20 pointer-events-none hidden lg:block">
-                <div className="perspective-1000 w-[400px] h-[400px]">
+              {/* 3D NEURAL CORE - NESTED LAYERS */}
+              <div className="absolute right-[-80px] top-[-20px] opacity-30 pointer-events-none hidden lg:block scale-110">
+                <div className="perspective-2000 w-[450px] h-[450px]">
                   <div className="preserve-3d animate-rotate-3d w-full h-full relative">
+                    {/* Outer Cube */}
                     <div className="cube-face cube-face-front" />
                     <div className="cube-face cube-face-back" />
                     <div className="cube-face cube-face-left" />
                     <div className="cube-face cube-face-right" />
                     <div className="cube-face cube-face-top" />
                     <div className="cube-face cube-face-bottom" />
+                    
+                    {/* Inner Core Cube */}
+                    <div className="inner-cube-face inner-face-front" />
+                    <div className="inner-cube-face inner-face-back" />
+                    <div className="inner-cube-face inner-face-left" />
+                    <div className="inner-cube-face inner-face-right" />
+                    <div className="inner-cube-face inner-face-top" />
+                    <div className="inner-cube-face inner-face-bottom" />
                   </div>
                 </div>
               </div>
 
-              <div className="flex-1 space-y-6 relative z-10">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
+              <div className="flex-1 space-y-6 relative z-10 preserve-3d">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
                   <ShieldCheck className="w-4 h-4" />
                   IMMUNE RESPONSE PROTOCOL
                 </div>
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
+                <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none [transform:translateZ(40px)]">
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
-                <p className="text-muted-foreground text-lg max-w-xl leading-relaxed font-medium">
+                <p className="text-muted-foreground text-lg max-w-xl leading-relaxed font-medium [transform:translateZ(20px)]">
                   Detect, <span className="text-foreground font-bold underline decoration-primary/30">Neutralize</span>, and <span className="text-foreground font-bold underline decoration-primary/30">Prevent</span> AI-manipulated content using adversarial vaccination and automated legal response.
                 </p>
                 
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border">
+                <div className="flex flex-wrap gap-4 pt-4 [transform:translateZ(30px)]">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border backdrop-blur-sm">
                     <ShieldAlert className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold uppercase tracking-tighter">Immunity Spark Active</span>
+                    <span className="text-xs font-bold uppercase tracking-tighter">Immunity Active</span>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border backdrop-blur-sm">
                     <Gavel className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold uppercase tracking-tighter">Legal Autopilot Ready</span>
+                    <span className="text-xs font-bold uppercase tracking-tighter">Legal Autopilot</span>
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-col gap-3 w-full md:w-auto relative z-10">
+              <div className="flex flex-col gap-3 w-full md:w-auto relative z-10 preserve-3d [transform:translateZ(50px)]">
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-[1.02] transition-all"
+                  className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-[1.05] transition-all bg-primary hover:bg-primary/90"
                   onClick={handleBeginInvestigation}
                 >
                   <Microscope className="w-5 h-5 mr-3" />
@@ -208,7 +215,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5 transition-all"
+                  className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5 transition-all backdrop-blur-md"
                   onClick={() => setActiveTab("protect")}
                 >
                   <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
@@ -219,9 +226,9 @@ export default function DeepScanHome() {
           </section>
 
           {/* MAIN WORKSTATION */}
-          <div ref={workstationRef}>
+          <div ref={workstationRef} className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-8 gap-8">
+              <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-8 gap-8 overflow-x-auto no-scrollbar">
                 {["analyze", "protect", "history", "datasets"].map((tab) => (
                   <TabsTrigger 
                     key={tab}
@@ -245,7 +252,7 @@ export default function DeepScanHome() {
                   )}>
                     <div className="space-y-6">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
-                      <Card className="bg-muted/30 border-2 border-dashed p-6 rounded-[2rem] space-y-4">
+                      <Card className="bg-muted/30 border-2 border-dashed p-6 rounded-[2rem] space-y-4 hover:border-primary/40 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-primary/10 rounded-xl">
                             <Brain className="w-5 h-5 text-primary" />
@@ -304,7 +311,7 @@ export default function DeepScanHome() {
         </div>
       </main>
 
-      <footer className="border-t py-12 bg-card/30">
+      <footer className="border-t py-12 bg-card/30 mt-auto">
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
