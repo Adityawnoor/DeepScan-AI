@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -29,6 +29,13 @@ export function DatasetManager() {
   const [editingDataset, setEditingDataset] = React.useState<{ id: string, notes: string } | null>(null)
   const [isUpdatingNotes, setIsUpdatingNotes] = React.useState(false)
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
+  
+  // Local PC Database State
+  const [localFolderHandle, setLocalFolderHandle] = React.useState<any>(null)
+  const [localFiles, setLocalFiles] = React.useState<{ name: string, size: number, lastModified: number }[]>([])
+  const [isScanningLocal, setIsScanningLocal] = React.useState(false)
+  const [localMode, setLocalMode] = React.useState<"upload" | "local">("upload")
+
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetQuery = React.useMemo(() => {
@@ -50,6 +57,8 @@ export function DatasetManager() {
     status: string;
     label: string;
     notes?: string;
+    isLocal?: boolean;
+    localPath?: string;
   }>(datasetQuery)
   
   const { data: scans } = useCollection(scansQuery)
@@ -96,11 +105,99 @@ export function DatasetManager() {
     }
   }, [isTraining, trainingProgress, toast])
 
+  const handleConnectLocalPC = async () => {
+    try {
+      // Check for browser support
+      if (!('showDirectoryPicker' in window)) {
+        toast({
+          variant: "destructive",
+          title: "Browser Not Supported",
+          description: "Your browser does not support the File System Access API. Please use Chrome or Edge.",
+        })
+        return
+      }
+
+      const handle = await (window as any).showDirectoryPicker()
+      setLocalFolderHandle(handle)
+      setLocalMode("local")
+      scanLocalFolder(handle)
+      
+      toast({
+        title: "PC Folder Connected",
+        description: `Now treating '${handle.name}' as your local database.`,
+      })
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error("Local PC connection error", err)
+      }
+    }
+  }
+
+  const scanLocalFolder = async (handle: any) => {
+    setIsScanningLocal(true)
+    const files: any[] = []
+    try {
+      for await (const entry of handle.values()) {
+        if (entry.kind === 'file' && (entry.name.endsWith('.zip') || entry.name.endsWith('.tar.gz'))) {
+          const file = await entry.getFile()
+          files.push({
+            name: entry.name,
+            size: file.size,
+            lastModified: file.lastModified
+          })
+        }
+      }
+      setLocalFiles(files)
+    } catch (err) {
+      console.error("Error scanning folder", err)
+    } finally {
+      setIsScanningLocal(false)
+    }
+  }
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files[0]) {
       setSelectedFile(files[0])
     }
+  }
+
+  const handleIndexLocalFile = async (fileName: string, size: number) => {
+    if (!db) return
+
+    const datasetData = {
+      fileName: fileName,
+      uploadDate: new Date().toISOString(),
+      size: size,
+      fileType: "application/zip",
+      status: "processed",
+      label: datasetLabel,
+      notes: datasetNotes.trim(),
+      isLocal: true,
+      localPath: localFolderHandle?.name + "/" + fileName
+    }
+    
+    setIsUploading(true)
+    
+    addDoc(collection(db, "datasets"), datasetData)
+      .then(() => {
+        toast({
+          title: "Local File Indexed",
+          description: `${fileName} cataloged from your PC.`,
+        })
+        setDatasetNotes("")
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'datasets',
+          operation: 'create',
+          requestResourceData: datasetData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsUploading(false)
+      });
   }
 
   const handleSaveDataset = async () => {
@@ -113,7 +210,8 @@ export function DatasetManager() {
       fileType: selectedFile.type || "application/zip",
       status: "processed",
       label: datasetLabel,
-      notes: datasetNotes.trim()
+      notes: datasetNotes.trim(),
+      isLocal: false
     }
     
     setIsUploading(true)
@@ -267,12 +365,18 @@ export function DatasetManager() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card className="lg:col-span-8">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              Accuracy Trend
-            </CardTitle>
-            <CardDescription>Visualizing performance improvement based on user corrections.</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Accuracy Trend
+              </CardTitle>
+              <CardDescription>Performance improvement based on user corrections.</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleConnectLocalPC}>
+              <HardDrive className="w-4 h-4 mr-2" />
+              Mount PC Database
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -315,11 +419,23 @@ export function DatasetManager() {
 
         <Card className="lg:col-span-4 border-primary/20">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Upload className="w-5 h-5 text-primary" />
-              Dataset Ingest
-            </CardTitle>
-            <CardDescription>Categorize and catalog ZIP data.</CardDescription>
+            <div className="flex items-center justify-between mb-2">
+               <CardTitle className="text-lg flex items-center gap-2">
+                <Database className="w-5 h-5 text-primary" />
+                Data Ingest
+              </CardTitle>
+              <div className="flex bg-muted p-0.5 rounded-lg text-[10px] font-bold uppercase">
+                <button 
+                  className={cn("px-2 py-1 rounded-md transition-all", localMode === 'upload' ? "bg-background shadow-sm" : "opacity-50")}
+                  onClick={() => setLocalMode('upload')}
+                >Upload</button>
+                <button 
+                  className={cn("px-2 py-1 rounded-md transition-all", localMode === 'local' ? "bg-background shadow-sm" : "opacity-50")}
+                  onClick={() => setLocalMode('local')}
+                >PC (3GB+)</button>
+              </div>
+            </div>
+            <CardDescription>Catalog ZIP datasets for training.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -348,59 +464,97 @@ export function DatasetManager() {
               />
             </div>
 
-            {!selectedFile ? (
-              <div 
-                className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FileArchive className="w-8 h-8 text-primary mb-2 opacity-40" />
-                <p className="text-sm font-medium">Click to select ZIP</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB</p>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept=".zip,.tar,.gz"
-                  onChange={handleFileSelect}
-                />
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FileCheck className="w-5 h-5 text-primary" />
+            {localMode === 'upload' ? (
+              !selectedFile ? (
+                <div 
+                  className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FileArchive className="w-8 h-8 text-primary mb-2 opacity-40" />
+                  <p className="text-sm font-medium">Click to select ZIP</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Standard Upload</p>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept=".zip,.tar,.gz"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <FileCheck className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold truncate">{selectedFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setSelectedFile(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold truncate">{selectedFile.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setSelectedFile(null)}>
-                    <X className="w-4 h-4" />
+                  <Button 
+                    className="w-full" 
+                    onClick={handleSaveDataset}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? "Uploading..." : "Index Selected Dataset"}
                   </Button>
                 </div>
-                <Button 
-                  className="w-full" 
-                  onClick={handleSaveDataset}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <>
-                      <BrainCircuit className="w-4 h-4 mr-2 animate-spin" />
-                      Uploading Dataset...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Index Selected Dataset
-                    </>
-                  )}
-                </Button>
+              )
+            ) : (
+              <div className="space-y-3">
+                {!localFolderHandle ? (
+                  <Button variant="outline" className="w-full h-24 border-dashed" onClick={handleConnectLocalPC}>
+                    <div className="flex flex-col items-center gap-1">
+                      <FolderOpen className="w-6 h-6 opacity-40" />
+                      <span>Select Local Folder</span>
+                      <span className="text-[10px] opacity-60">Mount your PC database</span>
+                    </div>
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-2 rounded bg-muted/50 text-[10px] font-mono">
+                      <span className="truncate">PC://{localFolderHandle.name}</span>
+                      <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => scanLocalFolder(localFolderHandle)}>
+                        <RefreshCcw className={cn("w-3 h-3", isScanningLocal && "animate-spin")} />
+                      </Button>
+                    </div>
+                    <div className="max-h-[150px] overflow-y-auto border rounded-lg p-1 bg-muted/20">
+                      {localFiles.length === 0 ? (
+                        <p className="text-[10px] text-center py-4 text-muted-foreground italic">No ZIP files found in folder.</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {localFiles.map((file) => (
+                            <div key={file.name} className="flex items-center justify-between p-1.5 rounded hover:bg-primary/5 group border border-transparent hover:border-primary/10 transition-colors">
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-bold truncate leading-tight">{file.name}</p>
+                                <p className="text-[9px] text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(0)}MB</p>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 px-2 text-[9px] opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleIndexLocalFile(file.name, file.size)}
+                                disabled={isUploading}
+                              >
+                                Index
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-tight">
               <AlertTriangle className="w-4 h-4 mb-1" />
-              Indexed metadata for <strong>{datasets?.length || 0} datasets</strong>.
+              Local PC mode allows tracking files up to <strong>3GB+</strong> without bandwidth limits.
             </div>
           </CardContent>
         </Card>
@@ -429,7 +583,7 @@ export function DatasetManager() {
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead>Filename & Notes</TableHead>
+                    <TableHead>Filename & Source</TableHead>
                     <TableHead>Label</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Size</TableHead>
@@ -442,8 +596,9 @@ export function DatasetManager() {
                       <TableCell className="font-medium max-w-[300px]">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <FileArchive className="w-4 h-4 text-primary/60" />
-                            {ds.fileName}
+                            {ds.isLocal ? <HardDrive className="w-4 h-4 text-primary" /> : <FileArchive className="w-4 h-4 text-primary/60" />}
+                            <span className="truncate">{ds.fileName}</span>
+                            {ds.isLocal && <Badge variant="secondary" className="text-[8px] h-4">PC DB</Badge>}
                           </div>
                           {ds.notes && (
                             <div className="flex gap-1.5 text-xs text-muted-foreground font-normal italic">
@@ -490,7 +645,7 @@ export function DatasetManager() {
           <DialogHeader>
             <DialogTitle>Edit Dataset Notes</DialogTitle>
             <DialogDescription>
-              Update the description for this dataset. These notes help document the specific attributes or anomalies in this sample.
+              Update the description for this dataset.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -507,21 +662,10 @@ export function DatasetManager() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setEditingDataset(null)} disabled={isUpdatingNotes}>
-              <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
             <Button onClick={handleUpdateNotes} disabled={isUpdatingNotes}>
-              {isUpdatingNotes ? (
-                <>
-                  <BrainCircuit className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </>
-              )}
+              {isUpdatingNotes ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
