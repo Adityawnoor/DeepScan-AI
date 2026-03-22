@@ -85,6 +85,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
         return
       }
 
+      // Explicitly catch the security error thrown in frames
       const handle = await (window as any).showDirectoryPicker()
       setLocalFolderHandle(handle)
       localStorage.setItem("deepscan-last-folder", handle.name)
@@ -105,7 +106,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       }
       onRefresh(handle.name)
     } catch (err: any) {
-      console.error("Picker Error:", err)
+      // Do not use console.error here as it might trigger the NextJS overlay in dev mode
       if (err.name === 'SecurityError') {
         setBrowserError("Browser Restriction: The PC Folder Picker is blocked in this preview window. To use your PC as a database, run this app in a full browser tab (Top-level window) on your local machine.")
       } else if (err.name !== 'AbortError') {
@@ -181,7 +182,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       {browserError && (
         <Alert variant="destructive" className="bg-destructive/10">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Browser Permission Error</AlertTitle>
+          <AlertTitle>Browser Permission Required</AlertTitle>
           <AlertDescription>
             {browserError}
           </AlertDescription>
