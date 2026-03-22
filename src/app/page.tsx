@@ -12,11 +12,12 @@ import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistor
 import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Sparkles, Folder, 
   ArrowRight, RefreshCw, Fingerprint, Microscope, Zap,
-  Dna, Network, Activity
+  Dna, Network, Activity, Brain
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
