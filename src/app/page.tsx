@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -12,10 +13,10 @@ import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistor
 import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Brain } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Brain, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { doc, setDoc, collection, getDocs, query, limit, orderBy } from "firebase/firestore"
-import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase"
+import { useFirestore, errorEmitter, FirestorePermissionError, useCollection } from "@/firebase"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
@@ -25,6 +26,15 @@ export default function DeepScanHome() {
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [isLearning, setIsLearning] = React.useState(false)
+
+  // Fetch data to calculate "Brain Power"
+  const datasetQuery = React.useMemo(() => db ? query(collection(db, "datasets")) : null, [db])
+  const feedbackQuery = React.useMemo(() => db ? query(collection(db, "scans")) : null, [db])
+  
+  const { data: datasets } = useCollection(datasetQuery)
+  const { data: scans } = useCollection(feedbackQuery)
+
+  const knowledgeCount = (datasets?.length || 0) + (scans?.filter(s => s.userComment)?.length || 0)
 
   React.useEffect(() => {
     const saved = localStorage.getItem("deepscan-history")
@@ -51,8 +61,8 @@ export default function DeepScanHome() {
     setIsLearning(true)
     try {
       // Fetch latest datasets with user notes and labels
-      const datasetQuery = query(collection(db, "datasets"), orderBy("uploadDate", "desc"), limit(10))
-      const datasetSnap = await getDocs(datasetQuery)
+      const dQuery = query(collection(db, "datasets"), orderBy("uploadDate", "desc"), limit(10))
+      const datasetSnap = await getDocs(dQuery)
       
       let context = "Below are notes from recent verified datasets analyzed by experts:\n"
       datasetSnap.forEach(doc => {
@@ -62,9 +72,9 @@ export default function DeepScanHome() {
         }
       })
 
-      // Fetch latest scans where AI was wrong (user corrected)
-      const correctionQuery = query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(5))
-      const correctionSnap = await getDocs(correctionQuery)
+      // Fetch latest scans where user provided feedback
+      const cQuery = query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(5))
+      const correctionSnap = await getDocs(cQuery)
       
       if (!correctionSnap.empty) {
         context += "\nImportant user-provided corrections from previous scans:\n"
@@ -176,11 +186,10 @@ export default function DeepScanHome() {
           <DeepScanLogo />
           
           <div className="flex items-center gap-4">
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium mr-6">
-              <a href="#" className="text-primary hover:text-primary/80">Detection</a>
-              <a href="#" className="text-muted-foreground hover:text-primary">Enterprise</a>
-              <a href="#" className="text-muted-foreground hover:text-primary">API</a>
-            </nav>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
+              <Brain className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-primary">{knowledgeCount} Knowledge Points</span>
+            </div>
             <ThemeToggle />
           </div>
         </div>
@@ -192,14 +201,14 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 bg-primary/5 rounded-2xl border border-primary/10 overflow-hidden relative">
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-                <Brain className={cn("w-3.5 h-3.5", isLearning && "animate-pulse")} />
-                {isLearning ? "Retrieving Learned Knowledge..." : "Few-Shot Knowledge Loop Enabled"}
+                <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
+                {isLearning ? "Retrieving Knowledge..." : "Live Learning Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
-                Detect <span className="text-primary">Deepfakes</span> across all Media
+                Detect <span className="text-primary">Deepfakes</span> with Intelligence
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Our AI continuously learns from your verified datasets. Every note you type improves detection accuracy.
+                Your AI is currently fueled by <strong>{knowledgeCount} specific lessons</strong> from your training repository. It learns every time you save a note.
               </p>
             </div>
             <div className="hidden lg:block absolute -right-20 -top-20 opacity-10 rotate-12 scale-150">
@@ -250,7 +259,7 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <Info className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      Analysis is powered by <strong>Few-Shot Prompting</strong>. Your dataset labels and feedback are injected into the AI's reasoning engine in real-time.
+                      <strong>Persistence Check:</strong> Once you add a dataset note, it is stored in Firestore. You do <u>not</u> need to re-upload the ZIP file for the AI to benefit from your observations.
                     </p>
                   </div>
                 </div>
@@ -282,7 +291,7 @@ export default function DeepScanHome() {
             </TabsContent>
 
             <TabsContent value="datasets" className="mt-6">
-              <DatasetManager />
+              <DatasetManager knowledgeCount={knowledgeCount} />
             </TabsContent>
           </Tabs>
         </div>
