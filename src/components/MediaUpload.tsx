@@ -109,7 +109,6 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
     }
   }
 
-  // Handle Paste Event for direct image pasting
   React.useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       if (preview || isWebcamOpen || isAnalyzing) return
@@ -186,7 +185,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   }
 
   return (
-    <Card className="p-6 overflow-hidden border-dashed border-2 bg-card/50 perspective-2000">
+    <Card className="p-6 overflow-hidden border-dashed border-2 bg-card/50">
       {!preview && !isWebcamOpen ? (
         <div className="flex flex-col items-center justify-center min-h-[350px]">
           <div
@@ -200,13 +199,6 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
           >
-            {/* 3D DECORATIVE ELEMENT */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
-              <div className="w-full h-full flex items-center justify-center">
-                <Database className="w-64 h-64 animate-rotate-3d" />
-              </div>
-            </div>
-
             <input
               ref={inputRef}
               type="file"
@@ -214,22 +206,22 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               accept="image/*,audio/*,video/*"
               onChange={handleInputChange}
             />
-            <div className="flex gap-2 mb-4 preserve-3d">
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 group-hover:[transform:translateZ(20px)] transition-transform duration-500">
+            <div className="flex gap-2 mb-4">
+              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-500">
                 <ImageIcon className="w-5 h-5 text-primary" />
               </div>
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 group-hover:[transform:translateZ(20px)] transition-transform duration-500 delay-75">
+              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-500 delay-75">
                 <Music className="w-5 h-5 text-primary" />
               </div>
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 group-hover:[transform:translateZ(20px)] transition-transform duration-500 delay-150">
+              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-500 delay-150">
                 <Video className="w-5 h-5 text-primary" />
               </div>
             </div>
-            <h3 className="font-headline font-black text-xl mb-1 text-center uppercase tracking-tighter group-hover:[transform:translateZ(10px)] transition-transform">Analyze Media</h3>
+            <h3 className="font-headline font-black text-xl mb-1 text-center uppercase tracking-tighter">Analyze Media</h3>
             <p className="text-muted-foreground text-xs mb-4 px-4 text-center max-w-[280px] font-medium uppercase tracking-widest opacity-60">
               Drag & drop or <span className="text-primary font-bold">paste evidence</span>
             </p>
-            <div className="flex flex-wrap justify-center gap-3 preserve-3d">
+            <div className="flex flex-wrap justify-center gap-3">
               <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openWebcam(); }} className="rounded-xl border-primary/20 hover:bg-primary/5 backdrop-blur-sm">
                 <Camera className="w-4 h-4 mr-2" />
                 Use Webcam
@@ -261,7 +253,6 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-full aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl border-4 border-primary/10">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            <div className="absolute inset-0 pointer-events-none border-2 border-primary/20 rounded-[2rem] box-content" />
           </div>
           <div className="flex gap-2">
             <Button onClick={captureWebcam} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest">Capture Photo</Button>
@@ -270,7 +261,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
         </div>
       ) : (
         <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
-          <div className="relative w-full max-w-md aspect-square rounded-[2.5rem] overflow-hidden bg-black shadow-[0_0_50px_rgba(0,0,0,0.3)] group flex items-center justify-center border-4 border-primary/5 preserve-3d">
+          <div className="relative w-full max-w-md aspect-square rounded-[2.5rem] overflow-hidden bg-black shadow-2xl flex items-center justify-center border-4 border-primary/5">
             {mediaType === 'image' && (
               <img src={preview!} alt="Preview" className="w-full h-full object-contain" />
             )}
@@ -278,8 +269,8 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               <video src={preview!} controls className="w-full h-full object-contain" />
             )}
             {mediaType === 'audio' && (
-              <div className="flex flex-col items-center gap-4 p-8 w-full preserve-3d">
-                <Music className="w-24 h-24 text-primary opacity-20 animate-float-3d" />
+              <div className="flex flex-col items-center gap-4 p-8 w-full">
+                <Music className="w-24 h-24 text-primary opacity-20" />
                 <audio src={preview!} controls className="w-full shadow-2xl" />
               </div>
             )}
@@ -289,7 +280,6 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="scan-beam-overlay" />
           </div>
           <div className="flex gap-3">
             <Button 

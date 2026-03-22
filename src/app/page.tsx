@@ -131,7 +131,7 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white perspective-3000">
+    <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white">
       <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
@@ -154,53 +154,40 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
         <div className="flex flex-col gap-12">
           
-          <section className="relative group perspective-3000">
+          <section className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-purple-500/30 rounded-[3rem] blur-3xl opacity-30 transition duration-1000 group-hover:opacity-50" />
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-12 bg-card/40 border-2 border-primary/10 rounded-[3rem] backdrop-blur-3xl overflow-hidden min-h-[550px] hover-3d-card preserve-3d">
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-12 bg-card/40 border-2 border-primary/10 rounded-[3rem] backdrop-blur-3xl overflow-hidden min-h-[500px]">
               
-              {/* 3D SPATIAL NEURAL CORE */}
-              <div className="absolute right-[-100px] top-0 opacity-40 pointer-events-none hidden lg:block scale-125">
-                <div className="cube-v2 animate-rotate-spatial">
-                  <div className="cube-v2-face face-front"><Activity className="w-12 h-12 text-primary/40" /></div>
-                  <div className="cube-v2-face face-back" />
-                  <div className="cube-v2-face face-left" />
-                  <div className="cube-v2-face face-right" />
-                  <div className="cube-v2-face face-top" />
-                  <div className="cube-v2-face face-bottom" />
-                  <div className="core-sphere" />
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-8 relative z-10 preserve-3d">
-                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.3em] border border-primary/20 shadow-[0_0_30px_rgba(var(--primary),0.3)] animate-holographic">
+              <div className="flex-1 space-y-8 relative z-10">
+                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.3em] border border-primary/20 animate-holographic">
                   <ShieldCheck className="w-5 h-5" />
                   IMMUNE RESPONSE PROTOCOL ACTIVE
                 </div>
-                <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9] [transform:translateZ(60px)]">
+                <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.9]">
                   DETHRONE THE <br />
                   <span className="text-primary italic">AI GHOST.</span>
                 </h1>
-                <p className="text-muted-foreground text-xl max-w-2xl leading-relaxed font-medium [transform:translateZ(40px)]">
-                  Deploy the Forensic Singularity Engine to detect, <span className="text-foreground font-bold underline decoration-primary/30">Neutralize</span>, and <span className="text-foreground font-bold underline decoration-primary/30">Vaccinate</span> digital identities against adversarial neural synthesis.
+                <p className="text-muted-foreground text-xl max-w-2xl leading-relaxed font-medium">
+                  Deploy the Forensic Singularity Engine to detect, <span className="text-foreground font-bold underline decoration-primary/30">Neutralize</span>, and <span className="text-foreground font-bold underline decoration-primary/30">Vaccinate</span> digital identities.
                 </p>
                 
-                <div className="flex flex-wrap gap-6 pt-6 [transform:translateZ(50px)]">
-                  <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-muted/50 border-2 border-primary/5 backdrop-blur-sm shadow-xl">
+                <div className="flex flex-wrap gap-6 pt-6">
+                  <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-muted/50 border-2 border-primary/5 backdrop-blur-sm">
                     <ShieldAlert className="w-5 h-5 text-primary" />
                     <span className="text-xs font-black uppercase tracking-widest">Immunity: Verified</span>
                   </div>
-                  <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-muted/50 border-2 border-primary/5 backdrop-blur-sm shadow-xl">
+                  <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-muted/50 border-2 border-primary/5 backdrop-blur-sm">
                     <Gavel className="w-5 h-5 text-primary" />
                     <span className="text-xs font-black uppercase tracking-widest">Legal: Autopilot</span>
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-col gap-4 w-full md:w-auto relative z-10 preserve-3d [transform:translateZ(80px)]">
+              <div className="flex flex-col gap-4 w-full md:w-auto relative z-10">
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-20 px-12 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(var(--primary),0.3)] hover:scale-[1.05] transition-all bg-primary hover:bg-primary/90 border-t-2 border-white/20"
+                  className="h-20 px-12 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-[1.05] transition-all bg-primary hover:bg-primary/90"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-6 h-6 mr-4" />
@@ -243,11 +230,11 @@ export default function DeepScanHome() {
                     "grid grid-cols-1 gap-12 transition-all duration-1000",
                     currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
                   )}>
-                    <div className="space-y-8 preserve-3d">
+                    <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
-                      <Card className="bg-primary/5 border-2 border-dashed border-primary/20 p-8 rounded-[3rem] space-y-6 hover-3d-card">
+                      <Card className="bg-primary/5 border-2 border-dashed border-primary/20 p-8 rounded-[3rem] space-y-6">
                         <div className="flex items-center gap-4">
-                          <div className="p-3 bg-primary/20 rounded-2xl shadow-lg animate-holographic">
+                          <div className="p-3 bg-primary/20 rounded-2xl">
                             <Brain className="w-6 h-6 text-primary" />
                           </div>
                           <h4 className="font-black uppercase text-sm tracking-[0.2em]">Forensic Singularity Engine</h4>
