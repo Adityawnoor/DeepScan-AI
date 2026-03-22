@@ -1,0 +1,31 @@
+
+{
+  "entities": {
+    "ScanResult": {
+      "title": "Scan Result",
+      "description": "Stored results of a deepfake scan including user feedback for accuracy tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "mediaType": { "type": "string", "enum": ["image", "audio", "video"] },
+        "aiVerdict": { "type": "boolean", "description": "True if AI thought it was a deepfake" },
+        "aiConfidence": { "type": "number" },
+        "explanation": { "type": "string" },
+        "userFeedback": { "type": "boolean", "description": "The actual truth provided by the user" },
+        "isCorrect": { "type": "boolean", "description": "Whether the AI was correct" },
+        "mediaUrl": { "type": "string" }
+      },
+      "required": ["timestamp", "mediaType", "aiVerdict"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/scans/{scanId}": {
+      "schema": "ScanResult",
+      "description": "Collection of analyzed media and user feedback."
+    }
+  }
+}

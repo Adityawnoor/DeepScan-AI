@@ -1,25 +1,52 @@
+
 "use client"
 
 import * as React from "react"
-import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock } from "lucide-react"
+import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock, ThumbsUp, ThumbsDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { doc, updateDoc } from "firebase/firestore"
+import { useFirestore } from "@/firebase"
+import { useToast } from "@/hooks/use-toast"
 
 interface AnalysisResultProps {
+  scanId: string
   result: any
   mediaUrl: string
   mediaType: 'image' | 'audio' | 'video'
 }
 
-export function AnalysisResult({ result, mediaUrl, mediaType }: AnalysisResultProps) {
+export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: AnalysisResultProps) {
+  const { toast } = useToast()
+  const db = useFirestore()
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 })
+  const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { clientWidth, clientHeight } = e.currentTarget
     setDimensions({ width: clientWidth, height: clientHeight })
+  }
+
+  const submitFeedback = (userVerdict: boolean) => {
+    if (!db) return
+    
+    setFeedbackSubmitted(userVerdict)
+    const scanRef = doc(db, "scans", scanId)
+    const isCorrect = userVerdict === result.isDeepfake
+
+    updateDoc(scanRef, {
+      userFeedback: userVerdict,
+      isCorrect: isCorrect
+    })
+
+    toast({
+      title: "Feedback Submitted",
+      description: isCorrect ? "Thank you! The AI correctly identified this." : "Thank you! We'll use this correction to improve accuracy.",
+    })
   }
 
   const isFake = result.isDeepfake
@@ -69,6 +96,37 @@ export function AnalysisResult({ result, mediaUrl, mediaType }: AnalysisResultPr
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h4 className="text-sm font-semibold mb-3">Is this result accurate?</h4>
+              {feedbackSubmitted === null ? (
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
+                    onClick={() => submitFeedback(result.isDeepfake)}
+                  >
+                    <ThumbsUp className="w-4 h-4 mr-2" />
+                    Correct
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                    onClick={() => submitFeedback(!result.isDeepfake)}
+                  >
+                    <ThumbsDown className="w-4 h-4 mr-2" />
+                    Incorrect
+                  </Button>
+                </div>
+              ) : (
+                <div className="p-3 bg-primary/5 rounded-lg text-sm text-center font-medium text-primary flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Thank you for your feedback!
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

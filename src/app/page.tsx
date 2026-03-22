@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,13 +12,16 @@ import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, ExternalLink, Zap } from "lucide-react"
+import { ShieldCheck, History, Info, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { doc, setDoc } from "firebase/firestore"
+import { useFirestore } from "@/firebase"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
+  const db = useFirestore()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
-  const [currentResult, setCurrentResult] = React.useState<{ output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
+  const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
 
@@ -60,10 +64,23 @@ export default function DeepScanHome() {
         throw new Error("Unsupported media type")
       }
       
-      setCurrentResult({ output, mediaUrl: dataUri, mediaType })
+      const scanId = crypto.randomUUID()
+      setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
+      // Save to Firestore for "learning" / data collection
+      if (db) {
+        setDoc(doc(db, "scans", scanId), {
+          timestamp: new Date().toISOString(),
+          mediaType,
+          aiVerdict: output.isDeepfake,
+          aiConfidence: output.confidence,
+          explanation: output.explanation,
+          mediaUrl: dataUri.length < 100000 ? dataUri : "Omitted (Too Large)"
+        })
+      }
+
       const newHistoryItem: HistoryItem = {
-        id: crypto.randomUUID(),
+        id: scanId,
         timestamp: new Date().toISOString(),
         fileName: "DeepScan_" + mediaType.toUpperCase() + "_" + new Date().getTime(),
         isDeepfake: output.isDeepfake,
@@ -173,6 +190,7 @@ export default function DeepScanHome() {
                 {currentResult && (
                   <div className="lg:col-span-8 animate-in fade-in slide-in-from-right-4 duration-500">
                     <AnalysisResult 
+                      scanId={currentResult.id}
                       result={currentResult.output} 
                       mediaUrl={currentResult.mediaUrl} 
                       mediaType={currentResult.mediaType}
