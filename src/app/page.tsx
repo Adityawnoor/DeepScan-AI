@@ -13,7 +13,7 @@ import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistor
 import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Brain, Sparkles } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Brain, Sparkles, Cloud } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { doc, setDoc, collection, getDocs, query, limit, orderBy } from "firebase/firestore"
 import { useFirestore, errorEmitter, FirestorePermissionError, useCollection } from "@/firebase"
@@ -27,7 +27,7 @@ export default function DeepScanHome() {
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [isLearning, setIsLearning] = React.useState(false)
 
-  // Fetch data to calculate "Brain Power" from the Database
+  // Real-time listener for the Cloud Knowledge Base
   const datasetQuery = React.useMemo(() => db ? query(collection(db, "datasets")) : null, [db])
   const feedbackQuery = React.useMemo(() => db ? query(collection(db, "scans")) : null, [db])
   
@@ -57,6 +57,7 @@ export default function DeepScanHome() {
     })
   }
 
+  // The "Recall" function: How the AI remembers your past datasets
   const getLearnedKnowledge = async () => {
     if (!db) return ""
     setIsLearning(true)
@@ -91,6 +92,8 @@ export default function DeepScanHome() {
       console.error("Knowledge retrieval error", e)
       return ""
     } finally {
+      // We keep a small artificial delay so the user sees the "Learning" effect
+      await new Promise(r => setTimeout(r, 800))
       setIsLearning(false)
     }
   }
@@ -98,6 +101,7 @@ export default function DeepScanHome() {
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
+      // Step 1: Recall knowledge from the database
       const learnedContext = await getLearnedKnowledge()
       
       let output: any
@@ -187,8 +191,8 @@ export default function DeepScanHome() {
           
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
-              <Brain className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">{knowledgeCount} Lessons Stored in Cloud Database</span>
+              <Cloud className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-primary">Cloud Persistence Active</span>
             </div>
             <ThemeToggle />
           </div>
@@ -202,7 +206,7 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Retrieving Knowledge from Database..." : "Cloud Persistence Active"}
+                {isLearning ? "Recalling Knowledge from Database..." : "Neural Brain Synced"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
                 Detect <span className="text-primary">Deepfakes</span> with Intelligence
@@ -243,7 +247,7 @@ export default function DeepScanHome() {
                   className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
                 >
                   <Database className="w-4 h-4 mr-2" />
-                  Cloud Database
+                  Knowledge Base
                 </TabsTrigger>
               </TabsList>
             </div>
