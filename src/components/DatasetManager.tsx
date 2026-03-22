@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle, Monitor, ShieldCheck, ArrowRight, FileArchive, Settings2 } from "lucide-react"
+import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle, Monitor, ShieldCheck, ArrowRight, FileArchive, Settings2, ScrollText, Eye } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +27,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
   const [datasetLabel, setDatasetLabel] = React.useState<string>("unlabeled")
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [editingDataset, setEditingDataset] = React.useState<{ id: string, notes: string } | null>(null)
+  const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   
   // PC Repository State
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
@@ -70,6 +71,15 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
   }, [scans])
 
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
+
+  const learnedFactsSummary = React.useMemo(() => {
+    let summary = ""
+    datasets.forEach(ds => { if (ds.notes) summary += `[Dataset ${ds.label}] ${ds.notes}\n` })
+    scans.filter(s => s.userFeedback !== undefined).forEach(s => {
+      summary += `[Scan ${s.id.substring(0,4)}] Confirmed as ${s.userFeedback ? 'Fake' : 'Real'}. ${s.userComment || ''}\n`
+    })
+    return summary || "No forensic facts learned yet."
+  }, [datasets, scans])
 
   const handleConnectLocalPC = async () => {
     setBrowserError(null)
@@ -229,11 +239,12 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </CardContent>
         </Card>
 
-        <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
+        <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setShowBrainViewer(true)}>
           <div className="space-y-2">
-             <BrainCircuit className="w-10 h-10 text-primary mx-auto opacity-20" />
-             <p className="text-sm font-bold text-primary">Intelligence Active</p>
-             <p className="text-xs text-muted-foreground leading-relaxed">The AI is learning from <strong>{knowledgeCount}</strong> data points on your PC.</p>
+             <BrainCircuit className="w-10 h-10 text-primary mx-auto opacity-40 animate-pulse" />
+             <p className="text-sm font-bold text-primary">Intelligence Explorer</p>
+             <p className="text-[10px] text-muted-foreground">View {knowledgeCount} private lessons learned.</p>
+             <Button variant="link" size="sm" className="h-auto p-0 text-[10px]">Open Explorer <Eye className="w-3 h-3 ml-1" /></Button>
           </div>
         </Card>
       </div>
@@ -421,6 +432,25 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </Table>
         </CardContent>
       </Card>
+
+      {/* AI Brain Knowledge Explorer Dialog */}
+      <Dialog open={showBrainViewer} onOpenChange={setShowBrainViewer}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BrainCircuit className="w-5 h-5 text-primary" />
+              Private Intelligence Explorer
+            </DialogTitle>
+            <CardDescription>This is the raw data the AI reads from your PC to "learn" before every scan.</CardDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto bg-muted/30 p-4 rounded-lg border font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+            {learnedFactsSummary}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowBrainViewer(false)}>Close Explorer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editingDataset} onOpenChange={() => setEditingDataset(null)}>
         <DialogContent>

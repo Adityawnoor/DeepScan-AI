@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock, ThumbsUp, ThumbsDown, MessageSquare, Send } from "lucide-react"
+import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock, ThumbsUp, ThumbsDown, MessageSquare, Send, MapPin, PlayCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -24,6 +24,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, onUpdate }
   const { toast } = useToast()
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
   const [userComment, setUserComment] = React.useState("")
+  const mediaRef = React.useRef<HTMLVideoElement | HTMLAudioElement>(null)
 
   React.useEffect(() => {
     setFeedbackSubmitted(null)
@@ -53,6 +54,13 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, onUpdate }
     saveToLocal({ userComment: userComment.trim() })
     toast({ title: "Note Added to Local Database" })
     setUserComment("")
+  }
+
+  const seekTo = (seconds: number) => {
+    if (mediaRef.current) {
+      mediaRef.current.currentTime = seconds
+      mediaRef.current.play()
+    }
   }
 
   const isFake = result.isDeepfake
@@ -91,6 +99,45 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, onUpdate }
               </div>
             </div>
 
+            {/* Forensic Evidence List */}
+            {((result.highlightedRegions && result.highlightedRegions.length > 0) || 
+              (result.suspiciousTimestamps && result.suspiciousTimestamps.length > 0) ||
+              (result.suspiciousSegments && result.suspiciousSegments.length > 0)) && (
+              <div className="space-y-3">
+                <Label className="text-xs font-bold uppercase text-muted-foreground">Forensic Evidence Found</Label>
+                <div className="space-y-2">
+                  {result.highlightedRegions?.map((region: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 p-2 rounded bg-destructive/5 border border-destructive/10 text-[11px]">
+                      <MapPin className="w-3 h-3 text-destructive shrink-0 mt-0.5" />
+                      <span>{region.reason}</span>
+                    </div>
+                  ))}
+                  {result.suspiciousTimestamps?.map((ts: any, i: number) => (
+                    <button 
+                      key={i} 
+                      onClick={() => seekTo(ts.timestamp)}
+                      className="w-full flex items-center gap-2 p-2 rounded bg-primary/5 border border-primary/10 text-[11px] text-left hover:bg-primary/10 transition-colors"
+                    >
+                      <PlayCircle className="w-3 h-3 text-primary shrink-0" />
+                      <span className="font-bold text-primary">[{Math.floor(ts.timestamp)}s]</span>
+                      <span className="truncate">{ts.description}</span>
+                    </button>
+                  ))}
+                  {result.suspiciousSegments?.map((seg: any, i: number) => (
+                    <button 
+                      key={i} 
+                      onClick={() => seekTo(seg.startTime)}
+                      className="w-full flex items-center gap-2 p-2 rounded bg-primary/5 border border-primary/10 text-[11px] text-left hover:bg-primary/10 transition-colors"
+                    >
+                      <PlayCircle className="w-3 h-3 text-primary shrink-0" />
+                      <span className="font-bold text-primary">[{Math.floor(seg.startTime)}s - {Math.floor(seg.endTime)}s]</span>
+                      <span className="truncate">{seg.reason}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="pt-4 border-t space-y-4">
                <div>
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground mb-2 block">Accuracy Feedback</Label>
@@ -117,11 +164,32 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, onUpdate }
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden flex items-center justify-center p-4 bg-muted/30">
+        <Card className="overflow-hidden flex items-center justify-center p-4 bg-muted/30 relative">
           <div className="relative rounded-lg overflow-hidden border bg-white flex items-center justify-center">
-             {mediaType === 'image' && <img src={mediaUrl} className="max-w-full max-h-[60vh] object-contain" />}
-             {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full max-h-[60vh]" />}
-             {mediaType === 'audio' && <audio src={mediaUrl} controls className="p-8" />}
+             {mediaType === 'image' && (
+               <div className="relative">
+                 <img src={mediaUrl} className="max-w-full max-h-[60vh] object-contain" />
+                 {/* AI Highlighted Regions Overlay */}
+                 {result.highlightedRegions?.map((region: any, i: number) => (
+                   <div 
+                    key={i}
+                    className="absolute border-2 border-destructive animate-pulse bg-destructive/10"
+                    style={{
+                      left: `${region.x}%`,
+                      top: `${region.y}%`,
+                      width: `${region.width}%`,
+                      height: `${region.height}%`,
+                    }}
+                   >
+                     <div className="absolute -top-6 left-0 bg-destructive text-white text-[8px] px-1 py-0.5 rounded whitespace-nowrap">
+                       EVIDENCE #{i+1}
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             )}
+             {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full max-h-[60vh]" />}
+             {mediaType === 'audio' && <audio ref={mediaRef as any} src={mediaUrl} controls className="p-8 w-full" />}
           </div>
         </Card>
       </div>
