@@ -67,7 +67,6 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      // Save to Firestore for "learning" / data collection
       if (db) {
         setDoc(doc(db, "scans", scanId), {
           timestamp: new Date().toISOString(),
@@ -96,13 +95,25 @@ export default function DeepScanHome() {
         title: "Analysis Complete",
         description: output.isDeepfake ? "Potential manipulation detected." : "Media appears to be authentic.",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      toast({
-        variant: "destructive",
-        title: "Analysis Failed",
-        description: "There was an error processing the media. Please try again.",
-      })
+      
+      const errorMessage = error.message || ""
+      const isQuotaError = errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("RESOURCE_EXHAUSTED")
+      
+      if (isQuotaError) {
+        toast({
+          variant: "destructive",
+          title: "Rate Limit Exceeded",
+          description: "The AI service is currently busy. Please wait a minute before trying again.",
+        })
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Analysis Failed",
+          description: "There was an error processing the media. Please try again.",
+        })
+      }
     } finally {
       setIsAnalyzing(false)
     }
