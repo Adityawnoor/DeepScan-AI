@@ -31,16 +31,22 @@ export function DatasetManager() {
     return query(collection(db, "scans"), orderBy("timestamp", "asc"), limit(50))
   }, [db])
 
-  const { data: datasets, loading: datasetsLoading } = useCollection(datasetQuery)
+  const { data: datasets, loading: datasetsLoading } = useCollection<{
+    fileName: string;
+    uploadDate: string;
+    size: number;
+    fileType: string;
+    status: string;
+  }>(datasetQuery)
+  
   const { data: scans, loading: scansLoading } = useCollection(scansQuery)
 
-  // Calculate simulated accuracy data for the chart
   const chartData = React.useMemo(() => {
     if (!scans || scans.length === 0) return []
     
     let correctCount = 0
     return scans.map((scan: any, index: number) => {
-      if (scan.isCorrect !== false) correctCount++ // Assume correct if not explicitly marked wrong
+      if (scan.isCorrect !== false) correctCount++
       const accuracy = (correctCount / (index + 1)) * 100
       return {
         name: new Date(scan.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -51,7 +57,6 @@ export function DatasetManager() {
 
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
 
-  // Effect to handle the training simulation
   React.useEffect(() => {
     if (!isTraining) return
 
@@ -68,7 +73,6 @@ export function DatasetManager() {
     return () => clearInterval(interval)
   }, [isTraining])
 
-  // Effect to handle simulation completion side-effects
   React.useEffect(() => {
     if (isTraining && trainingProgress >= 100) {
       setIsTraining(false)
@@ -85,12 +89,12 @@ export function DatasetManager() {
 
     const file = files[0]
     
-    // Increased browser upload threshold to 2.5GB (2500MB)
+    // Up to 2.5GB limit check
     if (file.size > 2500 * 1024 * 1024) {
       toast({
         variant: "destructive",
         title: "File Too Large",
-        description: "Browser uploads are limited to 2.5GB. For larger datasets, please use the DeepScan CLI.",
+        description: "Uploads are limited to 2.5GB.",
       })
       return
     }
@@ -106,13 +110,13 @@ export function DatasetManager() {
       })
 
       toast({
-        title: "Dataset Queued",
-        description: `${file.name} has been added to the training queue.`,
+        title: "Dataset Saved",
+        description: `${file.name} metadata has been saved to the repository.`,
       })
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Upload Failed",
+        title: "Save Failed",
         description: "Could not save dataset metadata.",
       })
     } finally {
@@ -127,7 +131,7 @@ export function DatasetManager() {
       await deleteDoc(doc(db, "datasets", id))
       toast({
         title: "Dataset Removed",
-        description: "Metadata deleted from repository.",
+        description: "Dataset metadata deleted from repository.",
       })
     } catch (error) {
       toast({
@@ -264,7 +268,7 @@ export function DatasetManager() {
             >
               <FileArchive className="w-10 h-10 text-primary mb-2 opacity-40" />
               <p className="text-sm font-medium">Click to select ZIP</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB via Web</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB</p>
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -275,7 +279,7 @@ export function DatasetManager() {
             </div>
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-tight">
               <AlertTriangle className="w-4 h-4 mb-1" />
-              To upload <strong>3GB+ datasets</strong>, please use the CLI with your <code>deepscan-cli --upload-dataset</code> command.
+              Saving metadata for <strong>{datasets?.length || 0} datasets</strong>.
             </div>
           </CardContent>
         </Card>
@@ -311,7 +315,7 @@ export function DatasetManager() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {datasets.map((ds: any) => (
+                  {datasets.map((ds) => (
                     <TableRow key={ds.id}>
                       <TableCell className="font-medium flex items-center gap-2">
                         <FileArchive className="w-4 h-4 text-primary/60" />
