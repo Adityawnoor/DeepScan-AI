@@ -1,8 +1,7 @@
-
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw, Info, Cloud } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -52,7 +51,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       const writable = await fileHandle.createWritable()
       await writable.write(JSON.stringify(data, null, 2))
       await writable.close()
-      toast({ title: "PC Sync Complete", description: "Metadata saved to your hard drive." })
+      toast({ title: "PC Sync Complete", description: "Metadata saved to 'deepscan-private-metadata.json' on your hard drive." })
     } catch (err) {
       console.error("PC Write Error:", err)
       toast({ variant: "destructive", title: "PC Sync Failed", description: "Allow file write permissions." })
@@ -101,7 +100,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
         }
         toast({ title: "Private Vault Opened", description: "Loaded your PC metadata file." })
       } catch (e) {
-        toast({ title: "New Vault Created", description: `Database established in '${handle.name}'.` })
+        toast({ title: "New Vault Created", description: `Database established in '${handle.name}'. File: deepscan-private-metadata.json` })
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') console.error(err)
@@ -287,7 +286,10 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-2 rounded bg-muted/50 text-[10px] font-mono">
-                  <span className="truncate">Vault: {localFolderHandle.name}</span>
+                  <div className="flex flex-col truncate">
+                    <span className="truncate font-bold">Vault: {localFolderHandle.name}</span>
+                    <span className="text-[8px] opacity-60">Database: deepscan-private-metadata.json</span>
+                  </div>
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => scanLocalFolder(localFolderHandle)}>
                     <RefreshCcw className={cn("w-3 h-3", isScanningLocal && "animate-spin")} />
                   </Button>
@@ -310,7 +312,17 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Private Repository</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Private Repository</CardTitle>
+            {localFolderHandle && (
+              <Badge variant="secondary" className="text-[10px] gap-1.5">
+                <FileJson className="w-3 h-3" />
+                Syncing to: {localFolderHandle.name}/deepscan-private-metadata.json
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader className="bg-muted/50">
@@ -344,6 +356,15 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
               ))}
             </TableBody>
           </Table>
+          
+          {!localFolderHandle && datasets.length > 0 && (
+            <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex gap-3 text-xs text-destructive">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <p>
+                <strong>Warning:</strong> You haven't mounted a PC folder. This data is currently only in your browser's temporary memory. Mount a folder to save it to your hard drive permanently.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
