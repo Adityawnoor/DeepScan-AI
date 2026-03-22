@@ -26,6 +26,11 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
   const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 })
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
 
+  // Reset feedback state whenever the scan ID changes
+  React.useEffect(() => {
+    setFeedbackSubmitted(null)
+  }, [scanId])
+
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { clientWidth, clientHeight } = e.currentTarget
     setDimensions({ width: clientWidth, height: clientHeight })
