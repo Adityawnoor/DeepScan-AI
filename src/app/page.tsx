@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -13,7 +14,7 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder, ExternalLink, ArrowRight } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder, ExternalLink, ArrowRight, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
@@ -32,8 +33,9 @@ export default function DeepScanHome() {
   const [localScans, setLocalScans] = React.useState<any[]>([])
   const [isMigrating, setIsMigrating] = React.useState(false)
   const [connectedFolderName, setConnectedFolderName] = React.useState<string | null>(null)
+  const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
 
-  // Initialize from LocalStorage (Secondary backup)
+  // Initialize from LocalStorage and attempt handle recovery
   React.useEffect(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
@@ -46,7 +48,24 @@ export default function DeepScanHome() {
     if (savedFolderName) setConnectedFolderName(savedFolderName)
   }, [])
 
-  const knowledgeCount = localDatasets.length + localScans.filter(s => s.userComment).length
+  const knowledgeCount = localDatasets.length + localScans.filter(s => s.userFeedback !== undefined).length
+
+  // Sync state to the physical PC file
+  const syncToPCFile = async (data: { datasets: any[], scans: any[] }) => {
+    if (!localFolderHandle) return
+    try {
+      // Check for permission again
+      const permission = await localFolderHandle.queryPermission({ mode: 'readwrite' })
+      if (permission !== 'granted') return
+
+      const fileHandle = await localFolderHandle.getFileHandle('deepscan-private-metadata.json', { create: true })
+      const writable = await fileHandle.createWritable()
+      await writable.write(JSON.stringify(data, null, 2))
+      await writable.close()
+    } catch (err) {
+      console.error("Auto-sync failed:", err)
+    }
+  }
 
   const transferFromCloud = async () => {
     if (!db) return
@@ -70,6 +89,8 @@ export default function DeepScanHome() {
       localStorage.setItem("deepscan-scans-metadata", JSON.stringify(mergedScans))
       localStorage.setItem("deepscan-datasets", JSON.stringify(mergedDatasets))
 
+      syncToPCFile({ datasets: mergedDatasets, scans: mergedScans })
+
       toast({
         title: "Migration Successful",
         description: `${cloudScans.length + cloudDatasets.length} items moved from Cloud to PC.`,
@@ -87,6 +108,7 @@ export default function DeepScanHome() {
     setLocalScans([])
     localStorage.removeItem("deepscan-history")
     localStorage.removeItem("deepscan-scans-metadata")
+    syncToPCFile({ datasets: localDatasets, scans: [] })
     toast({
       title: "Private Database Cleared",
       description: "All local forensic records have been removed.",
@@ -96,18 +118,28 @@ export default function DeepScanHome() {
   const getLearnedKnowledge = async () => {
     setIsLearning(true)
     try {
-      let context = "Below are notes from your private PC Knowledge Base:\n"
-      localDatasets.slice(0, 15).forEach(ds => {
-        if (ds.notes) {
-          context += `- Dataset [${ds.label.toUpperCase()}]: ${ds.notes}\n`
-        }
-      })
+      let context = "### PRIVATE PC KNOWLEDGE BASE (USER-VERIFIED)\n"
+      
+      // Learn from Datasets
+      if (localDatasets.length > 0) {
+        context += "\nLEARNED FROM RESEARCH DATASETS:\n"
+        localDatasets.slice(0, 15).forEach(ds => {
+          if (ds.notes) {
+            context += `- Dataset [${ds.label.toUpperCase()}]: ${ds.notes}\n`
+          }
+        })
+      }
 
-      const corrections = localScans.filter(s => s.userComment).slice(0, 10)
-      if (corrections.length > 0) {
-        context += "\nUser Insights from History:\n"
-        corrections.forEach(s => {
-          context += `- Observed Artifact: ${s.userComment}\n`
+      // Learn from EVERY scan with feedback
+      const feedbackScans = localScans.filter(s => s.userFeedback !== undefined).slice(0, 20)
+      if (feedbackScans.length > 0) {
+        context += "\nLEARNED FROM PAST VERDICTS:\n"
+        feedbackScans.forEach(s => {
+          const truth = s.userFeedback ? "DEEPFAKE" : "AUTHENTIC"
+          const result = s.aiVerdict === s.userFeedback ? "AI WAS CORRECT" : "AI WAS WRONG"
+          context += `- Scan ${s.id.substring(0,8)} was confirmed as ${truth} (${result}).`
+          if (s.userComment) context += ` Note: ${s.userComment}`
+          context += "\n"
         })
       }
 
@@ -172,6 +204,9 @@ export default function DeepScanHome() {
       setHistory(updatedHistory)
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
 
+      // Auto-sync to PC if connected
+      syncToPCFile({ datasets: localDatasets, scans: updatedScans })
+
       toast({
         title: "Private Analysis Complete",
         description: output.isDeepfake ? "Potential manipulation detected." : "Media appears authentic.",
@@ -218,7 +253,7 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Accessing PC Memory..." : "Local Intelligence Active"}
+                {isLearning ? "Learning from PC Memory..." : "Local Intelligence Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
                 Forensic <span className="text-primary">Privacy</span> Mode
@@ -226,10 +261,17 @@ export default function DeepScanHome() {
               <div className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
                 <p>Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally on your hard drive.</p>
                 {connectedFolderName ? (
-                  <span className="block mt-2 font-semibold text-primary">
-                    <Folder className="inline w-4 h-4 mr-1 text-primary" /> 
-                    Actively saving to folder: <span className="underline decoration-primary/30">"{connectedFolderName}"</span>
-                  </span>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <span className="font-semibold text-primary">
+                      <Folder className="inline w-4 h-4 mr-1 text-primary" /> 
+                      Connected to: "{connectedFolderName}"
+                    </span>
+                    {!localFolderHandle && (
+                       <Button variant="outline" size="sm" onClick={() => setActiveTab("datasets")} className="w-fit">
+                         <RefreshCw className="w-4 h-4 mr-2" /> Re-verify PC Permission
+                       </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 space-y-3">
                     <p className="text-destructive font-bold flex items-center gap-2">
@@ -305,7 +347,7 @@ export default function DeepScanHome() {
                       <p className="font-bold text-primary mb-1">Your Database Location:</p>
                       <div className="space-y-2">
                         {connectedFolderName ? (
-                          <p>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong>. Open this folder in your computer's file explorer to see the file.</p>
+                          <p>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong>. Look in this folder on your computer.</p>
                         ) : (
                           <div className="flex flex-col gap-2">
                              <p>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</p>
@@ -330,7 +372,11 @@ export default function DeepScanHome() {
                         const savedDatasets = localStorage.getItem("deepscan-datasets")
                         const savedScans = localStorage.getItem("deepscan-scans-metadata")
                         if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
-                        if (savedScans) setLocalScans(JSON.parse(savedScans))
+                        if (savedScans) {
+                          const parsed = JSON.parse(savedScans)
+                          setLocalScans(parsed)
+                          syncToPCFile({ datasets: localDatasets, scans: parsed })
+                        }
                       }}
                     />
                   </div>
@@ -354,10 +400,13 @@ export default function DeepScanHome() {
             <TabsContent value="datasets" className="mt-6">
               <DatasetManager 
                 knowledgeCount={knowledgeCount} 
-                onRefresh={(folderName) => {
+                onRefresh={(folderName, handle) => {
                    const savedDatasets = localStorage.getItem("deepscan-datasets")
+                   const savedScans = localStorage.getItem("deepscan-scans-metadata")
                    if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
+                   if (savedScans) setLocalScans(JSON.parse(savedScans))
                    if (folderName) setConnectedFolderName(folderName)
+                   if (handle) setLocalFolderHandle(handle)
                 }}
               />
             </TabsContent>

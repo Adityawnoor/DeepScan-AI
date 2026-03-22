@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 
 interface DatasetManagerProps {
   knowledgeCount: number
-  onRefresh: (folderName?: string) => void
+  onRefresh: (folderName?: string, handle?: FileSystemDirectoryHandle) => void
 }
 
 export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProps) {
@@ -29,7 +29,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
   const [editingDataset, setEditingDataset] = React.useState<{ id: string, notes: string } | null>(null)
   
   // PC Repository State
-  const [localFolderHandle, setLocalFolderHandle] = React.useState<any>(null)
+  const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [localFiles, setLocalFiles] = React.useState<{ name: string, size: number, lastModified: number }[]>([])
   const [isScanningLocal, setIsScanningLocal] = React.useState(false)
   const [datasets, setDatasets] = React.useState<any[]>([])
@@ -85,7 +85,6 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
         return
       }
 
-      // Explicitly catch the security error thrown in frames
       const handle = await (window as any).showDirectoryPicker()
       setLocalFolderHandle(handle)
       localStorage.setItem("deepscan-last-folder", handle.name)
@@ -100,14 +99,19 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           setDatasets(meta.datasets)
           localStorage.setItem("deepscan-datasets", JSON.stringify(meta.datasets))
         }
+        if (meta.scans) {
+          setScans(meta.scans)
+          localStorage.setItem("deepscan-scans-metadata", JSON.stringify(meta.scans))
+        }
         toast({ title: "Private Vault Opened", description: `Linked to folder: ${handle.name}` })
       } catch (e) {
         toast({ title: "New Vault Created", description: `Memory file 'deepscan-private-metadata.json' created in ${handle.name}.` })
+        syncToPCFile({ datasets: datasets, scans: scans })
       }
-      onRefresh(handle.name)
+      onRefresh(handle.name, handle)
     } catch (err: any) {
       if (err.name === 'SecurityError' || (err.message && err.message.includes('cross origin'))) {
-        setBrowserError("BROWSER RESTRICTION: The Folder Picker is blocked in this preview. To link your PC database, you MUST open this app in a full browser tab (e.g. http://localhost:9002) instead of this small window.")
+        setBrowserError("BROWSER RESTRICTION: The Folder Picker is blocked in this preview window. To link your PC database, you MUST open this app in a full browser tab (e.g. localhost:9002) instead of this small window.")
       } else if (err.name !== 'AbortError') {
         toast({ variant: "destructive", title: "Connection Failed", description: err.message })
       }
@@ -150,7 +154,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     syncToPCFile({ datasets: updated, scans: scans })
     
     setDatasetNotes("")
-    onRefresh(localFolderHandle?.name)
+    onRefresh(localFolderHandle?.name, localFolderHandle!)
     toast({ title: "Item Remembered", description: "The AI now knows about this local file." })
   }
 
@@ -159,7 +163,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     setDatasets(updated)
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
     syncToPCFile({ datasets: updated, scans: scans })
-    onRefresh(localFolderHandle?.name)
+    onRefresh(localFolderHandle?.name, localFolderHandle!)
     toast({ title: "Memory Removed" })
   }
 
@@ -172,7 +176,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
     syncToPCFile({ datasets: updated, scans: scans })
     setEditingDataset(null)
-    onRefresh(localFolderHandle?.name)
+    onRefresh(localFolderHandle?.name, localFolderHandle!)
     toast({ title: "Notebook Updated" })
   }
 
@@ -212,7 +216,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs text-green-600 font-medium">
               <TrendingUp className="w-3 h-3" />
-              <span>Learned from PC History</span>
+              <span>Learned from {scans.length} verified scans</span>
             </div>
           </CardContent>
         </Card>
@@ -240,8 +244,8 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
         <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
           <div className="space-y-2">
              <ShieldCheck className="w-10 h-10 text-primary mx-auto opacity-20" />
-             <p className="text-sm font-bold text-primary">100% Private Mode</p>
-             <p className="text-xs text-muted-foreground leading-relaxed">Your data lives in <span className="font-bold underline">{localFolderHandle?.name || "the folder you pick"}</span></p>
+             <p className="text-sm font-bold text-primary">AI Memory Active</p>
+             <p className="text-xs text-muted-foreground leading-relaxed">The AI is learning from <strong>{knowledgeCount}</strong> data points on your PC.</p>
           </div>
         </Card>
       </div>
@@ -268,7 +272,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                 </ChartContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm border-2 border-dashed rounded-xl">
-                  Run a few scans to see how the AI is learning.
+                  Run scans and verify them to train your local AI model.
                 </div>
               )}
             </div>
@@ -326,7 +330,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase text-muted-foreground">Your Lessons (Notes)</Label>
                   <Textarea 
-                    placeholder="What should the AI remember about these files?"
+                    placeholder="What should the AI remember about these files? The AI reads these notes before every scan."
                     className="text-xs min-h-[80px]"
                     value={datasetNotes}
                     onChange={(e) => setDatasetNotes(e.target.value)}
@@ -416,15 +420,12 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <div className="mt-6 p-6 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 text-sm text-foreground">
             <Info className="w-8 h-8 shrink-0 text-primary" />
             <div className="space-y-2">
-              <p className="font-bold text-lg text-primary">How to see your database folder on your PC:</p>
+              <p className="font-bold text-lg text-primary">How the AI Learns from Every Scan:</p>
               <div className="leading-relaxed space-y-2">
-                <p>1. Open your computer's <strong>File Explorer</strong> (Windows) or <strong>Finder</strong> (Mac).</p>
-                <p>2. Navigate to the folder you chose (e.g. <strong className="text-primary underline">{localFolderHandle ? localFolderHandle.name : "[Your Vault Folder]"}</strong>).</p>
-                <p>3. Inside, look for <code className="bg-primary/10 px-1 rounded">deepscan-private-metadata.json</code>. This is your AI's brain.</p>
+                <p>1. Every time you confirm a scan (Correct/Wrong), the AI saves that as a "Memory Point".</p>
+                <p>2. When you run a <strong>New Scan</strong>, the AI reads all previous "Memory Points" and "Dataset Notes" from your PC.</p>
+                <p>3. It uses this context to improve its detection accuracy for your specific environment.</p>
               </div>
-              <p className="text-xs text-muted-foreground italic mt-4">
-                Note: Browser security prevents us from opening the folder for you. You must open it manually on your computer.
-              </p>
             </div>
           </div>
         </CardContent>
