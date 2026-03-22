@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X, FileCheck } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -28,6 +28,7 @@ export function DatasetManager() {
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [editingDataset, setEditingDataset] = React.useState<{ id: string, notes: string } | null>(null)
   const [isUpdatingNotes, setIsUpdatingNotes] = React.useState(false)
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetQuery = React.useMemo(() => {
@@ -95,16 +96,21 @@ export function DatasetManager() {
     }
   }, [isTraining, trainingProgress, toast])
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files || !files[0] || !db) return
+    if (files && files[0]) {
+      setSelectedFile(files[0])
+    }
+  }
 
-    const file = files[0]
+  const handleSaveDataset = async () => {
+    if (!selectedFile || !db) return
+
     const datasetData = {
-      fileName: file.name,
+      fileName: selectedFile.name,
       uploadDate: new Date().toISOString(),
-      size: file.size,
-      fileType: file.type || "application/zip",
+      size: selectedFile.size,
+      fileType: selectedFile.type || "application/zip",
       status: "processed",
       label: datasetLabel,
       notes: datasetNotes.trim()
@@ -116,9 +122,11 @@ export function DatasetManager() {
       .then(() => {
         toast({
           title: "Dataset Indexed",
-          description: `${file.name} cataloged with your notes.`,
+          description: `${selectedFile.name} cataloged with your notes.`,
         })
         setDatasetNotes("")
+        setSelectedFile(null)
+        if (fileInputRef.current) fileInputRef.current.value = ""
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -130,7 +138,6 @@ export function DatasetManager() {
       })
       .finally(() => {
         setIsUploading(false)
-        if (fileInputRef.current) fileInputRef.current.value = ""
       });
   }
 
@@ -341,21 +348,56 @@ export function DatasetManager() {
               />
             </div>
 
-            <div 
-              className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileArchive className="w-8 h-8 text-primary mb-2 opacity-40" />
-              <p className="text-sm font-medium">Click to select ZIP</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB</p>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept=".zip,.tar,.gz"
-                onChange={handleFileUpload}
-              />
-            </div>
+            {!selectedFile ? (
+              <div 
+                className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileArchive className="w-8 h-8 text-primary mb-2 opacity-40" />
+                <p className="text-sm font-medium">Click to select ZIP</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Max 2.5GB</p>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept=".zip,.tar,.gz"
+                  onChange={handleFileSelect}
+                />
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <FileCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold truncate">{selectedFile.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setSelectedFile(null)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={handleSaveDataset}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <BrainCircuit className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading Dataset...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Index Selected Dataset
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-tight">
               <AlertTriangle className="w-4 h-4 mb-1" />
               Indexed metadata for <strong>{datasets?.length || 0} datasets</strong>.
