@@ -7,7 +7,7 @@ import {
   Dna, Fingerprint, Microscope, Zap, Database, Layers,
   Activity, AlertTriangle, Sparkles, Brain, Scale, FileText,
   Clock, Maximize2, Share2, HeartPulse, Crosshair, Target,
-  Map as MapIcon, Compass, Workflow
+  Map as MapIcon, Compass, Workflow, AlertCircle
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -43,7 +43,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const isFake = result.isDeepfake
   const confidence = result.confidence
 
-  // Mock data for the Latent Origin Map
   const mapData = [
     { x: 0, y: 0, name: "Authentic Human", type: "real" },
     { x: result.neuralAncestry?.latentCoordinates?.x || 0, y: result.neuralAncestry?.latentCoordinates?.y || 0, name: "Subject Asset", type: "subject" },
@@ -58,12 +57,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     scans = scans.map((s: any) => s.id === scanId ? { ...s, ...update } : s)
     localStorage.setItem("deepscan-scans-metadata", JSON.stringify(scans))
     if (onUpdate) onUpdate()
-  }
-
-  const submitFeedback = (userVerdict: boolean) => {
-    setFeedbackSubmitted(userVerdict)
-    saveToLocal({ userFeedback: userVerdict, isCorrect: result.isDeepfake === userVerdict })
-    toast({ title: "Ground Truth Saved", description: "AI updated with verified verdict." })
   }
 
   const exportEvidence = async () => {
@@ -100,10 +93,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         
         {/* LEFT PANEL: ELITE FORENSICS */}
         <Card className="border-2 border-primary/20 shadow-2xl flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-             <Workflow className="w-64 h-64 text-primary" />
-          </div>
-          
           <CardHeader className="border-b bg-muted/20 relative z-10">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
@@ -112,7 +101,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   SINGULARITY REPORT
                 </CardTitle>
                 <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-                  Case ID: {scanId.substring(0, 12)} | Neural Ancestry Active
+                  Case ID: {scanId.substring(0, 12)}
                 </CardDescription>
               </div>
               <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest shadow-lg">
@@ -122,7 +111,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
           </CardHeader>
 
           <CardContent className="p-6 space-y-8 flex-1 relative z-10">
-            {/* Accuracy & Progress */}
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
@@ -173,7 +161,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 </div>
                 <div className="p-4 rounded-xl bg-muted/30 border border-dashed text-[10px] font-medium leading-relaxed italic text-muted-foreground">
                   <Info className="w-3.5 h-3.5 inline mr-1 text-primary" />
-                  {result.biometricVitals?.notes || "Blood flow detection measures microscopic color fluctuations in facial skin (rPPG). AI generations often lack this rhythmic vital signal."}
+                  {result.biometricVitals?.notes || "Skin pulse detection matches rhythmic color fluctuations."}
                 </div>
               </TabsContent>
 
@@ -197,9 +185,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
               <TabsContent value="origin" className="pt-6 space-y-4">
                  <div className="h-[200px] w-full bg-muted/20 rounded-2xl border relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-                       <Compass className="w-32 h-32" />
-                    </div>
                     <ResponsiveContainer width="100%" height="100%">
                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                           <XAxis type="number" dataKey="x" hide domain={[-100, 100]} />
@@ -218,14 +203,9 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                           </Scatter>
                        </ScatterChart>
                     </ResponsiveContainer>
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                       <div className="flex items-center gap-1.5 text-[8px] font-black uppercase text-muted-foreground">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Subject Coordinates: [{result.neuralAncestry?.latentCoordinates?.x}, {result.neuralAncestry?.latentCoordinates?.y}]
-                       </div>
-                    </div>
                  </div>
                  <p className="text-[9px] text-center font-bold text-muted-foreground uppercase tracking-widest">
-                   Latent Origin Traceback: Mapping subject DNA to known AI clusters
+                   Latent Origin Map: Subject coordinate is [{result.neuralAncestry?.latentCoordinates?.x}, {result.neuralAncestry?.latentCoordinates?.y}]
                  </p>
               </TabsContent>
 
@@ -236,7 +216,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                     <span className="text-[10px] font-black uppercase tracking-widest text-destructive">Noise Artifact Detected</span>
                   </div>
                   <p className="text-xs font-bold leading-tight">
-                    {result.noiseArtifacts?.description || "Inconsistent high-frequency pixel distribution found in the latent space."}
+                    {result.noiseArtifacts?.description || "High-frequency latent noise artifacts detected."}
                   </p>
                 </div>
                 <Button 
@@ -261,8 +241,8 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
           </CardFooter>
         </Card>
 
-        {/* RIGHT PANEL: VISUAL EVIDENCE */}
-        <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex items-center justify-center p-0 rounded-3xl min-h-[500px]">
+        {/* RIGHT PANEL: VISUAL EVIDENCE WITH PRECISION OVERLAYS */}
+        <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex flex-col items-center justify-center p-0 rounded-3xl min-h-[500px]">
           {/* Spectral Overlay Filter */}
           <div className={cn(
             "absolute inset-0 z-20 pointer-events-none transition-all duration-700",
@@ -271,54 +251,58 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
             <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-30 mix-blend-overlay animate-pulse" />
           </div>
 
-          <div className="relative w-full h-full flex items-center justify-center group">
-            {mediaType === 'image' && (
-              <>
-                <img 
-                  src={mediaUrl} 
-                  className={cn("max-w-full max-h-[80vh] object-contain transition-all duration-700 rounded-xl", showSpectralMode && "brightness-150 contrast-200 blur-[1px]")} 
-                />
-                {/* Forensic Bounding Boxes */}
-                {result.highlightedRegions?.map((region: any, i: number) => (
-                  <div 
-                    key={i}
-                    className="absolute border-4 border-destructive shadow-[0_0_20px_rgba(255,0,0,0.5)] animate-pulse transition-all duration-500 hover:scale-105"
-                    style={{
-                      left: `${region.x}%`,
-                      top: `${region.y}%`,
-                      width: `${region.width}%`,
-                      height: `${region.height}%`,
-                    }}
-                  >
-                    <div className="absolute -top-10 left-0 bg-destructive text-white text-[10px] px-3 py-1.5 rounded-full font-black flex items-center gap-2 shadow-2xl">
-                      <ShieldAlert className="w-3.5 h-3.5" />
-                      ARTIFACT #{i+1}
+          <div className="relative flex items-center justify-center p-4">
+            {/* THIS WRAPPER ENSURES OVERLAYS SCALE WITH THE IMAGE */}
+            <div className="relative inline-block max-w-full max-h-[80vh]">
+              {mediaType === 'image' && (
+                <>
+                  <img 
+                    src={mediaUrl} 
+                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "brightness-150 contrast-200 blur-[1px]")} 
+                  />
+                  {/* Precise Bounding Boxes */}
+                  {result.highlightedRegions?.map((region: any, i: number) => (
+                    <div 
+                      key={i}
+                      className="absolute border-2 border-destructive shadow-[0_0_15px_rgba(255,0,0,0.5)] animate-in fade-in zoom-in duration-500 group"
+                      style={{
+                        left: `${region.x}%`,
+                        top: `${region.y}%`,
+                        width: `${region.width}%`,
+                        height: `${region.height}%`,
+                      }}
+                    >
+                      <div className="absolute -top-6 left-0 bg-destructive text-white text-[8px] px-2 py-0.5 rounded-sm font-black flex items-center gap-1 shadow-xl whitespace-nowrap opacity-80 group-hover:opacity-100 transition-opacity">
+                        <ShieldAlert className="w-3 h-3" />
+                        ARTIFACT #{i+1}
+                      </div>
+                      <div className="absolute inset-0 bg-destructive/10 hidden group-hover:block" title={region.reason} />
                     </div>
+                  ))}
+                </>
+              )}
+              
+              {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full h-auto rounded-xl shadow-2xl" />}
+              
+              {mediaType === 'audio' && (
+                <div className="flex flex-col items-center gap-8 p-12">
+                  <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5 animate-pulse">
+                    <Music className="w-32 h-32 text-primary" />
                   </div>
-                ))}
-              </>
-            )}
-            
-            {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />}
-            
-            {mediaType === 'audio' && (
-              <div className="flex flex-col items-center gap-8 p-12">
-                <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5 animate-pulse">
-                  <Music className="w-32 h-32 text-primary" />
+                  <audio ref={mediaRef as any} src={mediaUrl} controls className="w-80 shadow-2xl" />
                 </div>
-                <audio ref={mediaRef as any} src={mediaUrl} controls className="w-80 shadow-2xl" />
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Special Indicator */}
+          {/* Indicator badges */}
           <div className="absolute bottom-6 right-6 z-30 flex gap-2">
             <Badge className="bg-primary/90 text-white font-black text-[10px] px-3 py-1 uppercase tracking-tighter backdrop-blur-md">
               <Zap className="w-3 h-3 mr-1.5" /> Singularity Engine
             </Badge>
             {showSpectralMode && (
               <Badge variant="destructive" className="font-black text-[10px] px-3 py-1 uppercase tracking-tighter animate-pulse">
-                Spectral Mode Active
+                Spectral Mode
               </Badge>
             )}
           </div>

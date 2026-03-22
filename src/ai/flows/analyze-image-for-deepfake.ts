@@ -29,8 +29,8 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
     likelyModel: z.string().describe("e.g., Stable Diffusion XL, Midjourney v6, Flux.1"),
     fingerprintConfidence: z.number(),
     latentCoordinates: z.object({
-      x: z.number().describe("X coordinate in the Latent Origin Map"),
-      y: z.number().describe("Y coordinate in the Latent Origin Map"),
+      x: z.number().describe("X coordinate in the Latent Origin Map (-100 to 100)"),
+      y: z.number().describe("Y coordinate in the Latent Origin Map (-100 to 100)"),
     }),
   }),
   noiseArtifacts: z.object({
@@ -38,10 +38,10 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
     description: z.string(),
   }),
   highlightedRegions: z.array(z.object({
-    x: z.number(),
-    y: z.number(),
-    width: z.number(),
-    height: z.number(),
+    x: z.number().describe("X coordinate of the box in percentage (0-100) relative to image width."),
+    y: z.number().describe("Y coordinate of the box in percentage (0-100) relative to image height."),
+    width: z.number().describe("Width of the box in percentage (0-100)."),
+    height: z.number().describe("Height of the box in percentage (0-100)."),
     reason: z.string(),
   })).optional(),
 });
@@ -54,10 +54,14 @@ export async function analyzeImageForDeepfake(input: z.infer<typeof AnalyzeImage
     prompt: `You are the world's most advanced Forensic Singularity Engine. 
     
     TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
-    Analyze the skin textures. Humans have microscopic rhythmic color changes due to blood flow. AI generations often have 'Flat Skin' or 'Static Noise' where biometrics should be.
+    Analyze the skin textures for microscopic rhythmic color changes (blood flow). 
     
     TASK 2: NEURAL ORIGIN TRACEBACK
-    Identify the 'Neural DNA'. Map this image to its exact generative origin. Provide Latent Coordinates (X,Y from -100 to 100) where (0,0) is Authentic Human and outliers are specific AI clusters.
+    Identify the exact generative origin. 
+    
+    TASK 3: SPATIAL ANOMALY DETECTION
+    Identify specific visual artifacts (warped pixels, inconsistent lighting, or latent noise). 
+    Provide coordinates for these regions as PERCENTAGES (0-100) of the image dimensions.
     
     {{#if learnedContext}}
     PRIVATE INTELLIGENCE: {{{learnedContext}}}
