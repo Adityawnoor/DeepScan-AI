@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -96,18 +97,21 @@ export default function DeepScanHome() {
         description: output.isDeepfake ? "Potential manipulation detected." : "Media appears to be authentic.",
       })
     } catch (error: any) {
-      console.error(error)
-      
-      const errorMessage = error.message || ""
-      const isQuotaError = errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("RESOURCE_EXHAUSTED")
+      const errorMessage = String(error?.message || error || "")
+      const isQuotaError = 
+        errorMessage.includes("429") || 
+        errorMessage.includes("quota") || 
+        errorMessage.includes("RESOURCE_EXHAUSTED") ||
+        errorMessage.includes("Too Many Requests")
       
       if (isQuotaError) {
         toast({
           variant: "destructive",
-          title: "Rate Limit Exceeded",
-          description: "The AI service is currently busy. Please wait a minute before trying again.",
+          title: "Service Busy",
+          description: "The AI service has reached its temporary limit. Please try again in about 30-60 seconds.",
         })
       } else {
+        console.error("Analysis Error:", error)
         toast({
           variant: "destructive",
           title: "Analysis Failed",
