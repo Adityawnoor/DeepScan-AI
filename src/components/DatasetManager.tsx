@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder } from "lucide-react"
+import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -193,18 +193,19 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Database Folder</p>
-                <p className="text-xl font-bold truncate max-w-[150px]">
-                  {localFolderHandle ? localFolderHandle.name : "Not Linked"}
+                <p className="text-sm font-medium text-muted-foreground">Active Database Folder</p>
+                <p className="text-xl font-extrabold text-primary truncate max-w-[150px]">
+                  {localFolderHandle ? localFolderHandle.name : "Not Connected"}
                 </p>
               </div>
               <div className="p-3 bg-secondary/10 rounded-xl">
                 <Folder className="w-6 h-6 text-secondary" />
               </div>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {localFolderHandle ? "Metadata file: deepscan-private-metadata.json" : "Click below to pick a folder."}
-            </p>
+            <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+               <FileJson className="w-3 h-3" />
+               <span>deepscan-private-metadata.json</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -212,7 +213,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <div className="space-y-2">
              <Lock className="w-10 h-10 text-primary mx-auto opacity-20" />
              <p className="text-sm font-bold text-primary">100% Private Mode</p>
-             <p className="text-xs text-muted-foreground">Your data never leaves this computer.</p>
+             <p className="text-xs text-muted-foreground leading-relaxed">Your data lives in <span className="font-bold underline">{localFolderHandle?.name || "the folder you pick"}</span></p>
           </div>
         </Card>
       </div>
@@ -252,7 +253,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
               <HardDrive className="w-5 h-5 text-primary" />
               Database Ingest
             </CardTitle>
-            <CardDescription>Link your hard drive folder to sync data.</CardDescription>
+            <CardDescription>Select a folder on your PC to act as your secure vault.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -289,8 +290,8 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono">
                   <div className="flex flex-col truncate">
-                    <span className="truncate font-bold text-primary">Connected: {localFolderHandle.name}</span>
-                    <span className="text-[8px] opacity-60">File: deepscan-private-metadata.json</span>
+                    <span className="truncate font-bold text-primary">CONNECTED TO: {localFolderHandle.name}</span>
+                    <span className="text-[8px] opacity-60">Memory file: deepscan-private-metadata.json</span>
                   </div>
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scanLocalFolder(localFolderHandle)}>
                     <RefreshCcw className={cn("w-3 h-3 text-primary", isScanningLocal && "animate-spin")} />
@@ -368,14 +369,14 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <div className="mt-6 p-6 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 text-sm text-foreground">
             <Info className="w-8 h-8 shrink-0 text-primary" />
             <div className="space-y-2">
-              <p className="font-bold text-lg text-primary">Where is my data stored?</p>
+              <p className="font-bold text-lg text-primary">How to see your database folder on your PC:</p>
               <p className="leading-relaxed">
-                Your AI database is a file named <code className="bg-primary/10 px-1 rounded">deepscan-private-metadata.json</code>.
-                It is located in the folder you picked: <strong className="text-primary">{localFolderHandle ? localFolderHandle.name : "[No Folder Selected]"}</strong>.
+                1. Open your computer's <strong>File Explorer</strong> (Windows) or <strong>Finder</strong> (Mac).<br/>
+                2. Navigate to the folder named: <strong className="text-primary underline">{localFolderHandle ? localFolderHandle.name : "[Choose one above]"}</strong>.<br/>
+                3. Inside that folder, you will find the file <code className="bg-primary/10 px-1 rounded">deepscan-private-metadata.json</code>. This file contains everything the AI has learned from you.
               </p>
-              <p className="text-xs text-muted-foreground">
-                If you haven't picked a folder yet, click the <strong>"Pick Your PC Vault"</strong> button above. 
-                You can create a new folder named "DeepScan_Data" on your Desktop and pick that!
+              <p className="text-xs text-muted-foreground italic">
+                Note: The browser cannot open the folder for you due to security restrictions. You must navigate to it manually using your computer's file system.
               </p>
             </div>
           </div>

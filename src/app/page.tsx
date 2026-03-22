@@ -14,7 +14,7 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
@@ -198,7 +198,9 @@ export default function DeepScanHome() {
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
               <Lock className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">Private Database Mode</span>
+              <span className="text-xs font-bold text-primary">
+                {connectedFolderName ? `PC Vault: ${connectedFolderName}` : "Private PC Mode"}
+              </span>
             </div>
             <ThemeToggle />
           </div>
@@ -218,13 +220,14 @@ export default function DeepScanHome() {
                 Forensic <span className="text-primary">Privacy</span> Mode
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally. 
+                Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally on your hard drive. 
                 {connectedFolderName ? (
                   <span className="block mt-2 font-semibold text-primary">
-                    <Folder className="inline w-4 h-4 mr-1" /> Linked to Folder: "{connectedFolderName}"
+                    <Folder className="inline w-4 h-4 mr-1 text-primary" /> 
+                    Actively saving to folder: <span className="underline decoration-primary/30">"{connectedFolderName}"</span>
                   </span>
                 ) : (
-                  <span className="block mt-2 italic">No folder linked yet. Metadata is in browser cache.</span>
+                  <span className="block mt-2 italic">No folder linked yet. Database is temporary.</span>
                 )}
               </p>
             </div>
@@ -282,7 +285,7 @@ export default function DeepScanHome() {
                       <p className="font-bold text-primary mb-1">Your Database Location:</p>
                       <p>
                         {connectedFolderName ? (
-                          <>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong></>
+                          <>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong>. Open this folder in your computer's file explorer to see the file.</>
                         ) : (
                           <>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</>
                         )}
