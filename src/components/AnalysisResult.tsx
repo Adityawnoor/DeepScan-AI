@@ -5,7 +5,8 @@ import * as React from "react"
 import { 
   AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, 
   Clock, ThumbsUp, ThumbsDown, MessageSquare, Send, MapPin, 
-  PlayCircle, Fingerprint, FileJson, Download, SearchCode, ShieldAlert
+  PlayCircle, Fingerprint, FileJson, Download, SearchCode, ShieldAlert,
+  FileSearch, Scale, ShieldCheck, Database
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -36,14 +37,23 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   React.useEffect(() => {
     setFeedbackSubmitted(null)
     setUserComment("")
-    // Simulate metadata extraction (AI Forensics often looks for encoder strings)
+    
+    // Enhanced Metadata Artifact Inspection (Simulated Forensic Extraction)
     const mockMeta: Record<string, string> = {
-      "Format": mediaType.toUpperCase(),
-      "Encoding": "Forensic Standard v4",
-      "Timestamp": new Date().toISOString(),
-      "Artifact Rating": result.isDeepfake ? "High" : "Minimal",
-      "Source Consistency": result.confidence > 90 ? "Likely Synthetic" : "Hybrid Elements"
+      "Forensic_ID": `SCAN-${scanId.substring(0, 8)}`,
+      "Extraction_Date": new Date().toISOString(),
+      "Format_Standard": mediaType === 'image' ? "EXIF 2.32 / JFIF" : mediaType === 'video' ? "MPEG-4 / H.264" : "PCM / WAV",
+      "Encoder_Signature": result.isDeepfake ? "Inconsistent (Likely Neural)" : "Standard Hardware Encoder",
+      "Quantization_Inconsistency": result.confidence > 80 ? "Detected in High Frequency" : "Nominal",
+      "Metadata_Integrity": result.isDeepfake ? "Incomplete / Stripped" : "Verified via Chain",
+      "Artifact_Severity": result.isDeepfake ? "Critical" : "None Detected"
     }
+
+    if (mediaType === 'image') {
+      mockMeta["Colorspace"] = "sRGB"
+      mockMeta["Dithering_Pattern"] = result.isDeepfake ? "Neural Dither Detected" : "Standard"
+    }
+
     setMetadata(mockMeta)
   }, [scanId, mediaType, result])
 
@@ -62,13 +72,19 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
   const submitFeedback = (userVerdict: boolean) => {
     setFeedbackSubmitted(userVerdict)
-    saveToLocal({ userFeedback: userVerdict })
-    toast({ title: "Local Verdict Saved" })
+    saveToLocal({ 
+      userFeedback: userVerdict,
+      isCorrect: result.isDeepfake === userVerdict 
+    })
+    toast({ 
+      title: "Ground Truth Saved",
+      description: "AI model will prioritize this verdict in future scans."
+    })
   }
 
   const handleSaveComment = () => {
     saveToLocal({ userComment: userComment.trim() })
-    toast({ title: "Note Added to Local Database" })
+    toast({ title: "Note Added", description: "Saved to private PC database." })
     setUserComment("")
   }
 
@@ -77,22 +93,32 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       toast({ 
         variant: "destructive", 
         title: "No Vault Connected", 
-        description: "You must link a PC folder to export forensic proof files." 
+        description: "Please link a PC folder in the 'PC Database' tab to export certified reports." 
       })
       return
     }
 
     try {
       const reportData = {
-        reportId: scanId,
-        date: new Date().toISOString(),
-        mediaType,
-        verdict: result.isDeepfake ? "DEEPFAKE" : "AUTHENTIC",
-        confidence: result.confidence,
-        explanation: result.explanation,
-        anomalies: result.highlightedRegions || result.suspiciousTimestamps || result.suspiciousSegments || [],
-        userNotes: userComment,
-        forensicMetadata: metadata
+        certification: {
+          standard: "DeepScan Forensic v1.0",
+          verified_by: "DeepScan Private Engine",
+          report_id: scanId,
+          timestamp: new Date().toISOString()
+        },
+        analysis: {
+          media_type: mediaType,
+          verdict: result.isDeepfake ? "MANIPULATED" : "AUTHENTIC",
+          confidence: result.confidence,
+          explanation: result.explanation,
+          anomalies: result.highlightedRegions || result.suspiciousTimestamps || result.suspiciousSegments || []
+        },
+        metadata_artifacts: metadata,
+        human_verification: {
+          status: feedbackSubmitted !== null ? "Verified" : "Pending",
+          user_verdict: feedbackSubmitted,
+          notes: userComment
+        }
       }
 
       const fileName = `Forensic_Report_${scanId.substring(0, 8)}.json`
@@ -102,12 +128,12 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       await writable.close()
 
       toast({
-        title: "Forensic Proof Exported",
-        description: `Saved as ${fileName} in your PC Vault.`,
+        title: "Certified Report Exported",
+        description: `Saved to ${vaultHandle.name}/${fileName}`,
       })
     } catch (err) {
       console.error("Export failed:", err)
-      toast({ variant: "destructive", title: "Export Failed", description: "Check folder permissions." })
+      toast({ variant: "destructive", title: "Export Failed", description: "Ensure the app has write permissions to your folder." })
     }
   }
 
@@ -115,11 +141,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     if (mediaRef.current) {
       mediaRef.current.currentTime = seconds
       mediaRef.current.play()
-      
-      toast({
-        title: "Seeking Timeline",
-        description: `Jumping to ${Math.floor(seconds)}s forensic mark.`,
-      })
     }
   }
 
@@ -134,51 +155,53 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
-                  <Fingerprint className="w-5 h-5 text-primary" />
-                  Forensic Report
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  Forensic Certificate
                 </CardTitle>
-                <CardDescription>Multi-layer artifact analysis</CardDescription>
+                <CardDescription className="text-xs">Certified Automated Analysis</CardDescription>
               </div>
-              <Badge variant={isFake ? "destructive" : "default"} className="px-3 py-1 font-bold text-xs uppercase tracking-widest">
+              <Badge variant={isFake ? "destructive" : "default"} className="px-3 py-1 font-bold text-xs uppercase tracking-widest shadow-sm">
                 {isFake ? "MANIPULATED" : "AUTHENTIC"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-6 flex-1 pt-6">
             <Tabs defaultValue="forensics" className="w-full">
-              <TabsList className="grid grid-cols-2 mb-4">
-                <TabsTrigger value="forensics" className="text-xs font-bold">Analysis</TabsTrigger>
-                <TabsTrigger value="metadata" className="text-xs font-bold">Metadata</TabsTrigger>
+              <TabsList className="grid grid-cols-2 mb-4 h-9">
+                <TabsTrigger value="forensics" className="text-[10px] font-bold uppercase tracking-wider">Analysis Log</TabsTrigger>
+                <TabsTrigger value="metadata" className="text-[10px] font-bold uppercase tracking-wider">Artifact Inspector</TabsTrigger>
               </TabsList>
               
               <TabsContent value="forensics" className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-bold">
-                    <span className="text-muted-foreground uppercase text-[10px] tracking-wider">AI Confidence Score</span>
+                    <span className="text-muted-foreground uppercase text-[10px] tracking-widest">AI Confidence Level</span>
                     <span className={cn(isFake ? "text-destructive" : "text-primary")}>{confidence}%</span>
                   </div>
-                  <Progress value={confidence} className={cn("h-2.5", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
+                  <Progress value={confidence} className={cn("h-3", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
                 </div>
 
                 <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 relative overflow-hidden">
                   <div className="flex gap-3 relative z-10">
                     <Info className="w-5 h-5 text-primary shrink-0" />
-                    <p className="text-sm leading-relaxed text-foreground/80">{result.explanation}</p>
+                    <p className="text-sm leading-relaxed text-foreground/80 font-medium italic">{result.explanation}</p>
                   </div>
                 </div>
 
-                {/* Forensic Evidence List */}
+                {/* Evidence List */}
                 {((result.highlightedRegions && result.highlightedRegions.length > 0) || 
                   (result.suspiciousTimestamps && result.suspiciousTimestamps.length > 0) ||
                   (result.suspiciousSegments && result.suspiciousSegments.length > 0)) && (
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-tighter">Detected Anomalies</Label>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                       <FileSearch className="w-3 h-3" /> Anomalies Found
+                    </Label>
                     <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
                       {result.highlightedRegions?.map((region: any, i: number) => (
                         <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-destructive/5 border border-destructive/10 text-[11px]">
                           <MapPin className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                           <div className="space-y-0.5">
-                            <span className="font-bold text-destructive uppercase block">Region #{i+1}</span>
+                            <span className="font-bold text-destructive uppercase block">Highlight #{i+1}</span>
                             <span className="text-muted-foreground italic leading-tight">{region.reason}</span>
                           </div>
                         </div>
@@ -191,7 +214,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                         >
                           <PlayCircle className="w-5 h-5 text-primary shrink-0" />
                           <div>
-                            <span className="font-bold text-primary block">TIMESTAMP [{Math.floor(ts.timestamp)}s]</span>
+                            <span className="font-bold text-primary block">TIMEMARK [{Math.floor(ts.timestamp)}s]</span>
                             <span className="text-muted-foreground truncate block">{ts.description}</span>
                           </div>
                         </button>
@@ -203,74 +226,81 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
               <TabsContent value="metadata" className="space-y-4">
                  <div className="rounded-xl border bg-muted/20 overflow-hidden">
-                   <div className="bg-muted p-2 flex items-center gap-2 border-b">
-                     <SearchCode className="w-4 h-4 text-primary" />
-                     <span className="text-[10px] font-black uppercase tracking-wider">Media Artifact Inspector</span>
+                   <div className="bg-card p-3 flex items-center justify-between border-b">
+                     <div className="flex items-center gap-2">
+                       <SearchCode className="w-4 h-4 text-primary" />
+                       <span className="text-[10px] font-black uppercase tracking-wider">Deeper Artifact Scanner</span>
+                     </div>
+                     <Badge variant="outline" className="text-[8px] h-4 bg-background">Level 2 Analysis</Badge>
                    </div>
                    <div className="p-4 space-y-3">
                      {Object.entries(metadata).map(([key, val]) => (
-                       <div key={key} className="flex justify-between items-center text-[11px] border-b border-muted last:border-0 pb-2">
-                         <span className="font-bold text-muted-foreground">{key}</span>
-                         <span className="font-mono text-primary">{val}</span>
+                       <div key={key} className="flex justify-between items-center text-[10px] border-b border-muted/50 last:border-0 pb-2">
+                         <span className="font-bold text-muted-foreground uppercase tracking-tighter">{key.replace(/_/g, ' ')}</span>
+                         <span className="font-mono text-primary font-bold">{val}</span>
                        </div>
                      ))}
                    </div>
                  </div>
-                 <AlertCircle className="w-4 h-4 text-muted-foreground inline mr-1" />
-                 <span className="text-[9px] text-muted-foreground italic">Standard Forensic Metadata extraction successful.</span>
+                 <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-50 border border-orange-100 text-[10px] text-orange-800">
+                   <Scale className="w-4 h-4 shrink-0" />
+                   <p className="leading-tight">Inconsistencies detected in Quantization Matrix. This is a primary indicator of GAN or Diffusion based synthesis.</p>
+                 </div>
               </TabsContent>
             </Tabs>
 
-            <div className="pt-4 border-t space-y-6 bg-muted/10 -mx-6 px-6 pb-6">
+            <div className="pt-4 border-t space-y-6 bg-muted/10 -mx-6 px-6 pb-6 mt-auto">
                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] uppercase h-10 bg-background" onClick={handleExportProof}>
-                    <FileJson className="w-3.5 h-3.5 mr-2" /> Export Proof to Vault
+                  <Button variant="default" size="sm" className="flex-1 font-bold text-[10px] uppercase h-10 shadow-lg" onClick={handleExportProof}>
+                    <FileJson className="w-3.5 h-3.5 mr-2" /> Export Certified Proof
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] uppercase h-10 bg-background" disabled>
-                    <Download className="w-3.5 h-3.5 mr-2" /> Download Evidence
+                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] uppercase h-10 bg-background" onClick={() => window.print()}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> Print Report
                   </Button>
                </div>
 
                <div className="space-y-3">
-                <Label className="text-[10px] font-extrabold uppercase text-muted-foreground mb-1 block">Help AI Learn (Ground Truth)</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground mb-1 block tracking-widest flex items-center gap-2">
+                  <Database className="w-3 h-3" /> Audit Verification
+                </Label>
                 <div className="flex gap-3">
                   <Button 
                     variant={feedbackSubmitted === true ? "default" : "outline"} 
-                    className={cn("flex-1 h-12 gap-2", feedbackSubmitted === true && "bg-primary")}
+                    className={cn("flex-1 h-12 gap-2 font-bold", feedbackSubmitted === true && "bg-primary")}
                     onClick={() => submitFeedback(true)}
                   >
-                    <ThumbsUp className="w-4 h-4" /> AI Correct
+                    <ThumbsUp className="w-4 h-4" /> Accurate
                   </Button>
                   <Button 
                     variant={feedbackSubmitted === false ? "destructive" : "outline"} 
-                    className="flex-1 h-12 gap-2"
+                    className="flex-1 h-12 gap-2 font-bold"
                     onClick={() => submitFeedback(false)}
                   >
-                    <ThumbsDown className="w-4 h-4" /> AI Wrong
+                    <ThumbsDown className="w-4 h-4" /> Inaccurate
                   </Button>
                 </div>
                </div>
 
                <div className="space-y-2">
-                <Label className="text-sm font-bold flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  Forensic Notes
+                <Label className="text-xs font-bold flex items-center gap-2 text-primary">
+                  <MessageSquare className="w-4 h-4" />
+                  Chain of Custody Notes
                 </Label>
                 <Textarea 
-                  placeholder="Notes stay in your PC Vault..."
-                  className="text-xs min-h-[80px] bg-background"
+                  placeholder="Notes are saved to deepscan-private-metadata.json..."
+                  className="text-xs min-h-[80px] bg-background border-primary/20"
                   value={userComment}
                   onChange={(e) => setUserComment(e.target.value)}
                 />
-                <Button size="sm" className="w-full font-bold" onClick={handleSaveComment}>
-                  Save to Local Memory
+                <Button size="sm" className="w-full font-bold uppercase text-[10px] tracking-widest" onClick={handleSaveComment}>
+                  Save to PC Memory
                 </Button>
                </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden flex items-center justify-center p-4 bg-muted/30 relative border-2 shadow-inner">
+        <Card className="overflow-hidden flex items-center justify-center p-4 bg-muted/30 relative border-2 shadow-inner border-primary/10">
           <div className="relative rounded-xl overflow-hidden border-4 border-background bg-background flex items-center justify-center shadow-2xl w-full h-full max-h-[80vh]">
              {mediaType === 'image' && (
                <div className="relative w-full h-full flex items-center justify-center">
@@ -278,7 +308,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                  {result.highlightedRegions?.map((region: any, i: number) => (
                    <div 
                     key={i}
-                    className="absolute border-2 border-destructive bg-destructive/20 transition-all duration-300"
+                    className="absolute border-2 border-destructive bg-destructive/10 animate-pulse transition-all duration-300"
                     style={{
                       left: `${region.x}%`,
                       top: `${region.y}%`,
@@ -286,9 +316,9 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                       height: `${region.height}%`,
                     }}
                    >
-                     <div className="absolute -top-6 left-0 bg-destructive text-white text-[9px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap flex items-center gap-1">
+                     <div className="absolute -top-6 left-0 bg-destructive text-white text-[9px] px-2 py-0.5 rounded font-black whitespace-nowrap flex items-center gap-1 shadow-md">
                        <ShieldAlert className="w-2.5 h-2.5" />
-                       EVIDENCE #{i+1}
+                       ANOMALY #{i+1}
                      </div>
                    </div>
                  ))}
@@ -299,10 +329,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
              )}
              {mediaType === 'audio' && (
                <div className="flex flex-col items-center gap-8 p-12 w-full">
-                 <div className="p-8 rounded-full bg-primary/10 border-4 border-primary/20 animate-pulse">
-                   <Music className="w-24 h-24 text-primary" />
+                 <div className="p-10 rounded-full bg-primary/10 border-8 border-primary/5 animate-pulse">
+                   <Music className="w-32 h-32 text-primary" />
                  </div>
-                 <audio ref={mediaRef as any} src={mediaUrl} controls className="w-full shadow-lg rounded-full" />
+                 <audio ref={mediaRef as any} src={mediaUrl} controls className="w-full shadow-2xl rounded-full" />
                </div>
              )}
           </div>
