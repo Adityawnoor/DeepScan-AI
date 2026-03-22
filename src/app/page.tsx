@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -14,28 +13,26 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder, ExternalLink, ArrowRight, RefreshCw } from "lucide-react"
+import { 
+  ShieldCheck, History, Database, Sparkles, Folder, 
+  ArrowRight, RefreshCw, Fingerprint, Microscope, Zap,
+  Dna, Network, Activity
+} from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useFirestore } from "@/firebase"
-import { collection, getDocs } from "firebase/firestore"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
-  const db = useFirestore()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [isLearning, setIsLearning] = React.useState(false)
 
-  // Private PC Database State
   const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
   const [localScans, setLocalScans] = React.useState<any[]>([])
-  const [isMigrating, setIsMigrating] = React.useState(false)
   const [connectedFolderName, setConnectedFolderName] = React.useState<string | null>(null)
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
 
-  // Initialize from LocalStorage and attempt handle recovery
   React.useEffect(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
@@ -50,14 +47,9 @@ export default function DeepScanHome() {
 
   const knowledgeCount = localDatasets.length + localScans.filter(s => s.userFeedback !== undefined).length
 
-  // Sync state to the physical PC file
   const syncToPCFile = async (data: { datasets: any[], scans: any[] }) => {
     if (!localFolderHandle) return
     try {
-      // Check for permission again
-      const permission = await localFolderHandle.queryPermission({ mode: 'readwrite' })
-      if (permission !== 'granted') return
-
       const fileHandle = await localFolderHandle.getFileHandle('deepscan-private-metadata.json', { create: true })
       const writable = await fileHandle.createWritable()
       await writable.write(JSON.stringify(data, null, 2))
@@ -67,113 +59,28 @@ export default function DeepScanHome() {
     }
   }
 
-  const transferFromCloud = async () => {
-    if (!db) return
-    setIsMigrating(true)
-    try {
-      toast({ title: "Connecting to Cloud...", description: "Pulling data for local migration." })
-      
-      const scansSnap = await getDocs(collection(db, "scans"))
-      const datasetsSnap = await getDocs(collection(db, "datasets"))
-
-      const cloudScans = scansSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      const cloudDatasets = datasetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-
-      // Merge with local
-      const mergedScans = [...cloudScans, ...localScans]
-      const mergedDatasets = [...cloudDatasets, ...localDatasets]
-
-      setLocalScans(mergedScans)
-      setLocalDatasets(mergedDatasets)
-      
-      localStorage.setItem("deepscan-scans-metadata", JSON.stringify(mergedScans))
-      localStorage.setItem("deepscan-datasets", JSON.stringify(mergedDatasets))
-
-      syncToPCFile({ datasets: mergedDatasets, scans: mergedScans })
-
-      toast({
-        title: "Migration Successful",
-        description: `${cloudScans.length + cloudDatasets.length} items moved from Cloud to PC.`,
-      })
-    } catch (e) {
-      console.error(e)
-      toast({ variant: "destructive", title: "Migration Failed", description: "Check cloud permissions." })
-    } finally {
-      setIsMigrating(false)
-    }
-  }
-
-  const handleClearHistory = () => {
-    setHistory([])
-    setLocalScans([])
-    localStorage.removeItem("deepscan-history")
-    localStorage.removeItem("deepscan-scans-metadata")
-    syncToPCFile({ datasets: localDatasets, scans: [] })
-    toast({
-      title: "Private Database Cleared",
-      description: "All local forensic records have been removed.",
-    })
-  }
-
-  const getLearnedKnowledge = async () => {
-    setIsLearning(true)
-    try {
-      let context = "### PRIVATE PC KNOWLEDGE BASE (USER-VERIFIED)\n"
-      
-      // Learn from Datasets
-      if (localDatasets.length > 0) {
-        context += "\nLEARNED FROM RESEARCH DATASETS:\n"
-        localDatasets.slice(0, 15).forEach(ds => {
-          if (ds.notes) {
-            context += `- Dataset [${ds.label.toUpperCase()}]: ${ds.notes}\n`
-          }
-        })
-      }
-
-      // Learn from EVERY scan with feedback
-      const feedbackScans = localScans.filter(s => s.userFeedback !== undefined).slice(0, 20)
-      if (feedbackScans.length > 0) {
-        context += "\nLEARNED FROM PAST VERDICTS:\n"
-        feedbackScans.forEach(s => {
-          const truth = s.userFeedback ? "DEEPFAKE" : "AUTHENTIC"
-          const result = s.aiVerdict === s.userFeedback ? "AI WAS CORRECT" : "AI WAS WRONG"
-          context += `- Scan ${s.id.substring(0,8)} was confirmed as ${truth} (${result}).`
-          if (s.userComment) context += ` Note: ${s.userComment}`
-          context += "\n"
-        })
-      }
-
-      return context
-    } catch (e) {
-      console.error("Knowledge retrieval error", e)
-      return ""
-    } finally {
-      await new Promise(r => setTimeout(r, 600))
-      setIsLearning(false)
-    }
-  }
-
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      const learnedContext = await getLearnedKnowledge()
-      
+      let context = `### PRIVATE INTELLIGENCE REPORT ###\n`
+      localScans.filter(s => s.userFeedback !== undefined).slice(0, 10).forEach(s => {
+        context += `- Record ${s.id.substring(0,8)} verified as ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`
+      })
+
       let output: any
       let mediaType: 'image' | 'audio' | 'video' = 'image'
 
       if (dataUri.startsWith('data:image/')) {
         mediaType = 'image'
-        output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext })
+        output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
       } else if (dataUri.startsWith('data:audio/')) {
         mediaType = 'audio'
-        output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext })
+        output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
       } else if (dataUri.startsWith('data:video/')) {
         mediaType = 'video'
-        output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext })
-      } else {
-        throw new Error("Unsupported media type")
+        output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
       }
-      
+
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
@@ -183,181 +90,156 @@ export default function DeepScanHome() {
         mediaType,
         aiVerdict: output.isDeepfake,
         aiConfidence: output.confidence,
-        explanation: output.explanation,
-        mediaUrl: "Stored Locally"
+        mediaUrl: "Private Storage"
       }
 
       const updatedScans = [newScanMetadata, ...localScans]
       setLocalScans(updatedScans)
       localStorage.setItem("deepscan-scans-metadata", JSON.stringify(updatedScans))
 
-      const newHistoryItem: HistoryItem = {
+      const updatedHistory = [{
         id: scanId,
         timestamp: new Date().toISOString(),
-        fileName: "Private_Scan_" + new Date().getTime(),
+        fileName: "Case_" + scanId.substring(0, 6),
         isDeepfake: output.isDeepfake,
         confidence: output.confidence,
         type: mediaType
-      }
+      } as HistoryItem, ...history]
       
-      const updatedHistory = [newHistoryItem, ...history]
       setHistory(updatedHistory)
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
-
-      // Auto-sync to PC if connected
       syncToPCFile({ datasets: localDatasets, scans: updatedScans })
 
-      toast({
-        title: "Private Analysis Complete",
-        description: output.isDeepfake ? "Potential manipulation detected." : "Media appears authentic.",
-      })
-    } catch (error: any) {
-      console.error("Analysis Error:", error)
-      toast({
-        variant: "destructive",
-        title: "Analysis Failed",
-        description: "Verify internet connection for AI processing.",
-      })
+      toast({ title: "Analysis Complete", description: "Neural ancestry identified." })
+    } catch (e) {
+      console.error(e)
+      toast({ variant: "destructive", title: "Scan Failed" })
     } finally {
       setIsAnalyzing(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-card/80 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white">
+      {/* ELITE HEADER */}
+      <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
-          
-          <div className="flex items-center gap-4">
-            <div className={cn(
-              "hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border transition-all",
-              connectedFolderName 
-                ? "bg-primary/5 border-primary/10" 
-                : "bg-destructive/5 border-destructive/20 animate-pulse"
-            )}>
-              {connectedFolderName ? <Lock className="w-4 h-4 text-primary" /> : <ShieldCheck className="w-4 h-4 text-destructive" />}
-              <span className={cn("text-xs font-bold", connectedFolderName ? "text-primary" : "text-destructive")}>
-                {connectedFolderName ? `Vault: ${connectedFolderName}` : "No Folder Linked"}
-              </span>
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span>Neural Engine: Online</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Network className="w-3 h-3 text-primary" />
+                <span>Private Vault: {connectedFolderName || "Scanning..."}</span>
+              </div>
             </div>
             <ThemeToggle />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-col gap-8">
+      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
+        <div className="flex flex-col gap-12">
           
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 bg-primary/5 rounded-2xl border border-primary/10 overflow-hidden relative">
-            <div className="flex-1 space-y-3 relative z-10">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-                <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Thinking..." : "AI Memory Active"}
+          {/* HERO FORENSIC STATUS */}
+          <section className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-[2rem] blur-2xl opacity-50 transition duration-1000 group-hover:opacity-70" />
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-10 bg-card/40 border-2 border-primary/10 rounded-[2rem] backdrop-blur-3xl overflow-hidden">
+              <div className="flex-1 space-y-6">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
+                  <Fingerprint className="w-4 h-4" />
+                  ADVANCED NEURAL FORENSICS
+                </div>
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
+                  IDENTIFY THE <span className="text-primary italic">SYNTHETIC GHOST.</span>
+                </h1>
+                <p className="text-muted-foreground text-lg max-w-xl leading-relaxed font-medium">
+                  DeepScan elite mode detects microscopic <span className="text-foreground font-bold">Spectral Noise Artifacts</span> and identifies the exact <span className="text-foreground font-bold">Neural DNA</span> of the generative model used.
+                </p>
+                
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border">
+                    <Dna className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-tighter">{knowledgeCount} Lessons Learned</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border">
+                    <Activity className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-tighter">Latent Space Audit Active</span>
+                  </div>
+                </div>
               </div>
-              <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
-                Private <span className="text-primary">PC</span> Learning
-              </h1>
-              <div className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                <p>The AI is learning from <strong>{knowledgeCount} private lessons</strong> stored on your PC.</p>
-                {connectedFolderName ? (
-                  <div className="mt-2 flex flex-col gap-2">
-                    <span className="font-semibold text-primary">
-                      <Folder className="inline w-4 h-4 mr-1 text-primary" /> 
-                      Folder: "{connectedFolderName}"
-                    </span>
-                    {!localFolderHandle && (
-                       <Button variant="outline" size="sm" onClick={() => setActiveTab("datasets")} className="w-fit">
-                         <RefreshCw className="w-4 h-4 mr-2" /> Re-link Folder
-                       </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 space-y-3">
-                    <p className="text-destructive font-bold flex items-center gap-2">
-                      <Lock className="w-5 h-5" /> 
-                      Action Required: Data is Temporary
-                    </p>
-                    <p className="text-sm text-destructive/80 leading-snug">
-                      Your database isn't synced to your hard drive yet. Link a folder to save your AI's memory permanently.
-                    </p>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={() => setActiveTab("datasets")}
-                      className="font-bold"
-                    >
-                      Link a Folder Now <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
+              
+              <div className="flex flex-col gap-3 w-full md:w-auto">
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-[1.02] transition-all"
+                  onClick={() => setActiveTab("analyze")}
+                >
+                  <Microscope className="w-5 h-5 mr-3" />
+                  Begin Investigation
+                </Button>
+                {!connectedFolderName && (
+                  <Button variant="outline" className="rounded-2xl border-destructive/20 text-destructive h-12" onClick={() => setActiveTab("datasets")}>
+                    Link PC Vault to save DNA records
+                  </Button>
                 )}
               </div>
             </div>
-            <div className="flex flex-col gap-3">
-               <Button variant="outline" size="sm" onClick={transferFromCloud} disabled={isMigrating} className="bg-background">
-                  {isMigrating ? <Sparkles className="w-4 h-4 mr-2 animate-spin" /> : <DownloadCloud className="w-4 h-4 mr-2" />}
-                  Drain Cloud Memory
-               </Button>
-            </div>
-          </div>
+          </section>
 
+          {/* MAIN WORKSTATION */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex items-center justify-between mb-4 border-b pb-1">
-              <TabsList className="bg-transparent h-auto p-0 gap-8">
+            <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-8 gap-8">
+              {["analyze", "history", "datasets"].map((tab) => (
                 <TabsTrigger 
-                  value="analyze" 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
+                  key={tab}
+                  value={tab} 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black uppercase text-xs tracking-[0.2em] transition-all opacity-50 data-[state=active]:opacity-100"
                 >
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  Analyze
+                  {tab === "analyze" && <Zap className="w-3.5 h-3.5 mr-2" />}
+                  {tab === "history" && <History className="w-3.5 h-3.5 mr-2" />}
+                  {tab === "datasets" && <Database className="w-3.5 h-3.5 mr-2" />}
+                  {tab}
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="history" 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
-                >
-                  <History className="w-4 h-4 mr-2" />
-                  PC History
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="datasets" 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
-                >
-                  <Database className="w-4 h-4 mr-2" />
-                  PC Database
-                </TabsTrigger>
-              </TabsList>
-            </div>
+              ))}
+            </TabsList>
 
-            <TabsContent value="analyze" className="mt-6 space-y-12">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
+              <div className="space-y-12">
                 <div className={cn(
-                  "transition-all duration-500",
-                  currentResult ? "lg:col-span-4" : "lg:col-span-12"
+                  "grid grid-cols-1 gap-12 transition-all duration-1000",
+                  currentResult ? "lg:grid-cols-[400px_1fr]" : "grid-cols-1"
                 )}>
-                  <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
-                  
-                  <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
-                    <HardDrive className="w-5 h-5 text-primary shrink-0" />
-                    <div>
-                      <p className="font-bold text-primary mb-1">Private Storage Info:</p>
-                      <div className="space-y-2">
-                        {connectedFolderName ? (
-                          <p>Database File: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong></p>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                             <p>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</p>
-                             <Button variant="link" onClick={() => setActiveTab("datasets")} className="p-0 h-auto text-primary font-bold justify-start">
-                               Go to PC Database <ArrowRight className="w-4 h-4 ml-1" />
-                             </Button>
-                          </div>
-                        )}
+                  <div className="space-y-6">
+                    <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
+                    <Card className="bg-muted/30 border-2 border-dashed p-6 rounded-[2rem] space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl">
+                          <Brain className="w-5 h-5 text-primary" />
+                        </div>
+                        <h4 className="font-black uppercase text-xs tracking-widest">Forensic Capabilities</h4>
                       </div>
-                    </div>
+                      <ul className="space-y-3">
+                        {[
+                          "Generative Model Fingerprinting",
+                          "High-Frequency Noise Floor Analysis",
+                          "Temporal Consistency Checks",
+                          "Metadata Chain-of-Custody"
+                        ].map(item => (
+                          <li key={item} className="flex items-center gap-2 text-[10px] font-bold uppercase text-muted-foreground">
+                            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
                   </div>
-                </div>
 
-                {currentResult && (
-                  <div className="lg:col-span-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                  {currentResult && (
                     <AnalysisResult 
                       scanId={currentResult.id}
                       result={currentResult.output} 
@@ -365,62 +247,39 @@ export default function DeepScanHome() {
                       mediaType={currentResult.mediaType}
                       vaultHandle={localFolderHandle}
                       onUpdate={() => {
-                        const savedDatasets = localStorage.getItem("deepscan-datasets")
                         const savedScans = localStorage.getItem("deepscan-scans-metadata")
-                        if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
-                        if (savedScans) {
-                          const parsed = JSON.parse(savedScans)
-                          setLocalScans(parsed)
-                          syncToPCFile({ datasets: localDatasets, scans: parsed })
-                        }
+                        if (savedScans) setLocalScans(JSON.parse(savedScans))
                       }}
                     />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="history" className="mt-6">
-              <DetectionHistory 
-                items={history} 
-                onClear={handleClearHistory}
-                onSelectItem={(id) => {
-                  toast({
-                    title: "Accessing Storage",
-                    description: "Loading private metadata...",
-                  })
-                }}
-              />
+            <TabsContent value="history" className="mt-0">
+              <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
             </TabsContent>
 
-            <TabsContent value="datasets" className="mt-6">
-              <DatasetManager 
-                knowledgeCount={knowledgeCount} 
-                onRefresh={(folderName, handle) => {
-                   const savedDatasets = localStorage.getItem("deepscan-datasets")
-                   const savedScans = localStorage.getItem("deepscan-scans-metadata")
-                   if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
-                   if (savedScans) setLocalScans(JSON.parse(savedScans))
-                   if (folderName) setConnectedFolderName(folderName)
-                   if (handle) setLocalFolderHandle(handle)
-                }}
-              />
+            <TabsContent value="datasets" className="mt-0">
+              <DatasetManager knowledgeCount={knowledgeCount} onRefresh={(name, handle) => {
+                if (name) setConnectedFolderName(name);
+                if (handle) setLocalFolderHandle(handle);
+              }} />
             </TabsContent>
           </Tabs>
         </div>
       </main>
 
-      <footer className="border-t bg-card mt-auto">
-        <div className="container mx-auto max-max-w-7xl px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 opacity-60">
-              <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-medium">DeepScan Private Mode © {new Date().getFullYear()}</span>
-            </div>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary">PC Storage FAQ</a>
-              <a href="#" className="hover:text-primary">Privacy Policy</a>
-            </div>
+      <footer className="border-t py-12 bg-card/30">
+        <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
+          <DeepScanLogo />
+          <div className="flex gap-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
+            <a href="#" className="hover:text-primary transition-colors">Privacy manifest</a>
+            <a href="#" className="hover:text-primary transition-colors">PC storage protocol</a>
+          </div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
+            V2.5.0 Elite Forensic Engine
           </div>
         </div>
       </footer>

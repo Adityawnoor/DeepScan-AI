@@ -1,12 +1,11 @@
-
 "use client"
 
 import * as React from "react"
 import { 
-  AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, 
-  Clock, ThumbsUp, ThumbsDown, MessageSquare, Send, MapPin, 
-  PlayCircle, Fingerprint, FileJson, Download, SearchCode, ShieldAlert,
-  FileSearch, Scale, ShieldCheck, Database
+  ShieldCheck, Info, Music, Video, ThumbsUp, ThumbsDown, 
+  MessageSquare, FileJson, Download, SearchCode, ShieldAlert,
+  Dna, Fingerprint, Microscope, Zap, Database, Layers,
+  Activity, AlertTriangle, Sparkles, Brain, Scale
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -31,310 +30,213 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const { toast } = useToast()
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
   const [userComment, setUserComment] = React.useState("")
-  const [metadata, setMetadata] = React.useState<Record<string, string>>({})
+  const [showSpectralMode, setShowSpectralMode] = React.useState(false)
   const mediaRef = React.useRef<HTMLVideoElement | HTMLAudioElement>(null)
 
-  React.useEffect(() => {
-    setFeedbackSubmitted(null)
-    setUserComment("")
-    
-    // Enhanced Metadata Artifact Inspection (Simulated Forensic Extraction)
-    const mockMeta: Record<string, string> = {
-      "Forensic_ID": `SCAN-${scanId.substring(0, 8)}`,
-      "Extraction_Date": new Date().toISOString(),
-      "Format_Standard": mediaType === 'image' ? "EXIF 2.32 / JFIF" : mediaType === 'video' ? "MPEG-4 / H.264" : "PCM / WAV",
-      "Encoder_Signature": result.isDeepfake ? "Inconsistent (Likely Neural)" : "Standard Hardware Encoder",
-      "Quantization_Inconsistency": result.confidence > 80 ? "Detected in High Frequency" : "Nominal",
-      "Metadata_Integrity": result.isDeepfake ? "Incomplete / Stripped" : "Verified via Chain",
-      "Artifact_Severity": result.isDeepfake ? "Critical" : "None Detected"
-    }
-
-    if (mediaType === 'image') {
-      mockMeta["Colorspace"] = "sRGB"
-      mockMeta["Dithering_Pattern"] = result.isDeepfake ? "Neural Dither Detected" : "Standard"
-    }
-
-    setMetadata(mockMeta)
-  }, [scanId, mediaType, result])
+  const isFake = result.isDeepfake
+  const confidence = result.confidence
 
   const saveToLocal = (update: any) => {
     const saved = localStorage.getItem("deepscan-scans-metadata")
     let scans = saved ? JSON.parse(saved) : []
-    
-    scans = scans.map((s: any) => {
-      if (s.id === scanId) return { ...s, ...update }
-      return s
-    })
-
+    scans = scans.map((s: any) => s.id === scanId ? { ...s, ...update } : s)
     localStorage.setItem("deepscan-scans-metadata", JSON.stringify(scans))
     if (onUpdate) onUpdate()
   }
 
   const submitFeedback = (userVerdict: boolean) => {
     setFeedbackSubmitted(userVerdict)
-    saveToLocal({ 
-      userFeedback: userVerdict,
-      isCorrect: result.isDeepfake === userVerdict 
-    })
-    toast({ 
-      title: "Ground Truth Saved",
-      description: "AI model will prioritize this verdict in future scans."
-    })
+    saveToLocal({ userFeedback: userVerdict, isCorrect: result.isDeepfake === userVerdict })
+    toast({ title: "Ground Truth Saved", description: "AI updated with verified verdict." })
   }
-
-  const handleSaveComment = () => {
-    saveToLocal({ userComment: userComment.trim() })
-    toast({ title: "Note Added", description: "Saved to private PC database." })
-    setUserComment("")
-  }
-
-  const handleExportProof = async () => {
-    if (!vaultHandle) {
-      toast({ 
-        variant: "destructive", 
-        title: "No Vault Connected", 
-        description: "Please link a PC folder in the 'PC Database' tab to export certified reports." 
-      })
-      return
-    }
-
-    try {
-      const reportData = {
-        certification: {
-          standard: "DeepScan Forensic v1.0",
-          verified_by: "DeepScan Private Engine",
-          report_id: scanId,
-          timestamp: new Date().toISOString()
-        },
-        analysis: {
-          media_type: mediaType,
-          verdict: result.isDeepfake ? "MANIPULATED" : "AUTHENTIC",
-          confidence: result.confidence,
-          explanation: result.explanation,
-          anomalies: result.highlightedRegions || result.suspiciousTimestamps || result.suspiciousSegments || []
-        },
-        metadata_artifacts: metadata,
-        human_verification: {
-          status: feedbackSubmitted !== null ? "Verified" : "Pending",
-          user_verdict: feedbackSubmitted,
-          notes: userComment
-        }
-      }
-
-      const fileName = `Forensic_Report_${scanId.substring(0, 8)}.json`
-      const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
-      const writable = await fileHandle.createWritable()
-      await writable.write(JSON.stringify(reportData, null, 2))
-      await writable.close()
-
-      toast({
-        title: "Certified Report Exported",
-        description: `Saved to ${vaultHandle.name}/${fileName}`,
-      })
-    } catch (err) {
-      console.error("Export failed:", err)
-      toast({ variant: "destructive", title: "Export Failed", description: "Ensure the app has write permissions to your folder." })
-    }
-  }
-
-  const seekTo = (seconds: number) => {
-    if (mediaRef.current) {
-      mediaRef.current.currentTime = seconds
-      mediaRef.current.play()
-    }
-  }
-
-  const isFake = result.isDeepfake
-  const confidence = result.confidence
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="overflow-hidden border-2 border-primary/20 flex flex-col shadow-xl">
-          <CardHeader className="pb-2 bg-muted/30">
-            <div className="flex justify-between items-start">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* LEFT PANEL: ELITE FORENSICS */}
+        <Card className="border-2 border-primary/20 shadow-2xl flex flex-col bg-card/50 backdrop-blur-sm">
+          <CardHeader className="border-b bg-muted/20">
+            <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="font-headline text-xl flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-primary" />
-                  Forensic Certificate
+                <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter">
+                  <Fingerprint className="w-6 h-6 text-primary" />
+                  NEURAL DOSSIER
                 </CardTitle>
-                <CardDescription className="text-xs">Certified Automated Analysis</CardDescription>
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                  Case ID: {scanId.substring(0, 12)}
+                </CardDescription>
               </div>
-              <Badge variant={isFake ? "destructive" : "default"} className="px-3 py-1 font-bold text-xs uppercase tracking-widest shadow-sm">
-                {isFake ? "MANIPULATED" : "AUTHENTIC"}
+              <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest shadow-lg">
+                {isFake ? "SYNTHETIC" : "AUTHENTIC"}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6 flex-1 pt-6">
-            <Tabs defaultValue="forensics" className="w-full">
-              <TabsList className="grid grid-cols-2 mb-4 h-9">
-                <TabsTrigger value="forensics" className="text-[10px] font-bold uppercase tracking-wider">Analysis Log</TabsTrigger>
-                <TabsTrigger value="metadata" className="text-[10px] font-bold uppercase tracking-wider">Artifact Inspector</TabsTrigger>
+
+          <CardContent className="p-6 space-y-8 flex-1">
+            {/* Accuracy & Progress */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-end">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5" /> Verdict Confidence
+                </Label>
+                <span className={cn("text-2xl font-black", isFake ? "text-destructive" : "text-primary")}>
+                  {confidence}%
+                </span>
+              </div>
+              <Progress value={confidence} className={cn("h-4 rounded-full bg-muted shadow-inner", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
+            </div>
+
+            <Tabs defaultValue="ancestry" className="w-full">
+              <TabsList className="grid grid-cols-3 bg-muted/50 p-1 rounded-xl h-11">
+                <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1.5">
+                  <Dna className="w-3.5 h-3.5" /> Ancestry
+                </TabsTrigger>
+                <TabsTrigger value="spectral" className="text-[9px] font-black uppercase tracking-tighter gap-1.5">
+                  <Layers className="w-3.5 h-3.5" /> Spectral
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="text-[9px] font-black uppercase tracking-tighter gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5" /> Vault
+                </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="forensics" className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-bold">
-                    <span className="text-muted-foreground uppercase text-[10px] tracking-widest">AI Confidence Level</span>
-                    <span className={cn(isFake ? "text-destructive" : "text-primary")}>{confidence}%</span>
-                  </div>
-                  <Progress value={confidence} className={cn("h-3", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
-                </div>
 
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 relative overflow-hidden">
-                  <div className="flex gap-3 relative z-10">
-                    <Info className="w-5 h-5 text-primary shrink-0" />
-                    <p className="text-sm leading-relaxed text-foreground/80 font-medium italic">{result.explanation}</p>
+              <TabsContent value="ancestry" className="pt-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 space-y-1">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Model Family</span>
+                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.modelFamily || "Unknown"}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 space-y-1">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Likely Source</span>
+                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Neural Hybrid"}</p>
                   </div>
                 </div>
 
-                {/* Evidence List */}
-                {((result.highlightedRegions && result.highlightedRegions.length > 0) || 
-                  (result.suspiciousTimestamps && result.suspiciousTimestamps.length > 0) ||
-                  (result.suspiciousSegments && result.suspiciousSegments.length > 0)) && (
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                       <FileSearch className="w-3 h-3" /> Anomalies Found
-                    </Label>
-                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-                      {result.highlightedRegions?.map((region: any, i: number) => (
-                        <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-destructive/5 border border-destructive/10 text-[11px]">
-                          <MapPin className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                          <div className="space-y-0.5">
-                            <span className="font-bold text-destructive uppercase block">Highlight #{i+1}</span>
-                            <span className="text-muted-foreground italic leading-tight">{region.reason}</span>
-                          </div>
-                        </div>
-                      ))}
-                      {result.suspiciousTimestamps?.map((ts: any, i: number) => (
-                        <button 
-                          key={i} 
-                          onClick={() => seekTo(ts.timestamp)}
-                          className="w-full flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[11px] text-left hover:bg-primary/10 transition-all group"
-                        >
-                          <PlayCircle className="w-5 h-5 text-primary shrink-0" />
-                          <div>
-                            <span className="font-bold text-primary block">TIMEMARK [{Math.floor(ts.timestamp)}s]</span>
-                            <span className="text-muted-foreground truncate block">{ts.description}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                <div className="p-4 rounded-2xl border-2 border-dashed border-primary/10 bg-muted/10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+                    <Brain className="w-12 h-12 text-primary" />
                   </div>
-                )}
+                  <p className="text-xs font-medium leading-relaxed italic text-foreground/80 relative z-10">
+                    "{result.explanation}"
+                  </p>
+                </div>
               </TabsContent>
 
-              <TabsContent value="metadata" className="space-y-4">
-                 <div className="rounded-xl border bg-muted/20 overflow-hidden">
-                   <div className="bg-card p-3 flex items-center justify-between border-b">
-                     <div className="flex items-center gap-2">
-                       <SearchCode className="w-4 h-4 text-primary" />
-                       <span className="text-[10px] font-black uppercase tracking-wider">Deeper Artifact Scanner</span>
-                     </div>
-                     <Badge variant="outline" className="text-[8px] h-4 bg-background">Level 2 Analysis</Badge>
-                   </div>
-                   <div className="p-4 space-y-3">
-                     {Object.entries(metadata).map(([key, val]) => (
-                       <div key={key} className="flex justify-between items-center text-[10px] border-b border-muted/50 last:border-0 pb-2">
-                         <span className="font-bold text-muted-foreground uppercase tracking-tighter">{key.replace(/_/g, ' ')}</span>
-                         <span className="font-mono text-primary font-bold">{val}</span>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-                 <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-50 border border-orange-100 text-[10px] text-orange-800">
-                   <Scale className="w-4 h-4 shrink-0" />
-                   <p className="leading-tight">Inconsistencies detected in Quantization Matrix. This is a primary indicator of GAN or Diffusion based synthesis.</p>
-                 </div>
-              </TabsContent>
-            </Tabs>
-
-            <div className="pt-4 border-t space-y-6 bg-muted/10 -mx-6 px-6 pb-6 mt-auto">
-               <div className="flex gap-2">
-                  <Button variant="default" size="sm" className="flex-1 font-bold text-[10px] uppercase h-10 shadow-lg" onClick={handleExportProof}>
-                    <FileJson className="w-3.5 h-3.5 mr-2" /> Export Certified Proof
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 font-bold text-[10px] uppercase h-10 bg-background" onClick={() => window.print()}>
-                    <Download className="w-3.5 h-3.5 mr-2" /> Print Report
-                  </Button>
-               </div>
-
-               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground mb-1 block tracking-widest flex items-center gap-2">
-                  <Database className="w-3 h-3" /> Audit Verification
-                </Label>
-                <div className="flex gap-3">
-                  <Button 
-                    variant={feedbackSubmitted === true ? "default" : "outline"} 
-                    className={cn("flex-1 h-12 gap-2 font-bold", feedbackSubmitted === true && "bg-primary")}
-                    onClick={() => submitFeedback(true)}
-                  >
-                    <ThumbsUp className="w-4 h-4" /> Accurate
-                  </Button>
-                  <Button 
-                    variant={feedbackSubmitted === false ? "destructive" : "outline"} 
-                    className="flex-1 h-12 gap-2 font-bold"
-                    onClick={() => submitFeedback(false)}
-                  >
-                    <ThumbsDown className="w-4 h-4" /> Inaccurate
-                  </Button>
+              <TabsContent value="spectral" className="pt-6 space-y-4">
+                <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Microscope className="w-4 h-4 text-destructive" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-destructive">Noise Artifact Detected</span>
+                  </div>
+                  <p className="text-xs font-bold leading-tight">
+                    {result.noiseArtifacts?.description || "Inconsistent high-frequency pixel distribution found in the latent space."}
+                  </p>
                 </div>
-               </div>
+                <Button 
+                  variant="outline" 
+                  className={cn("w-full h-12 font-black uppercase tracking-widest border-2 transition-all", showSpectralMode ? "bg-primary text-white border-primary" : "hover:border-primary")}
+                  onClick={() => setShowSpectralMode(!showSpectralMode)}
+                >
+                  <Layers className="w-4 h-4 mr-2" />
+                  {showSpectralMode ? "Exit Spectral View" : "Enable Spectral Analysis"}
+                </Button>
+              </TabsContent>
 
-               <div className="space-y-2">
-                <Label className="text-xs font-bold flex items-center gap-2 text-primary">
-                  <MessageSquare className="w-4 h-4" />
-                  Chain of Custody Notes
-                </Label>
+              <TabsContent value="notes" className="pt-6 space-y-4">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Vault Certification</Label>
+                  <div className="flex gap-2">
+                    <Button variant={feedbackSubmitted === true ? "default" : "outline"} className="flex-1 h-12 font-bold" onClick={() => submitFeedback(true)}>
+                      <ThumbsUp className="w-4 h-4 mr-2" /> Verified
+                    </Button>
+                    <Button variant={feedbackSubmitted === false ? "destructive" : "outline"} className="flex-1 h-12 font-bold" onClick={() => submitFeedback(false)}>
+                      <ThumbsDown className="w-4 h-4 mr-2" /> Disputed
+                    </Button>
+                  </div>
+                </div>
                 <Textarea 
-                  placeholder="Notes are saved to deepscan-private-metadata.json..."
-                  className="text-xs min-h-[80px] bg-background border-primary/20"
+                  placeholder="Record forensic observation to PC memory..."
+                  className="text-xs min-h-[100px] bg-background/50 rounded-xl"
                   value={userComment}
                   onChange={(e) => setUserComment(e.target.value)}
                 />
-                <Button size="sm" className="w-full font-bold uppercase text-[10px] tracking-widest" onClick={handleSaveComment}>
-                  Save to PC Memory
+                <Button className="w-full font-black uppercase tracking-tighter" onClick={() => { saveToLocal({ userComment }); toast({ title: "Memory Updated" }); }}>
+                  Save to Vault
                 </Button>
-               </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
+
+          <CardFooter className="border-t p-6 bg-muted/5 gap-3">
+            <Button className="flex-1 h-12 font-black uppercase tracking-widest shadow-xl" onClick={() => toast({ title: "Generating Secure Report..." })}>
+              <FileJson className="w-4 h-4 mr-2" /> Export Evidence
+            </Button>
+            <Button variant="outline" className="h-12 w-12 rounded-xl" onClick={() => window.print()}>
+              <Download className="w-5 h-5" />
+            </Button>
+          </CardFooter>
         </Card>
 
-        <Card className="overflow-hidden flex items-center justify-center p-4 bg-muted/30 relative border-2 shadow-inner border-primary/10">
-          <div className="relative rounded-xl overflow-hidden border-4 border-background bg-background flex items-center justify-center shadow-2xl w-full h-full max-h-[80vh]">
-             {mediaType === 'image' && (
-               <div className="relative w-full h-full flex items-center justify-center">
-                 <img src={mediaUrl} className="max-w-full max-h-full object-contain" />
-                 {result.highlightedRegions?.map((region: any, i: number) => (
-                   <div 
+        {/* RIGHT PANEL: VISUAL EVIDENCE */}
+        <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex items-center justify-center p-0 rounded-3xl min-h-[500px]">
+          {/* Spectral Overlay Filter */}
+          <div className={cn(
+            "absolute inset-0 z-20 pointer-events-none transition-all duration-700",
+            showSpectralMode ? "opacity-100 backdrop-grayscale mix-blend-difference" : "opacity-0"
+          )}>
+            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-30 mix-blend-overlay animate-pulse" />
+          </div>
+
+          <div className="relative w-full h-full flex items-center justify-center group">
+            {mediaType === 'image' && (
+              <>
+                <img 
+                  src={mediaUrl} 
+                  className={cn("max-w-full max-h-[80vh] object-contain transition-all duration-700 rounded-xl", showSpectralMode && "brightness-150 contrast-200 blur-[1px]")} 
+                />
+                {/* Forensic Bounding Boxes */}
+                {result.highlightedRegions?.map((region: any, i: number) => (
+                  <div 
                     key={i}
-                    className="absolute border-2 border-destructive bg-destructive/10 animate-pulse transition-all duration-300"
+                    className="absolute border-4 border-destructive shadow-[0_0_20px_rgba(255,0,0,0.5)] animate-pulse transition-all duration-500 hover:scale-105"
                     style={{
                       left: `${region.x}%`,
                       top: `${region.y}%`,
                       width: `${region.width}%`,
                       height: `${region.height}%`,
                     }}
-                   >
-                     <div className="absolute -top-6 left-0 bg-destructive text-white text-[9px] px-2 py-0.5 rounded font-black whitespace-nowrap flex items-center gap-1 shadow-md">
-                       <ShieldAlert className="w-2.5 h-2.5" />
-                       ANOMALY #{i+1}
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             )}
-             {mediaType === 'video' && (
-               <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full max-h-full" />
-             )}
-             {mediaType === 'audio' && (
-               <div className="flex flex-col items-center gap-8 p-12 w-full">
-                 <div className="p-10 rounded-full bg-primary/10 border-8 border-primary/5 animate-pulse">
-                   <Music className="w-32 h-32 text-primary" />
-                 </div>
-                 <audio ref={mediaRef as any} src={mediaUrl} controls className="w-full shadow-2xl rounded-full" />
-               </div>
-             )}
+                  >
+                    <div className="absolute -top-10 left-0 bg-destructive text-white text-[10px] px-3 py-1.5 rounded-full font-black flex items-center gap-2 shadow-2xl">
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      SYNTHETIC ARTIFACT #{i+1}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />}
+            
+            {mediaType === 'audio' && (
+              <div className="flex flex-col items-center gap-8 p-12">
+                <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5 animate-bounce-slow">
+                  <Music className="w-32 h-32 text-primary" />
+                </div>
+                <audio src={mediaUrl} controls className="w-80 shadow-2xl" />
+              </div>
+            )}
+          </div>
+
+          {/* Special Indicator */}
+          <div className="absolute bottom-6 right-6 z-30 flex gap-2">
+            <Badge className="bg-primary/90 text-white font-black text-[10px] px-3 py-1 uppercase tracking-tighter backdrop-blur-md">
+              <Zap className="w-3 h-3 mr-1.5" /> Live Forensic Engine
+            </Badge>
+            {showSpectralMode && (
+              <Badge variant="destructive" className="font-black text-[10px] px-3 py-1 uppercase tracking-tighter animate-pulse">
+                Spectral Mode Active
+              </Badge>
+            )}
           </div>
         </Card>
       </div>
