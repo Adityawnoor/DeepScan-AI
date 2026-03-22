@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock } from "lucide-react"
+import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils"
 
 interface DatasetManagerProps {
   knowledgeCount: number
-  onRefresh: () => void
+  onRefresh: (folderName?: string) => void
 }
 
 export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProps) {
@@ -84,6 +84,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
       const handle = await (window as any).showDirectoryPicker()
       setLocalFolderHandle(handle)
+      localStorage.setItem("deepscan-last-folder", handle.name)
       scanLocalFolder(handle)
       
       try {
@@ -95,10 +96,11 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           setDatasets(meta.datasets)
           localStorage.setItem("deepscan-datasets", JSON.stringify(meta.datasets))
         }
-        toast({ title: "Private Vault Opened", description: "Loaded your PC notebook file." })
+        toast({ title: "Private Vault Opened", description: `Linked to folder: ${handle.name}` })
       } catch (e) {
         toast({ title: "New Vault Created", description: `Memory file 'deepscan-private-metadata.json' created in ${handle.name}.` })
       }
+      onRefresh(handle.name)
     } catch (err: any) {
       if (err.name !== 'AbortError') console.error(err)
     }
@@ -140,7 +142,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     syncToPCFile({ datasets: updated, scans: scans })
     
     setDatasetNotes("")
-    onRefresh()
+    onRefresh(localFolderHandle?.name)
     toast({ title: "Item Remembered", description: "The AI now knows about this local file." })
   }
 
@@ -149,7 +151,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     setDatasets(updated)
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
     syncToPCFile({ datasets: updated, scans: scans })
-    onRefresh()
+    onRefresh(localFolderHandle?.name)
     toast({ title: "Memory Removed" })
   }
 
@@ -162,7 +164,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
     syncToPCFile({ datasets: updated, scans: scans })
     setEditingDataset(null)
-    onRefresh()
+    onRefresh(localFolderHandle?.name)
     toast({ title: "Notebook Updated" })
   }
 
@@ -187,19 +189,21 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </CardContent>
         </Card>
 
-        <Card className="bg-secondary/5 border-secondary/20">
+        <Card className="bg-secondary/5 border-secondary/20 border-2">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Private Lessons</p>
-                <p className="text-3xl font-bold tracking-tight">{knowledgeCount}</p>
+                <p className="text-sm font-medium text-muted-foreground">Database Folder</p>
+                <p className="text-xl font-bold truncate max-w-[150px]">
+                  {localFolderHandle ? localFolderHandle.name : "Not Linked"}
+                </p>
               </div>
               <div className="p-3 bg-secondary/10 rounded-xl">
-                <BrainCircuit className="w-6 h-6 text-secondary" />
+                <Folder className="w-6 h-6 text-secondary" />
               </div>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              Lessons stored in your private notebook file.
+              {localFolderHandle ? "Metadata file: deepscan-private-metadata.json" : "Click below to pick a folder."}
             </p>
           </CardContent>
         </Card>
@@ -242,13 +246,13 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-4 border-primary/20">
+        <Card className="lg:col-span-4 border-primary/20 border-2">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <HardDrive className="w-5 h-5 text-primary" />
-              Dataset Ingest
+              Database Ingest
             </CardTitle>
-            <CardDescription>Tell the AI about files on your hard drive.</CardDescription>
+            <CardDescription>Link your hard drive folder to sync data.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -274,21 +278,22 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
             </div>
 
             {!localFolderHandle ? (
-              <Button variant="outline" className="w-full h-24 border-dashed" onClick={handleConnectLocalPC}>
+              <Button variant="outline" className="w-full h-24 border-dashed border-primary/50 bg-primary/5" onClick={handleConnectLocalPC}>
                 <div className="flex flex-col items-center gap-1">
-                  <FolderOpen className="w-6 h-6 opacity-40" />
-                  <span>Pick Your PC Vault</span>
+                  <FolderOpen className="w-6 h-6 text-primary" />
+                  <span className="font-bold text-primary">Pick Your PC Vault</span>
+                  <span className="text-[10px] text-muted-foreground">Choose ANY folder on your PC</span>
                 </div>
               </Button>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-2 rounded bg-muted/50 text-[10px] font-mono">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono">
                   <div className="flex flex-col truncate">
-                    <span className="truncate font-bold">Vault: {localFolderHandle.name}</span>
+                    <span className="truncate font-bold text-primary">Connected: {localFolderHandle.name}</span>
                     <span className="text-[8px] opacity-60">File: deepscan-private-metadata.json</span>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => scanLocalFolder(localFolderHandle)}>
-                    <RefreshCcw className={cn("w-3 h-3", isScanningLocal && "animate-spin")} />
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scanLocalFolder(localFolderHandle)}>
+                    <RefreshCcw className={cn("w-3 h-3 text-primary", isScanningLocal && "animate-spin")} />
                   </Button>
                 </div>
                 <div className="max-h-[150px] overflow-y-auto border rounded-lg p-1 bg-muted/20">
@@ -315,9 +320,9 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">AI Memory Bank</CardTitle>
             {localFolderHandle && (
-              <Badge variant="secondary" className="text-[10px] gap-1.5">
+              <Badge variant="secondary" className="text-[10px] gap-1.5 bg-primary/10 text-primary border-primary/20">
                 <FileJson className="w-3 h-3" />
-                Memory synced to: {localFolderHandle.name}/deepscan-private-metadata.json
+                Synced: {localFolderHandle.name}/deepscan-private-metadata.json
               </Badge>
             )}
           </div>
@@ -341,7 +346,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                 <TableRow key={ds.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> {ds.fileName}</span>
+                      <span className="flex items-center gap-1.5 font-bold"><HardDrive className="w-3.5 h-3.5" /> {ds.fileName}</span>
                       <span className="text-[10px] italic opacity-60 truncate max-w-[200px]">{ds.notes || "No notes provided."}</span>
                     </div>
                   </TableCell>
@@ -360,11 +365,18 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
             </TableBody>
           </Table>
           
-          <div className="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-100 flex gap-4 text-sm text-blue-700">
-            <Info className="w-6 h-6 shrink-0" />
-            <div className="space-y-1">
-              <p className="font-bold">Simple Guide: How this works</p>
-              <p>Your AI "memory" is stored in a file called <code>deepscan-private-metadata.json</code> inside your vault folder. You don't need to upload your 3GB files; the AI just learns from the notes you write here. If you delete that file, the AI forgets everything!</p>
+          <div className="mt-6 p-6 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 text-sm text-foreground">
+            <Info className="w-8 h-8 shrink-0 text-primary" />
+            <div className="space-y-2">
+              <p className="font-bold text-lg text-primary">Where is my data stored?</p>
+              <p className="leading-relaxed">
+                Your AI database is a file named <code className="bg-primary/10 px-1 rounded">deepscan-private-metadata.json</code>.
+                It is located in the folder you picked: <strong className="text-primary">{localFolderHandle ? localFolderHandle.name : "[No Folder Selected]"}</strong>.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                If you haven't picked a folder yet, click the <strong>"Pick Your PC Vault"</strong> button above. 
+                You can create a new folder named "DeepScan_Data" on your Desktop and pick that!
+              </p>
             </div>
           </div>
         </CardContent>

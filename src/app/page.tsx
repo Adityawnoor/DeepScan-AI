@@ -14,7 +14,7 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock, Folder } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
@@ -32,16 +32,19 @@ export default function DeepScanHome() {
   const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
   const [localScans, setLocalScans] = React.useState<any[]>([])
   const [isMigrating, setIsMigrating] = React.useState(false)
+  const [connectedFolderName, setConnectedFolderName] = React.useState<string | null>(null)
 
   // Initialize from LocalStorage (Secondary backup)
   React.useEffect(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
     const savedScans = localStorage.getItem("deepscan-scans-metadata")
+    const savedFolderName = localStorage.getItem("deepscan-last-folder")
 
     if (savedHistory) setHistory(JSON.parse(savedHistory))
     if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
     if (savedScans) setLocalScans(JSON.parse(savedScans))
+    if (savedFolderName) setConnectedFolderName(savedFolderName)
   }, [])
 
   const knowledgeCount = localDatasets.length + localScans.filter(s => s.userComment).length
@@ -215,7 +218,14 @@ export default function DeepScanHome() {
                 Forensic <span className="text-primary">Privacy</span> Mode
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI uses <strong>{knowledgeCount} private lessons</strong> stored only on this PC. No data is sent to the cloud for storage.
+                Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally. 
+                {connectedFolderName ? (
+                  <span className="block mt-2 font-semibold text-primary">
+                    <Folder className="inline w-4 h-4 mr-1" /> Linked to Folder: "{connectedFolderName}"
+                  </span>
+                ) : (
+                  <span className="block mt-2 italic">No folder linked yet. Metadata is in browser cache.</span>
+                )}
               </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -268,9 +278,16 @@ export default function DeepScanHome() {
                   
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <HardDrive className="w-5 h-5 text-primary shrink-0" />
-                    <p>
-                      <strong>Local Storage:</strong> Your history is saved in this browser. To make a permanent backup on your hard drive, mount a folder in the "PC Database" tab.
-                    </p>
+                    <div>
+                      <p className="font-bold text-primary mb-1">Your Database Location:</p>
+                      <p>
+                        {connectedFolderName ? (
+                          <>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong></>
+                        ) : (
+                          <>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</>
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -309,9 +326,10 @@ export default function DeepScanHome() {
             <TabsContent value="datasets" className="mt-6">
               <DatasetManager 
                 knowledgeCount={knowledgeCount} 
-                onRefresh={() => {
+                onRefresh={(folderName) => {
                    const savedDatasets = localStorage.getItem("deepscan-datasets")
                    if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
+                   if (folderName) setConnectedFolderName(folderName)
                 }}
               />
             </TabsContent>
