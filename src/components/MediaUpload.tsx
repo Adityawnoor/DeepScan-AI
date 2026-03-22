@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap } from "lucide-react"
+import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, ClipboardPaste } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -29,7 +29,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
     }
   }
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = (files: FileList | File[] | null) => {
     if (files && files[0]) {
       const file = files[0]
       let type: 'image' | 'audio' | 'video' | null = null
@@ -59,6 +59,31 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFiles(e.target.files)
   }
+
+  // Handle Paste Event
+  React.useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (preview || isWebcamOpen || isAnalyzing) return
+
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      const files: File[] = []
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file') {
+          const file = items[i].getAsFile()
+          if (file) files.push(file)
+        }
+      }
+
+      if (files.length > 0) {
+        handleFiles(files)
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [preview, isWebcamOpen, isAnalyzing])
 
   const openWebcam = async () => {
     setIsWebcamOpen(true)
@@ -111,8 +136,8 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
       {!preview && !isWebcamOpen ? (
         <div
           className={cn(
-            "flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed rounded-xl transition-all cursor-pointer",
-            dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/20"
+            "flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed rounded-xl transition-all cursor-pointer group",
+            dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
           )}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -128,25 +153,29 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             onChange={handleInputChange}
           />
           <div className="flex gap-2 mb-4">
-            <div className="p-3 bg-primary/10 rounded-full">
+            <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
               <ImageIcon className="w-5 h-5 text-primary" />
             </div>
-            <div className="p-3 bg-primary/10 rounded-full">
+            <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
               <Music className="w-5 h-5 text-primary" />
             </div>
-            <div className="p-3 bg-primary/10 rounded-full">
+            <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
               <Video className="w-5 h-5 text-primary" />
             </div>
           </div>
-          <h3 className="font-headline font-semibold text-lg mb-1">Analyze Media</h3>
-          <p className="text-muted-foreground text-sm mb-6 px-4 text-center">
-            Upload Image, Audio, or Video for Deepfake detection
+          <h3 className="font-headline font-semibold text-lg mb-1 text-center">Analyze Media</h3>
+          <p className="text-muted-foreground text-sm mb-6 px-4 text-center max-w-[280px]">
+            Drag & drop, click to browse, or <span className="text-primary font-medium">paste from clipboard</span>
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openWebcam(); }}>
               <Camera className="w-4 h-4 mr-2" />
               Use Webcam
             </Button>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-[10px] font-mono uppercase text-muted-foreground border">
+              <ClipboardPaste className="w-3 h-3" />
+              Ctrl + V to paste
+            </div>
           </div>
         </div>
       ) : isWebcamOpen ? (
