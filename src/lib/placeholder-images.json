@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-scan",
+      "description": "Abstract AI facial scanning visualization",
+      "imageUrl": "https://picsum.photos/seed/deepscan-1/1200/800",
+      "imageHint": "facial scanning"
+    }
+  ]
 }
