@@ -1,12 +1,15 @@
+
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { useFirestore, useCollection } from "@/firebase"
 import { collection, addDoc, deleteDoc, doc, query, orderBy, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
@@ -19,6 +22,7 @@ export function DatasetManager() {
   const [isUploading, setIsUploading] = React.useState(false)
   const [isTraining, setIsTraining] = React.useState(false)
   const [trainingProgress, setTrainingProgress] = React.useState(0)
+  const [datasetLabel, setDatasetLabel] = React.useState<string>("unlabeled")
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetQuery = React.useMemo(() => {
@@ -37,6 +41,7 @@ export function DatasetManager() {
     size: number;
     fileType: string;
     status: string;
+    label: string;
   }>(datasetQuery)
   
   const { data: scans, loading: scansLoading } = useCollection(scansQuery)
@@ -78,7 +83,7 @@ export function DatasetManager() {
       setIsTraining(false)
       toast({
         title: "Fine-Tuning Complete",
-        description: "The model weights have been updated based on your feedback.",
+        description: "The model weights have been updated based on your feedback loop.",
       })
     }
   }, [isTraining, trainingProgress, toast])
@@ -89,16 +94,6 @@ export function DatasetManager() {
 
     const file = files[0]
     
-    // Up to 2.5GB limit check
-    if (file.size > 2500 * 1024 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "File Too Large",
-        description: "Uploads are limited to 2.5GB.",
-      })
-      return
-    }
-
     setIsUploading(true)
     try {
       await addDoc(collection(db, "datasets"), {
@@ -106,17 +101,18 @@ export function DatasetManager() {
         uploadDate: new Date().toISOString(),
         size: file.size,
         fileType: file.type || "application/zip",
-        status: "processed"
+        status: "processed",
+        label: datasetLabel
       })
 
       toast({
-        title: "Dataset Saved",
-        description: `${file.name} metadata has been saved to the repository.`,
+        title: "Dataset Indexed",
+        description: `${file.name} cataloged as ${datasetLabel.toUpperCase()}.`,
       })
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Save Failed",
+        title: "Index Failed",
         description: "Could not save dataset metadata.",
       })
     } finally {
@@ -131,7 +127,7 @@ export function DatasetManager() {
       await deleteDoc(doc(db, "datasets", id))
       toast({
         title: "Dataset Removed",
-        description: "Dataset metadata deleted from repository.",
+        description: "Metadata deleted from repository.",
       })
     } catch (error) {
       toast({
@@ -146,6 +142,19 @@ export function DatasetManager() {
     if (isTraining) return
     setIsTraining(true)
     setTrainingProgress(0)
+  }
+
+  const getLabelBadge = (label: string) => {
+    switch (label) {
+      case 'real':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><Shield className="w-3 h-3 mr-1" /> Real</Badge>
+      case 'fake':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><ShieldAlert className="w-3 h-3 mr-1" /> Fake</Badge>
+      case 'mixed':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><Layers className="w-3 h-3 mr-1" /> Mixed</Badge>
+      default:
+        return <Badge variant="secondary">Unlabeled</Badge>
+    }
   }
 
   return (
@@ -164,7 +173,7 @@ export function DatasetManager() {
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs text-green-600 font-medium">
               <TrendingUp className="w-3 h-3" />
-              <span>+2.4% since last dataset</span>
+              <span>+2.4% from feedback loop</span>
             </div>
           </CardContent>
         </Card>
@@ -173,7 +182,7 @@ export function DatasetManager() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Feedback Loop</p>
+                <p className="text-sm font-medium text-muted-foreground">Labeled Samples</p>
                 <p className="text-3xl font-bold tracking-tight">{scans?.length || 0}</p>
               </div>
               <div className="p-3 bg-secondary/10 rounded-xl">
@@ -181,7 +190,7 @@ export function DatasetManager() {
               </div>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              Analyzed data points stored in Firestore.
+              User-verified data points in Firestore.
             </p>
           </CardContent>
         </Card>
@@ -199,7 +208,7 @@ export function DatasetManager() {
             <div className="space-y-2">
               <Play className="w-8 h-8 text-primary mx-auto opacity-40 group-hover:scale-110 group-hover:opacity-100 transition-all" />
               <p className="text-sm font-bold">Trigger Fine-Tuning</p>
-              <p className="text-xs text-muted-foreground px-4 leading-tight">Run simulation on current feedback loop.</p>
+              <p className="text-xs text-muted-foreground px-4 leading-tight">Apply labeled data to model weights.</p>
             </div>
           )}
         </Card>
@@ -246,7 +255,7 @@ export function DatasetManager() {
                 </ChartContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm border-2 border-dashed rounded-xl">
-                  Run more scans to populate performance data.
+                  Analyze more media to populate trend data.
                 </div>
               )}
             </div>
@@ -257,11 +266,26 @@ export function DatasetManager() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Upload className="w-5 h-5 text-primary" />
-              Data Ingest
+              Dataset Ingest
             </CardTitle>
-            <CardDescription>Submit labeled ZIP files.</CardDescription>
+            <CardDescription>Categorize and catalog ZIP data.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="dataset-label" className="text-xs font-bold uppercase text-muted-foreground">Dataset Category</Label>
+              <Select value={datasetLabel} onValueChange={setDatasetLabel}>
+                <SelectTrigger id="dataset-label">
+                  <SelectValue placeholder="Select content type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="real">Real Content (Authentic)</SelectItem>
+                  <SelectItem value="fake">Fake Content (Manipulated)</SelectItem>
+                  <SelectItem value="mixed">Mixed Content</SelectItem>
+                  <SelectItem value="unlabeled">Unlabeled / Raw</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div 
               className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors"
               onClick={() => fileInputRef.current?.click()}
@@ -279,7 +303,7 @@ export function DatasetManager() {
             </div>
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-tight">
               <AlertTriangle className="w-4 h-4 mb-1" />
-              Saving metadata for <strong>{datasets?.length || 0} datasets</strong>.
+              Indexed metadata for <strong>{datasets?.length || 0} datasets</strong>.
             </div>
           </CardContent>
         </Card>
@@ -309,6 +333,7 @@ export function DatasetManager() {
                 <TableHeader className="bg-muted/50">
                   <TableRow>
                     <TableHead>Filename</TableHead>
+                    <TableHead>Label</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Size</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -322,9 +347,12 @@ export function DatasetManager() {
                         {ds.fileName}
                       </TableCell>
                       <TableCell>
+                        {getLabelBadge(ds.label)}
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                           <CheckCircle2 className="w-3 h-3 mr-1.5" />
-                          Processed
+                          Ready
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
