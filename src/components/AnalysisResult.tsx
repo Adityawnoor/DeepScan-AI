@@ -7,7 +7,7 @@ import {
   Dna, Fingerprint, Microscope, Zap, Database, Layers,
   Activity, AlertTriangle, Sparkles, Brain, Scale, FileText,
   Clock, Maximize2, Share2, HeartPulse, Crosshair, Target,
-  Map as MapIcon, Compass, Workflow, AlertCircle
+  Map as MapIcon, Compass, Workflow, AlertCircle, Cpu
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -124,7 +124,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
             </div>
 
             <Tabs defaultValue="biometrics" className="w-full">
-              <TabsList className="grid grid-cols-4 bg-muted/50 p-1 rounded-xl h-11">
+              <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-xl h-11">
                 <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1">
                   <HeartPulse className="w-3.5 h-3.5" /> Vital
                 </TabsTrigger>
@@ -133,6 +133,9 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 </TabsTrigger>
                 <TabsTrigger value="origin" className="text-[9px] font-black uppercase tracking-tighter gap-1">
                   <MapIcon className="w-3.5 h-3.5" /> Origin
+                </TabsTrigger>
+                <TabsTrigger value="metadata" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                  <Cpu className="w-3.5 h-3.5" /> Meta
                 </TabsTrigger>
                 <TabsTrigger value="spectral" className="text-[9px] font-black uppercase tracking-tighter gap-1">
                   <Layers className="w-3.5 h-3.5" /> Noise
@@ -209,6 +212,30 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                  </p>
               </TabsContent>
 
+              <TabsContent value="metadata" className="pt-6 space-y-4">
+                 <div className="p-4 rounded-2xl bg-muted/20 border border-primary/10 space-y-3">
+                    <div className="flex items-center gap-2">
+                       <Cpu className="w-4 h-4 text-primary" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Artifact Metadata</span>
+                    </div>
+                    <div className="space-y-2">
+                       <div className="flex justify-between py-1 border-b border-muted">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Encoder ID</span>
+                          <span className="text-[10px] font-mono font-bold text-primary">SIG-772-NEURAL</span>
+                       </div>
+                       <div className="flex justify-between py-1 border-b border-muted">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Software Signature</span>
+                          <span className="text-[10px] font-mono font-bold text-primary">Stable Diffusion XL (Sim)</span>
+                       </div>
+                       <div className="flex justify-between py-1">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">Inconsistency Score</span>
+                          <span className="text-[10px] font-mono font-bold text-destructive">89%</span>
+                       </div>
+                    </div>
+                 </div>
+                 <p className="text-[10px] text-muted-foreground italic text-center">AI-generated media often lacks standard camera metadata or contains tell-tale encoder strings.</p>
+              </TabsContent>
+
               <TabsContent value="spectral" className="pt-6 space-y-4">
                 <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10">
                   <div className="flex items-center gap-2 mb-3">
@@ -251,11 +278,11 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
             <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-30 mix-blend-overlay animate-pulse" />
           </div>
 
-          <div className="relative flex items-center justify-center p-4">
+          <div className="relative flex items-center justify-center p-4 w-full h-full">
             {/* THIS WRAPPER ENSURES OVERLAYS SCALE WITH THE IMAGE */}
-            <div className="relative inline-block max-w-full max-h-[80vh]">
+            <div className="relative inline-block max-w-full max-h-full">
               {mediaType === 'image' && (
-                <>
+                <div className="relative">
                   <img 
                     src={mediaUrl} 
                     className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "brightness-150 contrast-200 blur-[1px]")} 
@@ -279,7 +306,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                       <div className="absolute inset-0 bg-destructive/10 hidden group-hover:block" title={region.reason} />
                     </div>
                   ))}
-                </>
+                </div>
               )}
               
               {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full h-auto rounded-xl shadow-2xl" />}

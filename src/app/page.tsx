@@ -34,6 +34,8 @@ export default function DeepScanHome() {
   const [connectedFolderName, setConnectedFolderName] = React.useState<string | null>(null)
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
 
+  const workstationRef = React.useRef<HTMLDivElement>(null)
+
   React.useEffect(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
@@ -120,6 +122,11 @@ export default function DeepScanHome() {
     }
   }
 
+  const handleBeginInvestigation = () => {
+    setActiveTab("analyze")
+    workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white">
       {/* ELITE HEADER */}
@@ -178,7 +185,7 @@ export default function DeepScanHome() {
                   variant="default" 
                   size="lg" 
                   className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-[1.02] transition-all"
-                  onClick={() => setActiveTab("analyze")}
+                  onClick={handleBeginInvestigation}
                 >
                   <Microscope className="w-5 h-5 mr-3" />
                   Begin Investigation
@@ -193,81 +200,83 @@ export default function DeepScanHome() {
           </section>
 
           {/* MAIN WORKSTATION */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-8 gap-8">
-              {["analyze", "history", "datasets"].map((tab) => (
-                <TabsTrigger 
-                  key={tab}
-                  value={tab} 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black uppercase text-xs tracking-[0.2em] transition-all opacity-50 data-[state=active]:opacity-100"
-                >
-                  {tab === "analyze" && <Zap className="w-3.5 h-3.5 mr-2" />}
-                  {tab === "history" && <History className="w-3.5 h-3.5 mr-2" />}
-                  {tab === "datasets" && <Database className="w-3.5 h-3.5 mr-2" />}
-                  {tab}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <div ref={workstationRef}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-8 gap-8">
+                {["analyze", "history", "datasets"].map((tab) => (
+                  <TabsTrigger 
+                    key={tab}
+                    value={tab} 
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black uppercase text-xs tracking-[0.2em] transition-all opacity-50 data-[state=active]:opacity-100"
+                  >
+                    {tab === "analyze" && <Zap className="w-3.5 h-3.5 mr-2" />}
+                    {tab === "history" && <History className="w-3.5 h-3.5 mr-2" />}
+                    {tab === "datasets" && <Database className="w-3.5 h-3.5 mr-2" />}
+                    {tab}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-            <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
-              <div className="space-y-12">
-                <div className={cn(
-                  "grid grid-cols-1 gap-12 transition-all duration-1000",
-                  currentResult ? "lg:grid-cols-[400px_1fr]" : "grid-cols-1"
-                )}>
-                  <div className="space-y-6">
-                    <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
-                    <Card className="bg-muted/30 border-2 border-dashed p-6 rounded-[2rem] space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-xl">
-                          <Brain className="w-5 h-5 text-primary" />
+              <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
+                <div className="space-y-12">
+                  <div className={cn(
+                    "grid grid-cols-1 gap-12 transition-all duration-1000",
+                    currentResult ? "lg:grid-cols-[400px_1fr]" : "grid-cols-1"
+                  )}>
+                    <div className="space-y-6">
+                      <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
+                      <Card className="bg-muted/30 border-2 border-dashed p-6 rounded-[2rem] space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 rounded-xl">
+                            <Brain className="w-5 h-5 text-primary" />
+                          </div>
+                          <h4 className="font-black uppercase text-xs tracking-widest">Forensic Capabilities</h4>
                         </div>
-                        <h4 className="font-black uppercase text-xs tracking-widest">Forensic Capabilities</h4>
-                      </div>
-                      <ul className="space-y-3">
-                        {[
-                          "Generative Model Fingerprinting",
-                          "High-Frequency Noise Floor Analysis",
-                          "Temporal Consistency Checks",
-                          "Metadata Chain-of-Custody"
-                        ].map(item => (
-                          <li key={item} className="flex items-center gap-2 text-[10px] font-bold uppercase text-muted-foreground">
-                            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </Card>
+                        <ul className="space-y-3">
+                          {[
+                            "Generative Model Fingerprinting",
+                            "High-Frequency Noise Floor Analysis",
+                            "Temporal Consistency Checks",
+                            "Metadata Chain-of-Custody"
+                          ].map(item => (
+                            <li key={item} className="flex items-center gap-2 text-[10px] font-bold uppercase text-muted-foreground">
+                              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </Card>
+                    </div>
+
+                    {currentResult && (
+                      <AnalysisResult 
+                        scanId={currentResult.id}
+                        result={currentResult.output} 
+                        mediaUrl={currentResult.mediaUrl} 
+                        mediaType={currentResult.mediaType}
+                        vaultHandle={localFolderHandle}
+                        onUpdate={() => {
+                          const savedScans = localStorage.getItem("deepscan-scans-metadata")
+                          if (savedScans) setLocalScans(JSON.parse(savedScans))
+                        }}
+                      />
+                    )}
                   </div>
-
-                  {currentResult && (
-                    <AnalysisResult 
-                      scanId={currentResult.id}
-                      result={currentResult.output} 
-                      mediaUrl={currentResult.mediaUrl} 
-                      mediaType={currentResult.mediaType}
-                      vaultHandle={localFolderHandle}
-                      onUpdate={() => {
-                        const savedScans = localStorage.getItem("deepscan-scans-metadata")
-                        if (savedScans) setLocalScans(JSON.parse(savedScans))
-                      }}
-                    />
-                  )}
                 </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="history" className="mt-0">
-              <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
-            </TabsContent>
+              <TabsContent value="history" className="mt-0">
+                <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
+              </TabsContent>
 
-            <TabsContent value="datasets" className="mt-0">
-              <DatasetManager knowledgeCount={knowledgeCount} onRefresh={(name, handle) => {
-                if (name) setConnectedFolderName(name);
-                if (handle) setLocalFolderHandle(handle);
-              }} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="datasets" className="mt-0">
+                <DatasetManager knowledgeCount={knowledgeCount} onRefresh={(name, handle) => {
+                  if (name) setConnectedFolderName(name);
+                  if (handle) setLocalFolderHandle(handle);
+                }} />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </main>
 
