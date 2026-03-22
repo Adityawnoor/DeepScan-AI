@@ -52,16 +52,15 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'videoDeepfakeDetectionPrompt',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are a forensic video expert trained to expose state-of-the-art temporal manipulations. Analyze the provided video with extreme scrutiny.
+  prompt: `You are a forensic video expert. Analyze the provided video for sophisticated temporal manipulations while distinguishing them from camera motion or low-bitrate artifacts.
 
-Search for these temporal and spatial clues:
-1.  **Temporal Flickering**: Look for single-frame inconsistencies around the eyes, teeth, and jawline where the mask might lose alignment.
-2.  **Lip-Sync Latency**: Detect micro-delays between phonetic sounds and the corresponding lip movements.
-3.  **Frame-to-Frame Continuity**: Check for subtle warping or "ghosting" effects when the subject moves their head rapidly.
-4.  **Lighting and Shadows**: Do the face shadows move in perfect synchronization with the head's rotation relative to the environment?
-5.  **Compression Artifacts**: Identify if the compression noise is inconsistent between the face and the rest of the scene.
+Look for specific "tells" of AI manipulation:
+1. **Temporal Jitter**: Watch for "shimmering" or "flutter" around facial boundaries, teeth, and hair that indicates a neural mask losing track of the subject's pose.
+2. **Sync Discrepancies**: Detect micro-latencies between mouth shapes (visemes) and audio sounds (phonemes) that exceed natural human variation.
+3. **Lighting De-synchronization**: Check if facial shadows respond correctly to head movements relative to background light sources.
+4. **Blink and Micro-expression Patterns**: Look for "static" or "frozen" eyes, or eye movements that appear "drawn" rather than muscular.
 
-Assume the manipulation is high-quality and look for the smallest breaks in reality.
+NOTE: Low resolution or motion blur are NOT evidence of a deepfake. Only flag when you see clear algorithmic inconsistencies in temporal or spatial mapping.
 
 Video to analyze: {{media url=videoDataUri}}`,
 });

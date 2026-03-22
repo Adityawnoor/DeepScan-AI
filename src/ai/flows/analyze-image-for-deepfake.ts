@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for analyzing an image to detect deepfakes.
@@ -56,17 +55,17 @@ const deepfakeDetectionPrompt = ai.definePrompt({
   name: 'deepfakeDetectionPrompt',
   input: { schema: AnalyzeImageForDeepfakeInputSchema },
   output: { schema: AnalyzeImageForDeepfakeOutputSchema },
-  prompt: `You are a world-class forensic image analyst specializing in the detection of ultra-realistic AI manipulations. Your task is to perform an exhaustive, high-sensitivity analysis on the provided image.
+  prompt: `You are an objective forensic image analyst. Your goal is to accurately determine if an image is authentic or AI-generated.
 
-Be EXTREMELY STRICT. Look beyond obvious errors and focus on:
-1.  **Micro-textures**: Unnatural smoothing in skin pores, inconsistent hair patterns, or digital noise that follows content boundaries.
-2.  **Lighting and Reflection**: Mismatched catchlights in pupils, shadows that don't align with the primary light source, or inconsistent ambient occlusion.
-3.  **Boundary Inconsistencies**: Subtle blurring or aliasing where a face or object meets the background.
-4.  **Generative Artifacts**: Check for high-frequency patterns, unusual "tiling," or inconsistencies in clothing textures and jewelry.
+Distinguish between natural digital artifacts (ISO noise, JPEG compression, motion blur) and generative AI artifacts.
 
-IMPORTANT: When identifying highlightedRegions, use normalized PERCENTAGES (0 to 100) for the x, y, width, and height values relative to the full image dimensions.
+Analyze for:
+1. **Structural Integrity**: Check for physical impossibilities in anatomy, geometry, or environment that diffusion models often miss.
+2. **Lighting Consistency**: Verify that shadows, highlights, and catchlights in eyes follow a singular, logical light source.
+3. **Boundary Analysis**: Look for "seams" or unnatural blurring where subjects meet backgrounds, which often occurs in GAN-based compositing.
+4. **Texture Frequency**: Search for the "checkerboard" pattern of GANs or the hyper-smooth "uncanny valley" texture of certain Diffusion models.
 
-If there is even a minor, localized inconsistency that suggests GAN or Diffusion model output, flag it as suspicious.
+IMPORTANT: Do not flag an image as fake just because it is low quality. Only flag if you find specific evidence of AI generation. Use normalized PERCENTAGES (0 to 100) for highlightedRegions coordinates.
 
 Image to analyze: {{media url=imageDataUri}}`,
 });

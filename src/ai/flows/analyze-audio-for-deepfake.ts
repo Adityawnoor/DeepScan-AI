@@ -53,16 +53,15 @@ const audioDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'audioDeepfakeDetectionPrompt',
   input: { schema: AnalyzeAudioForDeepfakeInputSchema },
   output: { schema: AnalyzeAudioForDeepfakeOutputSchema },
-  prompt: `You are a highly specialized audio forensic engineer. Your mission is to detect AI-synthesized speech or voice cloning with maximum rigor.
+  prompt: `You are an expert in vocal forensics. Your task is to detect AI-synthesized speech while avoiding false positives from low-quality recordings or background noise.
 
-Analyze the audio for even the most subtle vocal artifacts:
-1.  **Phase Discontinuity**: Look for unnatural phase shifts or robotic metallic resonances that indicate neural vocoders.
-2.  **Breathing and Plosives**: Are the breaths naturally timed and placed? Check for "dry" plosives (p, b, t) that lack a natural air-burst signature.
-3.  **Spectral Gaps**: Identify any missing frequency bands or unusual spectral energy distributions typical of compressed generative models.
-4.  **Prosody and Emotion**: Detect monotonic delivery or micro-fluctuations in pitch that don't match the linguistic content.
-5.  **Background Coherence**: Does the noise floor remain perfectly consistent? Sudden changes in background atmosphere during silence are a red flag.
+Search for corroborating evidence of synthesis:
+1. **Robotic Resonances**: Identify metallic or "tinny" textures that indicate a neural vocoder failing to replicate human vocal tract resonance.
+2. **Prosodic Unnaturalness**: Detect micro-fluctuations in pitch or tempo that do not align with natural human emotional emphasis or breathing patterns.
+3. **Spectral Inconsistencies**: Look for "ghosting" frequencies or unnatural silence gaps that are common in concatenated or generated speech.
+4. **Transition Artifacts**: Check for "clicks" or "warps" between words where a generative model may have struggled with co-articulation.
 
-Be highly sensitive to subtle "glitching" or "warping" in the vocal texture.
+BE CAREFUL: Do not mistake compression artifacts from a phone call or internet stream for AI artifacts. Only flag as deepfake if you see clear signs of algorithmic synthesis.
 
 Audio to analyze: {{media url=audioDataUri}}`,
 });
