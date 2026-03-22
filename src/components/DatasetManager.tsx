@@ -17,6 +17,7 @@ import { collection, addDoc, deleteDoc, doc, updateDoc, query, orderBy, limit } 
 import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { cn } from "@/lib/utils"
 
 export function DatasetManager() {
   const { toast } = useToast()
