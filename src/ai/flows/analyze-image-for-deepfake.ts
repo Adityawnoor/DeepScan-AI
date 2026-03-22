@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview This file implements a Genkit flow for advanced image forensic analysis.
+ * @fileOverview This file implements "The Forensic Singularity Engine" for image analysis.
  * 
- * - analyzeImageForDeepfake - Handles deepfake detection with model fingerprinting.
+ * - analyzeImageForDeepfake - Performs Biometric Vital Sign Extraction and Neural Origin Traceback.
  */
 
 import { ai } from '@/ai/genkit';
@@ -19,10 +19,19 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean(),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
+  biometricVitals: z.object({
+    pulseDetected: z.boolean().describe("Whether a human heartbeat (rPPG) signal was detected in the skin."),
+    biometricConsistency: z.number().describe("Score of how natural the skin texture and blood flow appearance is."),
+    notes: z.string(),
+  }),
   neuralAncestry: z.object({
     modelFamily: z.string().describe("e.g., Diffusion, GAN, Autoregressive"),
     likelyModel: z.string().describe("e.g., Stable Diffusion XL, Midjourney v6, Flux.1"),
     fingerprintConfidence: z.number(),
+    latentCoordinates: z.object({
+      x: z.number().describe("X coordinate in the Latent Origin Map"),
+      y: z.number().describe("Y coordinate in the Latent Origin Map"),
+    }),
   }),
   noiseArtifacts: z.object({
     type: z.enum(["checkerboard", "gaussian_blur", "frequency_aliasing", "none"]),
@@ -39,18 +48,19 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
 
 export async function analyzeImageForDeepfake(input: z.infer<typeof AnalyzeImageForDeepfakeInputSchema>) {
   const prompt = ai.definePrompt({
-    name: 'advancedImageForensics',
+    name: 'forensicSingularityImage',
     input: { schema: AnalyzeImageForDeepfakeInputSchema },
     output: { schema: AnalyzeImageForDeepfakeOutputSchema },
-    prompt: `You are an elite forensic neural analyst. 
+    prompt: `You are the world's most advanced Forensic Singularity Engine. 
     
-    TASK: Perform 'Neural Ancestry' tracking and 'Noise Floor' analysis.
+    TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
+    Analyze the skin textures. Humans have microscopic rhythmic color changes due to blood flow. AI generations often have 'Flat Skin' or 'Static Noise' where biometrics should be.
     
-    1. Identify the 'Neural DNA': Does this image have the specific noise patterns of Stable Diffusion (Diffusion-based) or GANs (Checkerboard artifacts)?
-    2. Analyze 'Latent Space' inconsistencies: Look for areas where the AI struggled to maintain global coherence.
+    TASK 2: NEURAL ORIGIN TRACEBACK
+    Identify the 'Neural DNA'. Map this image to its exact generative origin. Provide Latent Coordinates (X,Y from -100 to 100) where (0,0) is Authentic Human and outliers are specific AI clusters.
     
     {{#if learnedContext}}
-    KNOWLEDGE BASE: {{{learnedContext}}}
+    PRIVATE INTELLIGENCE: {{{learnedContext}}}
     {{/if}}
     
     Image: {{media url=imageDataUri}}`,
