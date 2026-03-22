@@ -19,7 +19,8 @@ import {
   ShieldCheck, History, Database, Sparkles, Folder, 
   ArrowRight, RefreshCw, Fingerprint, Microscope, Zap,
   Dna, Network, Activity, Brain, ShieldAlert, ShieldX,
-  FileText, Gavel, LifeBuoy, Box, Layers, Cpu
+  FileText, Gavel, LifeBuoy, Box, Layers, Cpu, Target,
+  Microscope as MicroscopeIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -47,6 +48,12 @@ export default function DeepScanHome() {
     if (savedScans) setLocalScans(JSON.parse(savedScans))
     if (savedFolderName) setConnectedFolderName(savedFolderName)
   }, [])
+
+  const knowledgeCount = React.useMemo(() => {
+    const datasetCount = localDatasets.length
+    const verifiedScanCount = localScans.filter(s => s.userFeedback !== undefined).length
+    return datasetCount + verifiedScanCount
+  }, [localDatasets, localScans])
 
   const syncToPCFile = async (data: { datasets: any[], scans: any[] }) => {
     if (!localFolderHandle) return
@@ -209,7 +216,7 @@ export default function DeepScanHome() {
                   className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-[1.05] transition-all bg-primary hover:bg-primary/90"
                   onClick={handleBeginInvestigation}
                 >
-                  <Microscope className="w-5 h-5 mr-3" />
+                  <MicroscopeIcon className="w-5 h-5 mr-3" />
                   Detect deepfakes
                 </Button>
                 <Button 
