@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare } from "lucide-react"
+import { Database, Upload, FileArchive, CheckCircle2, AlertTriangle, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Play, Shield, ShieldAlert, Layers, MessageSquare, Pencil, Save, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useFirestore, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase"
-import { collection, addDoc, deleteDoc, doc, query, orderBy, limit } from "firebase/firestore"
+import { collection, addDoc, deleteDoc, doc, updateDoc, query, orderBy, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -25,6 +26,8 @@ export function DatasetManager() {
   const [trainingProgress, setTrainingProgress] = React.useState(0)
   const [datasetLabel, setDatasetLabel] = React.useState<string>("unlabeled")
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
+  const [editingDataset, setEditingDataset] = React.useState<{ id: string, notes: string } | null>(null)
+  const [isUpdatingNotes, setIsUpdatingNotes] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetQuery = React.useMemo(() => {
@@ -148,6 +151,34 @@ export function DatasetManager() {
           operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
+      });
+  }
+
+  const handleUpdateNotes = () => {
+    if (!db || !editingDataset) return
+    
+    setIsUpdatingNotes(true)
+    const docRef = doc(db, "datasets", editingDataset.id)
+    const updateData = { notes: editingDataset.notes.trim() }
+
+    updateDoc(docRef, updateData)
+      .then(() => {
+        toast({
+          title: "Notes Updated",
+          description: "Dataset description has been successfully updated.",
+        })
+        setEditingDataset(null)
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsUpdatingNotes(false)
       });
   }
 
@@ -393,9 +424,14 @@ export function DatasetManager() {
                         {(ds.size / (1024 * 1024)).toFixed(2)} MB
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(ds.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => setEditingDataset({ id: ds.id, notes: ds.notes || "" })}>
+                            <Pencil className="w-4 h-4 text-primary" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(ds.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -405,6 +441,49 @@ export function DatasetManager() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Notes Dialog */}
+      <Dialog open={!!editingDataset} onOpenChange={(open) => !open && setEditingDataset(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Dataset Notes</DialogTitle>
+            <DialogDescription>
+              Update the description for this dataset. These notes help document the specific attributes or anomalies in this sample.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes" className="text-xs font-bold uppercase text-muted-foreground">Notes</Label>
+              <Textarea 
+                id="edit-notes"
+                placeholder="Update your notes here..."
+                className="min-h-[150px] resize-none"
+                value={editingDataset?.notes || ""}
+                onChange={(e) => setEditingDataset(prev => prev ? { ...prev, notes: e.target.value } : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditingDataset(null)} disabled={isUpdatingNotes}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateNotes} disabled={isUpdatingNotes}>
+              {isUpdatingNotes ? (
+                <>
+                  <BrainCircuit className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
