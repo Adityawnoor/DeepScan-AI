@@ -229,7 +229,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
         <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
           <div className="space-y-2">
-             <Lock className="w-10 h-10 text-primary mx-auto opacity-20" />
+             <Cloud className="w-10 h-10 text-primary mx-auto opacity-20" />
              <p className="text-sm font-bold text-primary">100% Private Mode</p>
              <p className="text-xs text-muted-foreground leading-relaxed">Your data lives in <span className="font-bold underline">{localFolderHandle?.name || "the folder you pick"}</span></p>
           </div>
