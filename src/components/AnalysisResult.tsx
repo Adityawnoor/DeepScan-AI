@@ -2,11 +2,13 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock, ThumbsUp, ThumbsDown } from "lucide-react"
+import { AlertCircle, CheckCircle2, Info, Image as ImageIcon, Music, Video, Clock, ThumbsUp, ThumbsDown, MessageSquare, Send } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { doc, updateDoc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
@@ -24,10 +26,13 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
   const db = useFirestore()
   const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 })
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
+  const [userComment, setUserComment] = React.useState("")
+  const [isSavingComment, setIsSavingComment] = React.useState(false)
 
   // Reset feedback state whenever the scan ID changes
   React.useEffect(() => {
     setFeedbackSubmitted(null)
+    setUserComment("")
   }, [scanId])
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -48,8 +53,27 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
     })
 
     toast({
-      title: "Feedback Submitted",
-      description: isCorrect ? "Thank you! The AI correctly identified this." : "Thank you! We'll use this correction to improve accuracy.",
+      title: "Verdict Saved",
+      description: isCorrect ? "Thank you! AI correctly identified this." : "Correction received. This helps us improve.",
+    })
+  }
+
+  const handleSaveComment = () => {
+    if (!db || !userComment.trim()) return
+    
+    setIsSavingComment(true)
+    const scanRef = doc(db, "scans", scanId)
+
+    updateDoc(scanRef, {
+      userComment: userComment.trim()
+    }).then(() => {
+      toast({
+        title: "Feedback Updated",
+        description: "Your detailed notes have been saved.",
+      })
+      setIsSavingComment(false)
+    }).catch(() => {
+      setIsSavingComment(false)
     })
   }
 
@@ -59,7 +83,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="overflow-hidden border-2 border-primary/20">
+        <Card className="overflow-hidden border-2 border-primary/20 flex flex-col">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <CardTitle className="font-headline text-xl flex items-center gap-2">
@@ -77,7 +101,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
             </div>
             <CardDescription>Comprehensive AI verification summary</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 flex-1">
             <div className="space-y-2">
               <div className="flex justify-between text-sm font-medium">
                 <span>Confidence Score</span>
@@ -94,7 +118,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
                   <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <h4 className="font-semibold text-sm mb-1">Explanation</h4>
+                  <h4 className="font-semibold text-sm mb-1">AI Explanation</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {result.explanation}
                   </p>
@@ -102,35 +126,76 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
               </div>
             </div>
 
-            <div className="pt-4 border-t">
-              <h4 className="text-sm font-semibold mb-3">Is this result accurate?</h4>
-              {feedbackSubmitted === null ? (
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
-                    onClick={() => submitFeedback(result.isDeepfake)}
-                  >
-                    <ThumbsUp className="w-4 h-4 mr-2" />
-                    Correct
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                    onClick={() => submitFeedback(!result.isDeepfake)}
-                  >
-                    <ThumbsDown className="w-4 h-4 mr-2" />
-                    Incorrect
-                  </Button>
-                </div>
-              ) : (
-                <div className="p-3 bg-primary/5 rounded-lg text-sm text-center font-medium text-primary flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Thank you for your feedback!
-                </div>
-              )}
+            <div className="pt-4 border-t space-y-4">
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 block">
+                  Verify Result Accuracy
+                </Label>
+                {feedbackSubmitted === null ? (
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
+                      onClick={() => submitFeedback(result.isDeepfake)}
+                    >
+                      <ThumbsUp className="w-4 h-4 mr-2" />
+                      Correct
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                      onClick={() => submitFeedback(!result.isDeepfake)}
+                    >
+                      <ThumbsDown className="w-4 h-4 mr-2" />
+                      Incorrect
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/10">
+                    <span className="text-sm font-medium text-primary flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Verdict Submitted
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-[10px] uppercase font-bold"
+                      onClick={() => setFeedbackSubmitted(null)}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="user-comment" className="text-sm font-semibold flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Additional Notes
+                </Label>
+                <Textarea 
+                  id="user-comment"
+                  placeholder="Tell us what you noticed (e.g., 'Eyes look weird', 'Audio jitter')..."
+                  className="min-h-[80px] text-sm resize-none"
+                  value={userComment}
+                  onChange={(e) => setUserComment(e.target.value)}
+                />
+                <Button 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={handleSaveComment}
+                  disabled={!userComment.trim() || isSavingComment}
+                >
+                  {isSavingComment ? "Saving..." : (
+                    <>
+                      <Send className="w-3.5 h-3.5 mr-2" />
+                      Save Detailed Feedback
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -138,7 +203,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
         <Card className="overflow-hidden relative flex flex-col items-center justify-center p-4 bg-muted/30 min-h-[400px]">
           <div className="relative rounded-lg overflow-hidden border bg-white flex items-center justify-center max-w-full max-h-full">
             {mediaType === 'image' && (
-              <div className="relative inline-block">
+              <div className="relative inline-block leading-none">
                 <img 
                   src={mediaUrl} 
                   alt="Analyzed Media" 
@@ -175,7 +240,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
           </div>
           <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
             <Info className="w-3 h-3" />
-            {mediaType === 'image' ? 'Hover highlighted regions for details.' : 'Anomalies listed below.'}
+            {mediaType === 'image' ? 'Hover highlighted regions for details.' : 'Review timestamps for anomalies.'}
           </p>
         </Card>
       </div>
@@ -186,7 +251,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
             <CardTitle className="text-lg">Detected Irregularities</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Image Regions */}
               {result.highlightedRegions?.map((region: any, idx: number) => (
                 <div key={idx} className="flex gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
@@ -195,7 +260,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
                   </div>
                   <div>
                     <p className="text-sm font-medium">{region.reason}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Spatial Anomaly Detected</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Spatial Anomaly</p>
                   </div>
                 </div>
               ))}
@@ -208,7 +273,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
                   <div>
                     <p className="text-sm font-medium">{segment.reason}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Segment: {segment.startTime}s - {segment.endTime}s
+                      {segment.startTime}s - {segment.endTime}s
                     </p>
                   </div>
                 </div>
@@ -221,7 +286,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
                   </div>
                   <div>
                     <p className="text-sm font-medium">{ts.description}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">At timestamp: {ts.timestamp}s</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Timestamp: {ts.timestamp}s</p>
                   </div>
                 </div>
               ))}

@@ -13,6 +13,7 @@
         "aiConfidence": { "type": "number" },
         "explanation": { "type": "string" },
         "userFeedback": { "type": "boolean", "description": "The actual truth provided by the user" },
+        "userComment": { "type": "string", "description": "Detailed text feedback from the user" },
         "isCorrect": { "type": "boolean", "description": "Whether the AI was correct" },
         "mediaUrl": { "type": "string" }
       },
