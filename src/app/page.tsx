@@ -27,13 +27,14 @@ export default function DeepScanHome() {
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [isLearning, setIsLearning] = React.useState(false)
 
-  // Fetch data to calculate "Brain Power"
+  // Fetch data to calculate "Brain Power" from the Database
   const datasetQuery = React.useMemo(() => db ? query(collection(db, "datasets")) : null, [db])
   const feedbackQuery = React.useMemo(() => db ? query(collection(db, "scans")) : null, [db])
   
   const { data: datasets } = useCollection(datasetQuery)
   const { data: scans } = useCollection(feedbackQuery)
 
+  // Total lessons the AI has stored in the Database
   const knowledgeCount = (datasets?.length || 0) + (scans?.filter(s => s.userComment)?.length || 0)
 
   React.useEffect(() => {
@@ -60,7 +61,7 @@ export default function DeepScanHome() {
     if (!db) return ""
     setIsLearning(true)
     try {
-      // Fetch latest datasets with user notes and labels
+      // Retrieving the lessons stored in the Database
       const dQuery = query(collection(db, "datasets"), orderBy("uploadDate", "desc"), limit(10))
       const datasetSnap = await getDocs(dQuery)
       
@@ -72,7 +73,6 @@ export default function DeepScanHome() {
         }
       })
 
-      // Fetch latest scans where user provided feedback
       const cQuery = query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(5))
       const correctionSnap = await getDocs(cQuery)
       
@@ -188,7 +188,7 @@ export default function DeepScanHome() {
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
               <Brain className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">{knowledgeCount} Knowledge Points</span>
+              <span className="text-xs font-bold text-primary">{knowledgeCount} Lessons Stored in Cloud Database</span>
             </div>
             <ThemeToggle />
           </div>
@@ -202,13 +202,13 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Retrieving Knowledge..." : "Live Learning Active"}
+                {isLearning ? "Retrieving Knowledge from Database..." : "Cloud Persistence Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
                 Detect <span className="text-primary">Deepfakes</span> with Intelligence
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI is currently fueled by <strong>{knowledgeCount} specific lessons</strong> from your training repository. It learns every time you save a note.
+                Your AI is currently fueled by <strong>{knowledgeCount} lessons</strong> stored in your Firebase cloud database. It learns every time you save a note.
               </p>
             </div>
             <div className="hidden lg:block absolute -right-20 -top-20 opacity-10 rotate-12 scale-150">
@@ -243,7 +243,7 @@ export default function DeepScanHome() {
                   className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
                 >
                   <Database className="w-4 h-4 mr-2" />
-                  Datasets
+                  Cloud Database
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -259,7 +259,7 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <Info className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      <strong>Persistence Check:</strong> Once you add a dataset note, it is stored in Firestore. You do <u>not</u> need to re-upload the ZIP file for the AI to benefit from your observations.
+                      <strong>Database Note:</strong> Once you add a dataset note, it is stored permanently in Firestore. You do <u>not</u> need to keep the ZIP file after you have written your observations; the AI learns from your analysis.
                     </p>
                   </div>
                 </div>
@@ -284,7 +284,7 @@ export default function DeepScanHome() {
                 onSelectItem={(id) => {
                   toast({
                     title: "Historical View",
-                    description: "Loading analysis metadata...",
+                    description: "Retrieving metadata from database...",
                   })
                 }}
               />
@@ -302,7 +302,7 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 opacity-60">
               <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-medium">DeepScan AI © {new Date().getFullYear()}</span>
+              <span className="text-sm font-medium">DeepScan AI - Powered by Firebase Cloud Database © {new Date().getFullYear()}</span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
               <a href="#" className="hover:text-primary">Terms</a>
