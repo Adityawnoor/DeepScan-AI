@@ -13,77 +13,62 @@ import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistor
 import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Brain, Sparkles, Cloud } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { doc, setDoc, collection, getDocs, query, limit, orderBy } from "firebase/firestore"
-import { useFirestore, errorEmitter, FirestorePermissionError, useCollection } from "@/firebase"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
-  const db = useFirestore()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [isLearning, setIsLearning] = React.useState(false)
 
-  // Real-time listener for the Cloud Knowledge Base
-  const datasetQuery = React.useMemo(() => db ? query(collection(db, "datasets")) : null, [db])
-  const feedbackQuery = React.useMemo(() => db ? query(collection(db, "scans")) : null, [db])
-  
-  const { data: datasets } = useCollection(datasetQuery)
-  const { data: scans } = useCollection(feedbackQuery)
+  // Local Knowledge State (Simulating Firestore collections)
+  const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
+  const [localScans, setLocalScans] = React.useState<any[]>([])
 
-  // Total lessons the AI has stored in the Database
-  const knowledgeCount = (datasets?.length || 0) + (scans?.filter(s => s.userComment)?.length || 0)
-
+  // Initialize from LocalStorage
   React.useEffect(() => {
-    const saved = localStorage.getItem("deepscan-history")
-    if (saved) {
-      try {
-        setHistory(JSON.parse(saved))
-      } catch (e) {
-        console.error("Failed to load history")
-      }
-    }
+    const savedHistory = localStorage.getItem("deepscan-history")
+    const savedDatasets = localStorage.getItem("deepscan-datasets")
+    const savedScans = localStorage.getItem("deepscan-scans-metadata")
+
+    if (savedHistory) setHistory(JSON.parse(savedHistory))
+    if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
+    if (savedScans) setLocalScans(JSON.parse(savedScans))
   }, [])
+
+  // Total lessons stored on the PC/Browser
+  const knowledgeCount = localDatasets.length + localScans.filter(s => s.userComment).length
 
   const handleClearHistory = () => {
     setHistory([])
+    setLocalScans([])
     localStorage.removeItem("deepscan-history")
+    localStorage.removeItem("deepscan-scans-metadata")
     toast({
-      title: "History Cleared",
-      description: "Your session history has been removed.",
+      title: "Local Database Cleared",
+      description: "All private scan records have been removed.",
     })
   }
 
-  // The "Recall" function: How the AI remembers your past datasets
   const getLearnedKnowledge = async () => {
-    if (!db) return ""
     setIsLearning(true)
     try {
-      // Retrieving the lessons stored in the Database
-      const dQuery = query(collection(db, "datasets"), orderBy("uploadDate", "desc"), limit(10))
-      const datasetSnap = await getDocs(dQuery)
-      
-      let context = "Below are notes from recent verified datasets analyzed by experts:\n"
-      datasetSnap.forEach(doc => {
-        const data = doc.data()
-        if (data.notes) {
-          context += `- Dataset [${data.label.toUpperCase()}]: ${data.notes}\n`
+      // Retrieving the lessons stored in the Private Local Database
+      let context = "Below are notes from recent verified datasets on your PC:\n"
+      localDatasets.slice(0, 10).forEach(ds => {
+        if (ds.notes) {
+          context += `- Dataset [${ds.label.toUpperCase()}]: ${ds.notes}\n`
         }
       })
 
-      const cQuery = query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(5))
-      const correctionSnap = await getDocs(cQuery)
-      
-      if (!correctionSnap.empty) {
-        context += "\nImportant user-provided corrections from previous scans:\n"
-        correctionSnap.forEach(doc => {
-          const data = doc.data()
-          if (data.userComment) {
-            context += `- User Insight: ${data.userComment}\n`
-          }
+      const corrections = localScans.filter(s => s.userComment).slice(0, 5)
+      if (corrections.length > 0) {
+        context += "\nUser-provided corrections from your local history:\n"
+        corrections.forEach(s => {
+          context += `- User Insight: ${s.userComment}\n`
         })
       }
 
@@ -92,8 +77,7 @@ export default function DeepScanHome() {
       console.error("Knowledge retrieval error", e)
       return ""
     } finally {
-      // We keep a small artificial delay so the user sees the "Learning" effect
-      await new Promise(r => setTimeout(r, 800))
+      await new Promise(r => setTimeout(r, 600))
       setIsLearning(false)
     }
   }
@@ -101,7 +85,6 @@ export default function DeepScanHome() {
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // Step 1: Recall knowledge from the database
       const learnedContext = await getLearnedKnowledge()
       
       let output: any
@@ -123,32 +106,25 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      if (db) {
-        const scanRef = doc(db, "scans", scanId);
-        const scanData = {
-          timestamp: new Date().toISOString(),
-          mediaType,
-          aiVerdict: output.isDeepfake,
-          aiConfidence: output.confidence,
-          explanation: output.explanation,
-          mediaUrl: dataUri.length < 100000 ? dataUri : "Omitted (Too Large)"
-        };
-
-        setDoc(scanRef, scanData)
-          .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-              path: scanRef.path,
-              operation: 'create',
-              requestResourceData: scanData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-          });
+      // Save to Local PC Metadata Database
+      const newScanMetadata = {
+        id: scanId,
+        timestamp: new Date().toISOString(),
+        mediaType,
+        aiVerdict: output.isDeepfake,
+        aiConfidence: output.confidence,
+        explanation: output.explanation,
+        mediaUrl: dataUri.length < 50000 ? dataUri : "Omitted (Stored Locally)"
       }
+
+      const updatedScans = [newScanMetadata, ...localScans]
+      setLocalScans(updatedScans)
+      localStorage.setItem("deepscan-scans-metadata", JSON.stringify(updatedScans))
 
       const newHistoryItem: HistoryItem = {
         id: scanId,
         timestamp: new Date().toISOString(),
-        fileName: "DeepScan_" + mediaType.toUpperCase() + "_" + new Date().getTime(),
+        fileName: "Scan_" + new Date().getTime(),
         isDeepfake: output.isDeepfake,
         confidence: output.confidence,
         type: mediaType
@@ -159,25 +135,16 @@ export default function DeepScanHome() {
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
 
       toast({
-        title: "Analysis Complete",
-        description: output.isDeepfake ? "Potential manipulation detected." : "Media appears to be authentic.",
+        title: "Local Analysis Complete",
+        description: output.isDeepfake ? "Potential manipulation detected." : "Media appears authentic.",
       })
     } catch (error: any) {
-      const errorMessage = String(error?.message || error || "").toUpperCase()
-      if (errorMessage.includes("RESOURCE_EXHAUSTED") || errorMessage.includes("429") || errorMessage.includes("QUOTA")) {
-        toast({
-          variant: "destructive",
-          title: "Service Busy",
-          description: "AI API quota reached. Please wait 30-60 seconds for the limit to reset.",
-        })
-      } else {
-        console.error("Analysis Error:", error)
-        toast({
-          variant: "destructive",
-          title: "Analysis Failed",
-          description: "There was an error processing the media. Please try again.",
-        })
-      }
+      console.error("Analysis Error:", error)
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "Check your internet connection or API quota.",
+      })
     } finally {
       setIsAnalyzing(false)
     }
@@ -190,9 +157,9 @@ export default function DeepScanHome() {
           <DeepScanLogo />
           
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
-              <Cloud className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">Cloud Persistence Active</span>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/5 border border-green-500/10 mr-4">
+              <Monitor className="w-4 h-4 text-green-600" />
+              <span className="text-xs font-bold text-green-600">Local Database Mode Active</span>
             </div>
             <ThemeToggle />
           </div>
@@ -206,13 +173,13 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Recalling Knowledge from Database..." : "Neural Brain Synced"}
+                {isLearning ? "Recalling Private PC Lessons..." : "Local Neural Brain Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
-                Detect <span className="text-primary">Deepfakes</span> with Intelligence
+                Truly Private <span className="text-primary">Deepfake</span> Analysis
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI is currently fueled by <strong>{knowledgeCount} lessons</strong> stored in your Firebase cloud database. It learns every time you save a note.
+                Your AI is currently remembering <strong>{knowledgeCount} private lessons</strong> stored on your PC. No cloud database is being used for your forensic history.
               </p>
             </div>
             <div className="hidden lg:block absolute -right-20 -top-20 opacity-10 rotate-12 scale-150">
@@ -235,7 +202,7 @@ export default function DeepScanHome() {
                   className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
                 >
                   <History className="w-4 h-4 mr-2" />
-                  History
+                  PC History
                   {history.length > 0 && (
                     <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">
                       {history.length}
@@ -247,7 +214,7 @@ export default function DeepScanHome() {
                   className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
                 >
                   <Database className="w-4 h-4 mr-2" />
-                  Knowledge Base
+                  PC Knowledge Base
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -261,9 +228,9 @@ export default function DeepScanHome() {
                   <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                   
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
-                    <Info className="w-5 h-5 text-primary shrink-0" />
+                    <HardDrive className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      <strong>Database Note:</strong> Once you add a dataset note, it is stored permanently in Firestore. You do <u>not</u> need to keep the ZIP file after you have written your observations; the AI learns from your analysis.
+                      <strong>Local Mode:</strong> All scan history and notes are stored in your browser's private storage. Clearing your browser cache will erase this "Brain," but your datasets on your hard drive remain safe.
                     </p>
                   </div>
                 </div>
@@ -275,6 +242,13 @@ export default function DeepScanHome() {
                       result={currentResult.output} 
                       mediaUrl={currentResult.mediaUrl} 
                       mediaType={currentResult.mediaType}
+                      onUpdate={() => {
+                        // Refresh local state when feedback is saved
+                        const savedDatasets = localStorage.getItem("deepscan-datasets")
+                        const savedScans = localStorage.getItem("deepscan-scans-metadata")
+                        if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
+                        if (savedScans) setLocalScans(JSON.parse(savedScans))
+                      }}
                     />
                   </div>
                 )}
@@ -287,15 +261,21 @@ export default function DeepScanHome() {
                 onClear={handleClearHistory}
                 onSelectItem={(id) => {
                   toast({
-                    title: "Historical View",
-                    description: "Retrieving metadata from database...",
+                    title: "Retrieving Private Data",
+                    description: "Loading metadata from PC storage...",
                   })
                 }}
               />
             </TabsContent>
 
             <TabsContent value="datasets" className="mt-6">
-              <DatasetManager knowledgeCount={knowledgeCount} />
+              <DatasetManager 
+                knowledgeCount={knowledgeCount} 
+                onRefresh={() => {
+                   const savedDatasets = localStorage.getItem("deepscan-datasets")
+                   if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
+                }}
+              />
             </TabsContent>
           </Tabs>
         </div>
@@ -306,12 +286,11 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 opacity-60">
               <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-medium">DeepScan AI - Powered by Firebase Cloud Database © {new Date().getFullYear()}</span>
+              <span className="text-sm font-medium">DeepScan Private - 100% PC Database © {new Date().getFullYear()}</span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary">Terms</a>
-              <a href="#" className="hover:text-primary">Privacy</a>
-              <a href="#" className="hover:text-primary">Contact</a>
+              <a href="#" className="hover:text-primary">Data Privacy</a>
+              <a href="#" className="hover:text-primary">PC Mount Guide</a>
             </div>
           </div>
         </div>
