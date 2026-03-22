@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -20,7 +19,7 @@ import {
   ShieldCheck, History, Database, Sparkles, Folder, 
   ArrowRight, RefreshCw, Fingerprint, Microscope, Zap,
   Dna, Network, Activity, Brain, ShieldAlert, ShieldX,
-  FileText, Gavel, LifeBuoy
+  FileText, Gavel, LifeBuoy, Box
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -153,11 +152,26 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
         <div className="flex flex-col gap-12">
           
-          {/* HERO FORENSIC STATUS */}
+          {/* HERO FORENSIC STATUS WITH 3D ANIMATION */}
           <section className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-[2rem] blur-2xl opacity-50 transition duration-1000 group-hover:opacity-70" />
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-10 bg-card/40 border-2 border-primary/10 rounded-[2rem] backdrop-blur-3xl overflow-hidden">
-              <div className="flex-1 space-y-6">
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-10 bg-card/40 border-2 border-primary/10 rounded-[2rem] backdrop-blur-3xl overflow-hidden min-h-[400px]">
+              
+              {/* 3D NEURAL CORE ANIMATION */}
+              <div className="absolute right-[-100px] top-[-50px] opacity-20 pointer-events-none hidden lg:block">
+                <div className="perspective-1000 w-[400px] h-[400px]">
+                  <div className="preserve-3d animate-rotate-3d w-full h-full relative">
+                    <div className="cube-face cube-face-front" />
+                    <div className="cube-face cube-face-back" />
+                    <div className="cube-face cube-face-left" />
+                    <div className="cube-face cube-face-right" />
+                    <div className="cube-face cube-face-top" />
+                    <div className="cube-face cube-face-bottom" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-6 relative z-10">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
                   <ShieldCheck className="w-4 h-4" />
                   IMMUNE RESPONSE PROTOCOL
@@ -181,7 +195,7 @@ export default function DeepScanHome() {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-3 w-full md:w-auto">
+              <div className="flex flex-col gap-3 w-full md:w-auto relative z-10">
                 <Button 
                   variant="default" 
                   size="lg" 
