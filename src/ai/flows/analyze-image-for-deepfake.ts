@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for analyzing an image to detect deepfakes.
@@ -31,10 +32,10 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
   highlightedRegions:
     z.array(
       z.object({
-        x: z.number().describe('The X-coordinate of the top-left corner of the region.'),
-        y: z.number().describe('The Y-coordinate of the top-left corner of the region.'),
-        width: z.number().describe('The width of the region.'),
-        height: z.number().describe('The height of the region.'),
+        x: z.number().describe('The X-coordinate (0-100 percentage) of the top-left corner.'),
+        y: z.number().describe('The Y-coordinate (0-100 percentage) of the top-left corner.'),
+        width: z.number().describe('The width (0-100 percentage) of the region.'),
+        height: z.number().describe('The height (0-100 percentage) of the region.'),
         reason:
           z.string()
             .describe('The reason why this specific region is considered suspicious.'),
@@ -62,6 +63,8 @@ Be EXTREMELY STRICT. Look beyond obvious errors and focus on:
 2.  **Lighting and Reflection**: Mismatched catchlights in pupils, shadows that don't align with the primary light source, or inconsistent ambient occlusion.
 3.  **Boundary Inconsistencies**: Subtle blurring or aliasing where a face or object meets the background.
 4.  **Generative Artifacts**: Check for high-frequency patterns, unusual "tiling," or inconsistencies in clothing textures and jewelry.
+
+IMPORTANT: When identifying highlightedRegions, use normalized PERCENTAGES (0 to 100) for the x, y, width, and height values relative to the full image dimensions.
 
 If there is even a minor, localized inconsistency that suggests GAN or Diffusion model output, flag it as suspicious.
 

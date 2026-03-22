@@ -22,7 +22,6 @@ interface AnalysisResultProps {
 export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: AnalysisResultProps) {
   const { toast } = useToast()
   const db = useFirestore()
-  const containerRef = React.useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 })
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
 
@@ -136,17 +135,17 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden relative flex flex-col items-center justify-center p-4 bg-muted/30 min-h-[300px]">
-          <div className="relative w-full h-full flex items-center justify-center rounded-lg overflow-hidden border bg-white" ref={containerRef}>
+        <Card className="overflow-hidden relative flex flex-col items-center justify-center p-4 bg-muted/30 min-h-[400px]">
+          <div className="relative rounded-lg overflow-hidden border bg-white flex items-center justify-center max-w-full max-h-full">
             {mediaType === 'image' && (
-              <>
+              <div className="relative inline-block">
                 <img 
                   src={mediaUrl} 
                   alt="Analyzed Media" 
-                  className="max-w-full max-h-full object-contain"
+                  className="max-w-full max-h-[60vh] object-contain block"
                   onLoad={handleImageLoad}
                 />
-                {result.highlightedRegions?.map((region: any, idx: number) => (
+                {dimensions.width > 0 && result.highlightedRegions?.map((region: any, idx: number) => (
                   <div
                     key={idx}
                     className="absolute border-2 border-red-500 bg-red-500/10 pointer-events-none group"
@@ -162,10 +161,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
                     </div>
                   </div>
                 ))}
-              </>
+              </div>
             )}
             {mediaType === 'video' && (
-              <video src={mediaUrl} controls className="max-w-full max-h-full object-contain" />
+              <video src={mediaUrl} controls className="max-w-full max-h-[60vh] object-contain" />
             )}
             {mediaType === 'audio' && (
               <div className="p-8 w-full flex flex-col items-center gap-4">
@@ -176,7 +175,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType }: Analysis
           </div>
           <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
             <Info className="w-3 h-3" />
-            {mediaType === 'image' ? 'Visual anomalies highlighted above.' : 'Temporal anomalies listed below.'}
+            {mediaType === 'image' ? 'Hover highlighted regions for details.' : 'Anomalies listed below.'}
           </p>
         </Card>
       </div>
