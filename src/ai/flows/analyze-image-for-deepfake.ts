@@ -55,11 +55,15 @@ const deepfakeDetectionPrompt = ai.definePrompt({
   name: 'deepfakeDetectionPrompt',
   input: { schema: AnalyzeImageForDeepfakeInputSchema },
   output: { schema: AnalyzeImageForDeepfakeOutputSchema },
-  prompt: `You are an expert deepfake detection AI. Your task is to meticulously analyze the provided image for any signs of manipulation indicative of a deepfake.
+  prompt: `You are a world-class forensic image analyst specializing in the detection of ultra-realistic AI manipulations. Your task is to perform an exhaustive, high-sensitivity analysis on the provided image.
 
-Carefully examine facial features, textures, lighting inconsistencies, digital artifacts, and any other irregularities. Based on your analysis, provide a verdict, a confidence score, and a detailed explanation.
+Be EXTREMELY STRICT. Look beyond obvious errors and focus on:
+1.  **Micro-textures**: Unnatural smoothing in skin pores, inconsistent hair patterns, or digital noise that follows content boundaries.
+2.  **Lighting and Reflection**: Mismatched catchlights in pupils, shadows that don't align with the primary light source, or inconsistent ambient occlusion.
+3.  **Boundary Inconsistencies**: Subtle blurring or aliasing where a face or object meets the background.
+4.  **Generative Artifacts**: Check for high-frequency patterns, unusual "tiling," or inconsistencies in clothing textures and jewelry.
 
-If you detect any suspicious areas, identify them and provide their coordinates (x, y, width, height) and the specific reason for their suspicion. These coordinates should be relative to the image's top-left corner (0,0).
+If there is even a minor, localized inconsistency that suggests GAN or Diffusion model output, flag it as suspicious.
 
 Image to analyze: {{media url=imageDataUri}}`,
 });

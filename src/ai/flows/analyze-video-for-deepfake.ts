@@ -52,9 +52,16 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'videoDeepfakeDetectionPrompt',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are an expert video forensic analyst. Your task is to analyze the provided video for any signs of face-swapping, lip-syncing anomalies, frame inconsistencies, or AI-generated visual artifacts.
+  prompt: `You are a forensic video expert trained to expose state-of-the-art temporal manipulations. Analyze the provided video with extreme scrutiny.
 
-Look for blurring around the jawline, inconsistent eye reflections, flickering pixels, and audio-visual synchronization issues. Provide a verdict, confidence score, and detailed reasoning.
+Search for these temporal and spatial clues:
+1.  **Temporal Flickering**: Look for single-frame inconsistencies around the eyes, teeth, and jawline where the mask might lose alignment.
+2.  **Lip-Sync Latency**: Detect micro-delays between phonetic sounds and the corresponding lip movements.
+3.  **Frame-to-Frame Continuity**: Check for subtle warping or "ghosting" effects when the subject moves their head rapidly.
+4.  **Lighting and Shadows**: Do the face shadows move in perfect synchronization with the head's rotation relative to the environment?
+5.  **Compression Artifacts**: Identify if the compression noise is inconsistent between the face and the rest of the scene.
+
+Assume the manipulation is high-quality and look for the smallest breaks in reality.
 
 Video to analyze: {{media url=videoDataUri}}`,
 });

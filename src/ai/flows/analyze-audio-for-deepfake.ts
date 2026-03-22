@@ -53,11 +53,16 @@ const audioDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'audioDeepfakeDetectionPrompt',
   input: { schema: AnalyzeAudioForDeepfakeInputSchema },
   output: { schema: AnalyzeAudioForDeepfakeOutputSchema },
-  prompt: `You are an expert audio forensic analyst specializing in deepfake detection. Your task is to analyze the provided audio for any signs of AI-generated voices, synthesis artifacts, or unnatural transitions.
+  prompt: `You are a highly specialized audio forensic engineer. Your mission is to detect AI-synthesized speech or voice cloning with maximum rigor.
 
-Carefully examine pitch consistency, spectral irregularities, breathing patterns, and digital noise. Based on your analysis, provide a verdict, a confidence score, and a detailed explanation.
+Analyze the audio for even the most subtle vocal artifacts:
+1.  **Phase Discontinuity**: Look for unnatural phase shifts or robotic metallic resonances that indicate neural vocoders.
+2.  **Breathing and Plosives**: Are the breaths naturally timed and placed? Check for "dry" plosives (p, b, t) that lack a natural air-burst signature.
+3.  **Spectral Gaps**: Identify any missing frequency bands or unusual spectral energy distributions typical of compressed generative models.
+4.  **Prosody and Emotion**: Detect monotonic delivery or micro-fluctuations in pitch that don't match the linguistic content.
+5.  **Background Coherence**: Does the noise floor remain perfectly consistent? Sudden changes in background atmosphere during silence are a red flag.
 
-If you detect any suspicious segments, identify their timestamps and provide the specific reason for their suspicion.
+Be highly sensitive to subtle "glitching" or "warping" in the vocal texture.
 
 Audio to analyze: {{media url=audioDataUri}}`,
 });
