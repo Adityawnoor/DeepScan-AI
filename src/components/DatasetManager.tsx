@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle } from "lucide-react"
+import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle, Monitor, ShieldCheck, ArrowRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -106,9 +106,8 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       }
       onRefresh(handle.name)
     } catch (err: any) {
-      // Do not use console.error here as it might trigger the NextJS overlay in dev mode
-      if (err.name === 'SecurityError') {
-        setBrowserError("Browser Restriction: The PC Folder Picker is blocked in this preview window. To use your PC as a database, run this app in a full browser tab (Top-level window) on your local machine.")
+      if (err.name === 'SecurityError' || (err.message && err.message.includes('cross origin'))) {
+        setBrowserError("BROWSER RESTRICTION: The Folder Picker is blocked in this preview. To link your PC database, you MUST open this app in a full browser tab (e.g. http://localhost:9002) instead of this small window.")
       } else if (err.name !== 'AbortError') {
         toast({ variant: "destructive", title: "Connection Failed", description: err.message })
       }
@@ -180,11 +179,21 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
   return (
     <div className="space-y-6">
       {browserError && (
-        <Alert variant="destructive" className="bg-destructive/10">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Browser Permission Required</AlertTitle>
-          <AlertDescription>
-            {browserError}
+        <Alert variant="destructive" className="bg-destructive/10 border-2 border-destructive">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle className="text-lg font-bold">Action Required: Open in Full Browser Tab</AlertTitle>
+          <AlertDescription className="space-y-4 pt-2">
+            <p className="font-semibold">{browserError}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="bg-background/50 p-4 rounded-lg border">
+                <p className="text-xs font-bold uppercase mb-2">Step 1</p>
+                <p className="text-sm">Copy the URL from your address bar (e.g. localhost:9002).</p>
+              </div>
+              <div className="bg-background/50 p-4 rounded-lg border">
+                <p className="text-xs font-bold uppercase mb-2">Step 2</p>
+                <p className="text-sm">Open a NEW tab in Chrome or Edge and paste the URL there.</p>
+              </div>
+            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -230,7 +239,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
         <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
           <div className="space-y-2">
-             <Cloud className="w-10 h-10 text-primary mx-auto opacity-20" />
+             <ShieldCheck className="w-10 h-10 text-primary mx-auto opacity-20" />
              <p className="text-sm font-bold text-primary">100% Private Mode</p>
              <p className="text-xs text-muted-foreground leading-relaxed">Your data lives in <span className="font-bold underline">{localFolderHandle?.name || "the folder you pick"}</span></p>
           </div>
@@ -270,64 +279,83 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <HardDrive className="w-5 h-5 text-primary" />
-              Database Ingest
+              Link PC Database
             </CardTitle>
-            <CardDescription>Select a folder on your PC to act as your secure vault.</CardDescription>
+            <CardDescription>Step-by-step to permanent local storage.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Truth Label</Label>
-              <Select value={datasetLabel} onValueChange={setDatasetLabel}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="real">Real Media</SelectItem>
-                  <SelectItem value="fake">AI Generated</SelectItem>
-                  <SelectItem value="mixed">Mixed/Training</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">Your Lessons (Notes)</Label>
-              <Textarea 
-                placeholder="What should the AI remember about these files?"
-                className="text-xs min-h-[80px]"
-                value={datasetNotes}
-                onChange={(e) => setDatasetNotes(e.target.value)}
-              />
-            </div>
-
             {!localFolderHandle ? (
-              <Button variant="outline" className="w-full h-24 border-dashed border-primary/50 bg-primary/5" onClick={handleConnectLocalPC}>
-                <div className="flex flex-col items-center gap-1">
-                  <FolderOpen className="w-6 h-6 text-primary" />
-                  <span className="font-bold text-primary">Pick Your PC Vault</span>
-                  <span className="text-[10px] text-muted-foreground text-center">Requires Top-level Browser Window</span>
-                </div>
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono">
-                  <div className="flex flex-col truncate">
-                    <span className="truncate font-bold text-primary">CONNECTED TO: {localFolderHandle.name}</span>
-                    <span className="text-[8px] opacity-60">Memory file: deepscan-private-metadata.json</span>
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex gap-3 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">1</div>
+                    <p>Open this app in a <strong>Full Browser Tab</strong>.</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scanLocalFolder(localFolderHandle)}>
-                    <RefreshCcw className={cn("w-3 h-3 text-primary", isScanningLocal && "animate-spin")} />
-                  </Button>
+                  <div className="flex gap-3 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">2</div>
+                    <p>Click the button below to pick a folder.</p>
+                  </div>
+                  <div className="flex gap-3 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">3</div>
+                    <p>Accept the <strong>"Allow"</strong> permission at the top of your screen.</p>
+                  </div>
                 </div>
-                <div className="max-h-[150px] overflow-y-auto border rounded-lg p-1 bg-muted/20">
-                  {localFiles.length === 0 ? (
-                    <div className="p-4 text-center text-[10px] text-muted-foreground">No ZIP files found in this vault.</div>
-                  ) : localFiles.map((file) => (
-                    <div key={file.name} className="flex items-center justify-between p-1.5 rounded hover:bg-primary/5 group border border-transparent hover:border-primary/10">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold truncate">{file.name}</p>
-                        <p className="text-[9px] text-muted-foreground">{(file.size / (1024*1024)).toFixed(0)}MB</p>
-                      </div>
-                      <Button size="sm" variant="ghost" className="h-6 text-[9px]" onClick={() => handleIndexLocalFile(file.name, file.size)}>Teach AI</Button>
+                
+                <Button variant="outline" className="w-full h-24 border-dashed border-primary/50 bg-primary/5" onClick={handleConnectLocalPC}>
+                  <div className="flex flex-col items-center gap-1">
+                    <FolderOpen className="w-6 h-6 text-primary" />
+                    <span className="font-bold text-primary">Pick Your PC Vault</span>
+                    <span className="text-[10px] text-muted-foreground text-center">Create a folder for your metadata</span>
+                  </div>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Truth Label</Label>
+                  <Select value={datasetLabel} onValueChange={setDatasetLabel}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="real">Real Media</SelectItem>
+                      <SelectItem value="fake">AI Generated</SelectItem>
+                      <SelectItem value="mixed">Mixed/Training</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Your Lessons (Notes)</Label>
+                  <Textarea 
+                    placeholder="What should the AI remember about these files?"
+                    className="text-xs min-h-[80px]"
+                    value={datasetNotes}
+                    onChange={(e) => setDatasetNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono">
+                    <div className="flex flex-col truncate">
+                      <span className="truncate font-bold text-primary">CONNECTED TO: {localFolderHandle.name}</span>
+                      <span className="text-[8px] opacity-60">Memory file: deepscan-private-metadata.json</span>
                     </div>
-                  ))}
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scanLocalFolder(localFolderHandle)}>
+                      <RefreshCcw className={cn("w-3 h-3 text-primary", isScanningLocal && "animate-spin")} />
+                    </Button>
+                  </div>
+                  <div className="max-h-[150px] overflow-y-auto border rounded-lg p-1 bg-muted/20">
+                    {localFiles.length === 0 ? (
+                      <div className="p-4 text-center text-[10px] text-muted-foreground">No ZIP files found in this vault.</div>
+                    ) : localFiles.map((file) => (
+                      <div key={file.name} className="flex items-center justify-between p-1.5 rounded hover:bg-primary/5 group border border-transparent hover:border-primary/10">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold truncate">{file.name}</p>
+                          <p className="text-[9px] text-muted-foreground">{(file.size / (1024*1024)).toFixed(0)}MB</p>
+                        </div>
+                        <Button size="sm" variant="ghost" className="h-6 text-[9px]" onClick={() => handleIndexLocalFile(file.name, file.size)}>Teach AI</Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -389,13 +417,13 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
             <Info className="w-8 h-8 shrink-0 text-primary" />
             <div className="space-y-2">
               <p className="font-bold text-lg text-primary">How to see your database folder on your PC:</p>
-              <p className="leading-relaxed">
-                1. Open your computer's <strong>File Explorer</strong> (Windows) or <strong>Finder</strong> (Mac).<br/>
-                2. Navigate to the folder named: <strong className="text-primary underline">{localFolderHandle ? localFolderHandle.name : "[Choose one above]"}</strong>.<br/>
-                3. Inside that folder, you will find the file <code className="bg-primary/10 px-1 rounded">deepscan-private-metadata.json</code>. This file contains everything the AI has learned from you.
-              </p>
-              <p className="text-xs text-muted-foreground italic">
-                Note: The browser cannot open the folder for you due to security restrictions. You must navigate to it manually using your computer's file system.
+              <div className="leading-relaxed space-y-2">
+                <p>1. Open your computer's <strong>File Explorer</strong> (Windows) or <strong>Finder</strong> (Mac).</p>
+                <p>2. Navigate to the folder you chose (e.g. <strong className="text-primary underline">{localFolderHandle ? localFolderHandle.name : "[Your Vault Folder]"}</strong>).</p>
+                <p>3. Inside, look for <code className="bg-primary/10 px-1 rounded">deepscan-private-metadata.json</code>. This is your AI's brain.</p>
+              </div>
+              <p className="text-xs text-muted-foreground italic mt-4">
+                Note: Browser security prevents us from opening the folder for you. You must open it manually on your computer.
               </p>
             </div>
           </div>
