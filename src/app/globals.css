@@ -23,7 +23,7 @@
     --border: 210 20% 90%;
     --input: 210 20% 90%;
     --ring: 211 100% 50%;
-    --radius: 1rem;
+    --radius: 1.5rem;
     --chart-1: 211 100% 50%;
     --chart-2: 208 7% 46%;
     --chart-3: 197 37% 24%;
@@ -63,36 +63,102 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     background-image: 
       radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.05) 0%, transparent 100%),
-      linear-gradient(hsl(var(--primary) / 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--primary) / 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 40px 40px, 40px 40px;
+      linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 60px 60px, 60px 60px;
+    perspective: 1500px;
   }
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+}
+
+@keyframes rotate-y {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+@keyframes rotate-x {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(360deg); }
+}
+
+@keyframes float-3d {
+  0%, 100% { transform: translateY(0) rotateX(0) rotateY(0); }
+  50% { transform: translateY(-20px) rotateX(5deg) rotateY(-5deg); }
+}
+
+@keyframes neural-pulse {
+  0%, 100% { transform: scale(1) translateZ(0px); opacity: 0.3; }
+  50% { transform: scale(1.1) translateZ(50px); opacity: 0.7; }
 }
 
 @keyframes holographic-flicker {
   0%, 100% { opacity: 1; filter: brightness(1) contrast(1); }
-  50% { opacity: 0.8; filter: brightness(1.2) contrast(1.1); }
+  50% { opacity: 0.8; filter: brightness(1.3) contrast(1.1); }
+}
+
+@keyframes scan-3d {
+  0% { transform: translateY(-100%) rotateX(45deg); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(200%) rotateX(45deg); opacity: 0; }
+}
+
+.animate-rotate-y {
+  animation: rotate-y 20s linear infinite;
+}
+
+.animate-rotate-x {
+  animation: rotate-x 25s linear infinite;
+}
+
+.animate-float-3d {
+  animation: float-3d 6s ease-in-out infinite;
+}
+
+.animate-neural-pulse {
+  animation: neural-pulse 4s ease-in-out infinite;
 }
 
 .animate-holographic {
   animation: holographic-flicker 2s ease-in-out infinite;
 }
 
-.scan-line {
+.scan-line-3d {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 2px;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 15px hsl(var(--primary));
-  animation: scan-vertical 4s linear infinite;
+  height: 10px;
+  background: linear-gradient(to bottom, transparent, hsl(var(--primary)), transparent);
+  box-shadow: 0 0 30px hsl(var(--primary));
+  animation: scan-3d 3s ease-in-out infinite;
   z-index: 50;
+  pointer-events: none;
 }
 
-@keyframes scan-vertical {
-  0% { transform: translateY(-100%); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(1000%); opacity: 0; }
+.spatial-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(to right, hsl(var(--primary) / 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--primary) / 0.1) 1px, transparent 1px);
+  background-size: 100px 100px;
+  transform: rotateX(60deg) scale(2);
+  transform-origin: center bottom;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: -1;
 }
