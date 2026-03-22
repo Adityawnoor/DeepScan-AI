@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle, Monitor, ShieldCheck, ArrowRight } from "lucide-react"
+import { Database, Trash2, BarChart3, TrendingUp, Target, BrainCircuit, Pencil, HardDrive, FolderOpen, RefreshCcw, Info, Cloud, FileJson, Lock, Folder, ExternalLink, AlertTriangle, Monitor, ShieldCheck, ArrowRight, FileArchive, Settings2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -51,10 +51,8 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       const writable = await fileHandle.createWritable()
       await writable.write(JSON.stringify(data, null, 2))
       await writable.close()
-      toast({ title: "PC Sync Complete", description: "Memory saved to 'deepscan-private-metadata.json' on your hard drive." })
     } catch (err) {
       console.error("PC Write Error:", err)
-      toast({ variant: "destructive", title: "PC Sync Failed", description: "Allow file write permissions." })
     }
   }
 
@@ -103,17 +101,14 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           setScans(meta.scans)
           localStorage.setItem("deepscan-scans-metadata", JSON.stringify(meta.scans))
         }
-        toast({ title: "Private Vault Opened", description: `Linked to folder: ${handle.name}` })
+        toast({ title: "Private Vault Opened", description: `Linked to: ${handle.name}` })
       } catch (e) {
-        toast({ title: "New Vault Created", description: `Memory file 'deepscan-private-metadata.json' created in ${handle.name}.` })
         syncToPCFile({ datasets: datasets, scans: scans })
       }
       onRefresh(handle.name, handle)
     } catch (err: any) {
       if (err.name === 'SecurityError' || (err.message && err.message.includes('cross origin'))) {
-        setBrowserError("BROWSER RESTRICTION: The Folder Picker is blocked in this preview window. To link your PC database, you MUST open this app in a full browser tab (e.g. localhost:9002) instead of this small window.")
-      } else if (err.name !== 'AbortError') {
-        toast({ variant: "destructive", title: "Connection Failed", description: err.message })
+        setBrowserError("BROWSER RESTRICTION: The Folder Picker is blocked in this preview window. Open this app in a full browser tab (e.g. localhost:9002) to link your PC database.")
       }
     }
   }
@@ -145,7 +140,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       label: datasetLabel,
       notes: datasetNotes.trim(),
       isLocal: true,
-      localPath: (localFolderHandle?.name || "Local") + "/" + fileName
+      localPath: fileName
     }
     
     const updated = [newDataset, ...datasets]
@@ -155,7 +150,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     
     setDatasetNotes("")
     onRefresh(localFolderHandle?.name, localFolderHandle!)
-    toast({ title: "Item Remembered", description: "The AI now knows about this local file." })
+    toast({ title: "Dataset Indexed", description: "The AI has 'learned' the notes for this file." })
   }
 
   const handleDelete = (id: string) => {
@@ -164,7 +159,6 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
     syncToPCFile({ datasets: updated, scans: scans })
     onRefresh(localFolderHandle?.name, localFolderHandle!)
-    toast({ title: "Memory Removed" })
   }
 
   const handleUpdateNotes = () => {
@@ -177,7 +171,6 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     syncToPCFile({ datasets: updated, scans: scans })
     setEditingDataset(null)
     onRefresh(localFolderHandle?.name, localFolderHandle!)
-    toast({ title: "Notebook Updated" })
   }
 
   return (
@@ -185,18 +178,14 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       {browserError && (
         <Alert variant="destructive" className="bg-destructive/10 border-2 border-destructive">
           <AlertTriangle className="h-5 w-5" />
-          <AlertTitle className="text-lg font-bold">Action Required: Open in Full Browser Tab</AlertTitle>
+          <AlertTitle className="text-lg font-bold">Security Action Required</AlertTitle>
           <AlertDescription className="space-y-4 pt-2">
             <p className="font-semibold">{browserError}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div className="bg-background/50 p-4 rounded-lg border">
-                <p className="text-xs font-bold uppercase mb-2">Step 1</p>
-                <p className="text-sm">Copy the URL from your address bar (e.g. localhost:9002).</p>
-              </div>
-              <div className="bg-background/50 p-4 rounded-lg border">
-                <p className="text-xs font-bold uppercase mb-2">Step 2</p>
-                <p className="text-sm">Open a NEW tab in Chrome or Edge and paste the URL there.</p>
-              </div>
+            <div className="flex gap-4">
+               <div className="bg-background/50 p-4 rounded-lg border flex-1">
+                 <p className="text-xs font-bold uppercase mb-1">How to Link</p>
+                 <p className="text-sm">Open this URL in a NEW tab in Chrome or Edge to access your hard drive.</p>
+               </div>
             </div>
           </AlertDescription>
         </Alert>
@@ -207,17 +196,16 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Private Accuracy</p>
+                <p className="text-sm font-medium text-muted-foreground">Accuracy Score</p>
                 <p className="text-3xl font-bold tracking-tight text-primary">{currentAccuracy}%</p>
               </div>
               <div className="p-3 bg-primary/10 rounded-xl">
                 <Target className="w-6 h-6 text-primary" />
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2 text-xs text-green-600 font-medium">
-              <TrendingUp className="w-3 h-3" />
-              <span>Learned from {scans.length} verified scans</span>
-            </div>
+            <p className="mt-4 text-xs text-muted-foreground font-medium">
+              Calculated from {scans.length} verified scans
+            </p>
           </CardContent>
         </Card>
 
@@ -225,7 +213,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Active Database Folder</p>
+                <p className="text-sm font-medium text-muted-foreground">Active PC Folder</p>
                 <p className="text-xl font-extrabold text-primary truncate max-w-[150px]">
                   {localFolderHandle ? localFolderHandle.name : "Not Connected"}
                 </p>
@@ -235,81 +223,101 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-               <FileJson className="w-3 h-3" />
-               <span>deepscan-private-metadata.json</span>
+               <FileJson className="w-3 h-3 text-primary" />
+               <span>Database: deepscan-private-metadata.json</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-primary/5 border-primary/10 flex items-center justify-center p-6 text-center">
           <div className="space-y-2">
-             <ShieldCheck className="w-10 h-10 text-primary mx-auto opacity-20" />
-             <p className="text-sm font-bold text-primary">AI Memory Active</p>
+             <BrainCircuit className="w-10 h-10 text-primary mx-auto opacity-20" />
+             <p className="text-sm font-bold text-primary">Intelligence Active</p>
              <p className="text-xs text-muted-foreground leading-relaxed">The AI is learning from <strong>{knowledgeCount}</strong> data points on your PC.</p>
           </div>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="lg:col-span-8">
-          <CardHeader>
-             <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                Performance Over Time
+        <div className="lg:col-span-8 space-y-6">
+           <Card>
+            <CardHeader>
+               <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Training Progress
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[250px] w-full">
+                {chartData.length > 0 ? (
+                  <ChartContainer config={{ accuracy: { label: "Accuracy (%)", color: "hsl(var(--primary))" } }}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={3} dot={{ r: 4 }} />
+                    </LineChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm border-2 border-dashed rounded-xl">
+                    No verified scans yet.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2 text-primary">
+                <Settings2 className="w-5 h-5" />
+                PC Storage Map: Where is my data?
               </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              {chartData.length > 0 ? (
-                <ChartContainer config={{ accuracy: { label: "Accuracy (%)", color: "hsl(var(--primary))" } }}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                    <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="accuracy" stroke="var(--color-accuracy)" strokeWidth={3} dot={{ r: 4 }} />
-                  </LineChart>
-                </ChartContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm border-2 border-dashed rounded-xl">
-                  Run scans and verify them to train your local AI model.
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-card p-4 rounded-xl border-2 border-primary/20 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileJson className="w-5 h-5 text-primary" />
+                    <span className="font-bold">The Database (JSON)</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong>File:</strong> <code>deepscan-private-metadata.json</code><br/>
+                    <strong>Stores:</strong> Scan history, accuracy, and your personal notes. This is the AI's "brain" and is very small.
+                  </p>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="bg-card p-4 rounded-xl border-2 border-secondary/20 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileArchive className="w-5 h-5 text-secondary" />
+                    <span className="font-bold">The Datasets (ZIPs)</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <strong>Files:</strong> Your <code>.zip</code> or <code>.7z</code> files.<br/>
+                    <strong>Stores:</strong> The actual heavy media. These stay in your folder; the database only stores their "names" as a reference.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card className="lg:col-span-4 border-primary/20 border-2">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <HardDrive className="w-5 h-5 text-primary" />
-              Link PC Database
+              Link PC Vault
             </CardTitle>
-            <CardDescription>Step-by-step to permanent local storage.</CardDescription>
+            <CardDescription>Grant access to your hard drive folder.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {!localFolderHandle ? (
               <div className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex gap-3 text-sm">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">1</div>
-                    <p>Open this app in a <strong>Full Browser Tab</strong>.</p>
-                  </div>
-                  <div className="flex gap-3 text-sm">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">2</div>
-                    <p>Click the button below to pick a folder.</p>
-                  </div>
-                  <div className="flex gap-3 text-sm">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">3</div>
-                    <p>Accept the <strong>"Allow"</strong> permission at the top of your screen.</p>
-                  </div>
-                </div>
-                
                 <Button variant="outline" className="w-full h-24 border-dashed border-primary/50 bg-primary/5" onClick={handleConnectLocalPC}>
                   <div className="flex flex-col items-center gap-1">
                     <FolderOpen className="w-6 h-6 text-primary" />
                     <span className="font-bold text-primary">Pick Your PC Vault</span>
-                    <span className="text-[10px] text-muted-foreground text-center">Create a folder for your metadata</span>
+                    <span className="text-[10px] text-muted-foreground">Select a folder on your computer</span>
                   </div>
                 </Button>
               </div>
@@ -328,9 +336,9 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Your Lessons (Notes)</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">Dataset Notes</Label>
                   <Textarea 
-                    placeholder="What should the AI remember about these files? The AI reads these notes before every scan."
+                    placeholder="Teach the AI what's in these files..."
                     className="text-xs min-h-[80px]"
                     value={datasetNotes}
                     onChange={(e) => setDatasetNotes(e.target.value)}
@@ -339,24 +347,21 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono">
-                    <div className="flex flex-col truncate">
-                      <span className="truncate font-bold text-primary">CONNECTED TO: {localFolderHandle.name}</span>
-                      <span className="text-[8px] opacity-60">Memory file: deepscan-private-metadata.json</span>
-                    </div>
+                    <span className="truncate font-bold text-primary">{localFolderHandle.name}</span>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => scanLocalFolder(localFolderHandle)}>
                       <RefreshCcw className={cn("w-3 h-3 text-primary", isScanningLocal && "animate-spin")} />
                     </Button>
                   </div>
                   <div className="max-h-[150px] overflow-y-auto border rounded-lg p-1 bg-muted/20">
                     {localFiles.length === 0 ? (
-                      <div className="p-4 text-center text-[10px] text-muted-foreground">No ZIP files found in this vault.</div>
+                      <div className="p-4 text-center text-[10px] text-muted-foreground">No ZIP files found.</div>
                     ) : localFiles.map((file) => (
                       <div key={file.name} className="flex items-center justify-between p-1.5 rounded hover:bg-primary/5 group border border-transparent hover:border-primary/10">
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold truncate">{file.name}</p>
                           <p className="text-[9px] text-muted-foreground">{(file.size / (1024*1024)).toFixed(0)}MB</p>
                         </div>
-                        <Button size="sm" variant="ghost" className="h-6 text-[9px]" onClick={() => handleIndexLocalFile(file.name, file.size)}>Teach AI</Button>
+                        <Button size="sm" variant="ghost" className="h-6 text-[9px]" onClick={() => handleIndexLocalFile(file.name, file.size)}>Index</Button>
                       </div>
                     ))}
                   </div>
@@ -370,11 +375,11 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">AI Memory Bank</CardTitle>
+            <CardTitle className="text-lg">Database Index</CardTitle>
             {localFolderHandle && (
               <Badge variant="secondary" className="text-[10px] gap-1.5 bg-primary/10 text-primary border-primary/20">
                 <FileJson className="w-3 h-3" />
-                Synced: {localFolderHandle.name}/deepscan-private-metadata.json
+                Synced: {localFolderHandle.name}
               </Badge>
             )}
           </div>
@@ -383,29 +388,27 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead>Filename</TableHead>
+                <TableHead>File Name (Reference)</TableHead>
                 <TableHead>Label</TableHead>
-                <TableHead>Size</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {datasets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No private lessons recorded yet.</TableCell>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No files indexed in your private database.</TableCell>
                 </TableRow>
               ) : datasets.map((ds) => (
                 <TableRow key={ds.id}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span className="flex items-center gap-1.5 font-bold"><HardDrive className="w-3.5 h-3.5" /> {ds.fileName}</span>
-                      <span className="text-[10px] italic opacity-60 truncate max-w-[200px]">{ds.notes || "No notes provided."}</span>
+                      <span className="flex items-center gap-1.5 font-bold truncate max-w-[300px]"><FileArchive className="w-3.5 h-3.5" /> {ds.fileName}</span>
+                      <span className="text-[10px] italic opacity-60 truncate max-w-[300px]">{ds.notes || "No notes."}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px]">{ds.label.toUpperCase()}</Badge>
                   </TableCell>
-                  <TableCell className="text-xs">{(ds.size / (1024*1024)).toFixed(1)}MB</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingDataset({ id: ds.id, notes: ds.notes || "" })}><Pencil className="w-4 h-4" /></Button>
@@ -416,31 +419,19 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
               ))}
             </TableBody>
           </Table>
-          
-          <div className="mt-6 p-6 rounded-xl bg-primary/5 border border-primary/20 flex gap-4 text-sm text-foreground">
-            <Info className="w-8 h-8 shrink-0 text-primary" />
-            <div className="space-y-2">
-              <p className="font-bold text-lg text-primary">How the AI Learns from Every Scan:</p>
-              <div className="leading-relaxed space-y-2">
-                <p>1. Every time you confirm a scan (Correct/Wrong), the AI saves that as a "Memory Point".</p>
-                <p>2. When you run a <strong>New Scan</strong>, the AI reads all previous "Memory Points" and "Dataset Notes" from your PC.</p>
-                <p>3. It uses this context to improve its detection accuracy for your specific environment.</p>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
       <Dialog open={!!editingDataset} onOpenChange={() => setEditingDataset(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Update Private Notebook</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Update Index Notes</DialogTitle></DialogHeader>
           <Textarea 
             className="min-h-[150px]"
             value={editingDataset?.notes}
             onChange={(e) => setEditingDataset(p => p ? {...p, notes: e.target.value} : null)}
           />
           <DialogFooter>
-            <Button onClick={handleUpdateNotes}>Save to Hard Drive</Button>
+            <Button onClick={handleUpdateNotes}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

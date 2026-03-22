@@ -238,7 +238,7 @@ export default function DeepScanHome() {
             )}>
               {connectedFolderName ? <Lock className="w-4 h-4 text-primary" /> : <ShieldCheck className="w-4 h-4 text-destructive" />}
               <span className={cn("text-xs font-bold", connectedFolderName ? "text-primary" : "text-destructive")}>
-                {connectedFolderName ? `PC Vault: ${connectedFolderName}` : "Unsecured PC Mode"}
+                {connectedFolderName ? `Vault: ${connectedFolderName}` : "No Folder Linked"}
               </span>
             </div>
             <ThemeToggle />
@@ -253,22 +253,22 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Learning from PC Memory..." : "Local Intelligence Active"}
+                {isLearning ? "Thinking..." : "AI Memory Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
-                Forensic <span className="text-primary">Privacy</span> Mode
+                Private <span className="text-primary">PC</span> Learning
               </h1>
               <div className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                <p>Your AI uses <strong>{knowledgeCount} private lessons</strong> stored locally on your hard drive.</p>
+                <p>The AI is learning from <strong>{knowledgeCount} private lessons</strong> stored on your PC.</p>
                 {connectedFolderName ? (
                   <div className="mt-2 flex flex-col gap-2">
                     <span className="font-semibold text-primary">
                       <Folder className="inline w-4 h-4 mr-1 text-primary" /> 
-                      Connected to: "{connectedFolderName}"
+                      Folder: "{connectedFolderName}"
                     </span>
                     {!localFolderHandle && (
                        <Button variant="outline" size="sm" onClick={() => setActiveTab("datasets")} className="w-fit">
-                         <RefreshCw className="w-4 h-4 mr-2" /> Re-verify PC Permission
+                         <RefreshCw className="w-4 h-4 mr-2" /> Re-link Folder
                        </Button>
                     )}
                   </div>
@@ -276,18 +276,18 @@ export default function DeepScanHome() {
                   <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 space-y-3">
                     <p className="text-destructive font-bold flex items-center gap-2">
                       <Lock className="w-5 h-5" /> 
-                      ACTION REQUIRED: Your Database is Temporary
+                      Action Required: Data is Temporary
                     </p>
                     <p className="text-sm text-destructive/80 leading-snug">
-                      Data is currently only saved in your browser's temporary cache. To make it permanent and safe on your hard drive, you must link a folder.
+                      Your database isn't synced to your hard drive yet. Link a folder to save your AI's memory permanently.
                     </p>
                     <Button 
                       variant="destructive" 
                       size="sm" 
                       onClick={() => setActiveTab("datasets")}
-                      className="font-bold shadow-lg"
+                      className="font-bold"
                     >
-                      Link a PC Folder Now <ArrowRight className="w-4 h-4 ml-2" />
+                      Link a Folder Now <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
                 )}
@@ -296,7 +296,7 @@ export default function DeepScanHome() {
             <div className="flex flex-col gap-3">
                <Button variant="outline" size="sm" onClick={transferFromCloud} disabled={isMigrating} className="bg-background">
                   {isMigrating ? <Sparkles className="w-4 h-4 mr-2 animate-spin" /> : <DownloadCloud className="w-4 h-4 mr-2" />}
-                  Drain Data from Cloud
+                  Drain Cloud Memory
                </Button>
             </div>
           </div>
@@ -317,11 +317,6 @@ export default function DeepScanHome() {
                 >
                   <History className="w-4 h-4 mr-2" />
                   PC History
-                  {history.length > 0 && (
-                    <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">
-                      {history.length}
-                    </span>
-                  )}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="datasets" 
@@ -344,15 +339,15 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <HardDrive className="w-5 h-5 text-primary shrink-0" />
                     <div>
-                      <p className="font-bold text-primary mb-1">Your Database Location:</p>
+                      <p className="font-bold text-primary mb-1">Private Storage Info:</p>
                       <div className="space-y-2">
                         {connectedFolderName ? (
-                          <p>Your data is synced to: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong>. Look in this folder on your computer.</p>
+                          <p>Database File: <strong>{connectedFolderName}/deepscan-private-metadata.json</strong></p>
                         ) : (
                           <div className="flex flex-col gap-2">
-                             <p>No folder linked. Metadata is currently saved only in your browser's private cache. Link a folder in the "PC Database" tab to save it to your hard drive.</p>
+                             <p>No folder linked. Metadata is currently saved only in your browser's private cache.</p>
                              <Button variant="link" onClick={() => setActiveTab("datasets")} className="p-0 h-auto text-primary font-bold justify-start">
-                               Go to PC Database <ArrowRight className="w-4 h-4 ml-1" />
+                               Link Folder <ArrowRight className="w-4 h-4 ml-1" />
                              </Button>
                           </div>
                         )}
@@ -390,7 +385,7 @@ export default function DeepScanHome() {
                 onClear={handleClearHistory}
                 onSelectItem={(id) => {
                   toast({
-                    title: "Accessing PC Storage",
+                    title: "Accessing Storage",
                     description: "Loading private metadata...",
                   })
                 }}
@@ -419,10 +414,10 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 opacity-60">
               <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-medium">DeepScan Private PC Mode © {new Date().getFullYear()}</span>
+              <span className="text-sm font-medium">DeepScan Private Mode © {new Date().getFullYear()}</span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary">How PC Databases Work</a>
+              <a href="#" className="hover:text-primary">PC Storage FAQ</a>
               <a href="#" className="hover:text-primary">Privacy Policy</a>
             </div>
           </div>
