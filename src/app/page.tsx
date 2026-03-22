@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -10,6 +11,7 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
+import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -17,7 +19,8 @@ import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Sparkles, Folder, 
   ArrowRight, RefreshCw, Fingerprint, Microscope, Zap,
-  Dna, Network, Activity, Brain
+  Dna, Network, Activity, Brain, ShieldAlert, ShieldX,
+  FileText, Gavel, LifeBuoy
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -27,8 +30,6 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
-  const [isLearning, setIsLearning] = React.useState(false)
-
   const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
   const [localScans, setLocalScans] = React.useState<any[]>([])
   const [connectedFolderName, setConnectedFolderName] = React.useState<string | null>(null)
@@ -141,7 +142,7 @@ export default function DeepScanHome() {
               </div>
               <div className="flex items-center gap-2">
                 <Network className="w-3 h-3 text-primary" />
-                <span>Private Vault: {connectedFolderName || "Scanning..."}</span>
+                <span>Vault: {connectedFolderName || "Scanning..."}</span>
               </div>
             </div>
             <ThemeToggle />
@@ -158,24 +159,24 @@ export default function DeepScanHome() {
             <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 p-10 bg-card/40 border-2 border-primary/10 rounded-[2rem] backdrop-blur-3xl overflow-hidden">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                  <Fingerprint className="w-4 h-4" />
-                  ADVANCED NEURAL FORENSICS
+                  <ShieldCheck className="w-4 h-4" />
+                  IMMUNE RESPONSE PROTOCOL
                 </div>
                 <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
-                  IDENTIFY THE <span className="text-primary italic">SYNTHETIC GHOST.</span>
+                  STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-lg max-w-xl leading-relaxed font-medium">
-                  DeepScan elite mode detects microscopic <span className="text-foreground font-bold">Spectral Noise Artifacts</span> and identifies the exact <span className="text-foreground font-bold">Neural DNA</span> of the generative model used.
+                  Detect, <span className="text-foreground font-bold underline decoration-primary/30">Neutralize</span>, and <span className="text-foreground font-bold underline decoration-primary/30">Prevent</span> AI-manipulated content using adversarial vaccination and automated legal response.
                 </p>
                 
                 <div className="flex flex-wrap gap-4 pt-4">
                   <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border">
-                    <Dna className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold uppercase tracking-tighter">{knowledgeCount} Lessons Learned</span>
+                    <ShieldAlert className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-tighter">Immunity Spark Active</span>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/50 border">
-                    <Activity className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold uppercase tracking-tighter">Latent Space Audit Active</span>
+                    <Gavel className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-tighter">Legal Autopilot Ready</span>
                   </div>
                 </div>
               </div>
@@ -188,13 +189,17 @@ export default function DeepScanHome() {
                   onClick={handleBeginInvestigation}
                 >
                   <Microscope className="w-5 h-5 mr-3" />
-                  Begin Investigation
+                  Detect deepfakes
                 </Button>
-                {!connectedFolderName && (
-                  <Button variant="outline" className="rounded-2xl border-destructive/20 text-destructive h-12" onClick={() => setActiveTab("datasets")}>
-                    Link PC Vault to save DNA records
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5 transition-all"
+                  onClick={() => setActiveTab("protect")}
+                >
+                  <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
+                  Vaccinate Photos
+                </Button>
               </div>
             </div>
           </section>
@@ -203,13 +208,14 @@ export default function DeepScanHome() {
           <div ref={workstationRef}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 mb-8 gap-8">
-                {["analyze", "history", "datasets"].map((tab) => (
+                {["analyze", "protect", "history", "datasets"].map((tab) => (
                   <TabsTrigger 
                     key={tab}
                     value={tab} 
                     className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-4 font-black uppercase text-xs tracking-[0.2em] transition-all opacity-50 data-[state=active]:opacity-100"
                   >
                     {tab === "analyze" && <Zap className="w-3.5 h-3.5 mr-2" />}
+                    {tab === "protect" && <ShieldCheck className="w-3.5 h-3.5 mr-2" />}
                     {tab === "history" && <History className="w-3.5 h-3.5 mr-2" />}
                     {tab === "datasets" && <Database className="w-3.5 h-3.5 mr-2" />}
                     {tab}
@@ -230,14 +236,14 @@ export default function DeepScanHome() {
                           <div className="p-2 bg-primary/10 rounded-xl">
                             <Brain className="w-5 h-5 text-primary" />
                           </div>
-                          <h4 className="font-black uppercase text-xs tracking-widest">Forensic Capabilities</h4>
+                          <h4 className="font-black uppercase text-xs tracking-widest">Singularity Engine</h4>
                         </div>
                         <ul className="space-y-3">
                           {[
-                            "Generative Model Fingerprinting",
-                            "High-Frequency Noise Floor Analysis",
-                            "Temporal Consistency Checks",
-                            "Metadata Chain-of-Custody"
+                            "Biometric Pulse (rPPG) Extraction",
+                            "Neural Origin Traceback Mapping",
+                            "Spectral Noise Floor Fingerprinting",
+                            "Adversarial Takedown Generation"
                           ].map(item => (
                             <li key={item} className="flex items-center gap-2 text-[10px] font-bold uppercase text-muted-foreground">
                               <ShieldCheck className="w-3.5 h-3.5 text-primary" />
@@ -265,6 +271,10 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="protect" className="mt-0">
+                <AuthenticityShield />
+              </TabsContent>
+
               <TabsContent value="history" className="mt-0">
                 <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
               </TabsContent>
@@ -286,7 +296,7 @@ export default function DeepScanHome() {
           <div className="flex gap-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
             <a href="#" className="hover:text-primary transition-colors">Privacy manifest</a>
-            <a href="#" className="hover:text-primary transition-colors">PC storage protocol</a>
+            <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
             V2.5.0 Elite Forensic Engine
