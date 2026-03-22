@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -13,7 +14,7 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson } from "lucide-react"
+import { ShieldCheck, History, Info, Zap, Database, Sparkles, Monitor, HardDrive, DownloadCloud, FileJson, Lock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore } from "@/firebase"
 import { collection, getDocs } from "firebase/firestore"
@@ -193,8 +194,8 @@ export default function DeepScanHome() {
           
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 mr-4">
-              <Monitor className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">Local PC Database Mode</span>
+              <Lock className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-primary">Private Database Mode</span>
             </div>
             <ThemeToggle />
           </div>
@@ -208,13 +209,13 @@ export default function DeepScanHome() {
             <div className="flex-1 space-y-3 relative z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                 <Sparkles className={cn("w-3.5 h-3.5", isLearning && "animate-spin")} />
-                {isLearning ? "Accessing PC Memory..." : "Private Intelligence Active"}
+                {isLearning ? "Accessing PC Memory..." : "Local Intelligence Active"}
               </div>
               <h1 className="text-3xl md:text-4xl font-headline font-extrabold tracking-tight">
-                Forensic <span className="text-primary">Privacy</span> First
+                Forensic <span className="text-primary">Privacy</span> Mode
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-                Your AI is powered by <strong>{knowledgeCount} private lessons</strong> stored locally on this machine. No cloud storage is being used for your scan metadata.
+                Your AI uses <strong>{knowledgeCount} private lessons</strong> stored only on this PC. No data is sent to the cloud for storage.
               </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -252,7 +253,7 @@ export default function DeepScanHome() {
                   className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 font-bold text-base transition-all"
                 >
                   <Database className="w-4 h-4 mr-2" />
-                  PC Knowledge Base
+                  PC Database
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -268,7 +269,7 @@ export default function DeepScanHome() {
                   <div className="mt-6 p-4 rounded-xl bg-muted/50 border flex gap-3 text-sm text-muted-foreground">
                     <HardDrive className="w-5 h-5 text-primary shrink-0" />
                     <p>
-                      <strong>Local PC Database:</strong> Your history is stored in your browser's persistent storage. Mount a folder in the "Knowledge Base" tab to create a physical <code>metadata.json</code> backup on your hard drive.
+                      <strong>Local Storage:</strong> Your history is saved in this browser. To make a permanent backup on your hard drive, mount a folder in the "PC Database" tab.
                     </p>
                   </div>
                 </div>
@@ -323,11 +324,11 @@ export default function DeepScanHome() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 opacity-60">
               <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-medium">DeepScan Private PC Database © {new Date().getFullYear()}</span>
+              <span className="text-sm font-medium">DeepScan Private PC Mode © {new Date().getFullYear()}</span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary">Local Storage Guide</a>
-              <a href="#" className="hover:text-primary">CORS Policy</a>
+              <a href="#" className="hover:text-primary">How PC Databases Work</a>
+              <a href="#" className="hover:text-primary">Privacy Policy</a>
             </div>
           </div>
         </div>
