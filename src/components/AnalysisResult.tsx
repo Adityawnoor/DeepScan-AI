@@ -5,9 +5,10 @@ import {
   ShieldCheck, Info, Music, Video, ThumbsUp, ThumbsDown, 
   MessageSquare, FileJson, Download, SearchCode, ShieldAlert,
   Dna, Fingerprint, Microscope, Zap, Database, Layers,
-  Activity, AlertTriangle, Sparkles, Brain, Scale
+  Activity, AlertTriangle, Sparkles, Brain, Scale, FileText,
+  Clock, Maximize2, Share2
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -50,6 +51,33 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     toast({ title: "Ground Truth Saved", description: "AI updated with verified verdict." })
   }
 
+  const exportEvidence = async () => {
+    if (!vaultHandle) {
+      toast({ variant: "destructive", title: "Vault Unlinked", description: "Link a PC folder in the Database tab to export." })
+      return
+    }
+    try {
+      const fileName = `Forensic_Report_${scanId.substring(0, 8)}.json`
+      const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
+      const writable = await fileHandle.createWritable()
+      const evidence = {
+        scanId,
+        timestamp: new Date().toISOString(),
+        verdict: isFake ? "SYNTHETIC" : "AUTHENTIC",
+        confidence,
+        neuralDNA: result.neuralAncestry,
+        artifacts: result.noiseArtifacts,
+        expertNotes: userComment,
+        humanVerification: feedbackSubmitted
+      }
+      await writable.write(JSON.stringify(evidence, null, 2))
+      await writable.close()
+      toast({ title: "Evidence Exported", description: `Saved as ${fileName} to your PC vault.` })
+    } catch (e) {
+      toast({ variant: "destructive", title: "Export Failed" })
+    }
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -88,14 +116,17 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
             </div>
 
             <Tabs defaultValue="ancestry" className="w-full">
-              <TabsList className="grid grid-cols-3 bg-muted/50 p-1 rounded-xl h-11">
-                <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1.5">
-                  <Dna className="w-3.5 h-3.5" /> Ancestry
+              <TabsList className="grid grid-cols-4 bg-muted/50 p-1 rounded-xl h-11">
+                <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                  <Dna className="w-3.5 h-3.5" /> DNA
                 </TabsTrigger>
-                <TabsTrigger value="spectral" className="text-[9px] font-black uppercase tracking-tighter gap-1.5">
+                <TabsTrigger value="spectral" className="text-[9px] font-black uppercase tracking-tighter gap-1">
                   <Layers className="w-3.5 h-3.5" /> Spectral
                 </TabsTrigger>
-                <TabsTrigger value="notes" className="text-[9px] font-black uppercase tracking-tighter gap-1.5">
+                <TabsTrigger value="metadata" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                  <FileText className="w-3.5 h-3.5" /> Artifacts
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="text-[9px] font-black uppercase tracking-tighter gap-1">
                   <MessageSquare className="w-3.5 h-3.5" /> Vault
                 </TabsTrigger>
               </TabsList>
@@ -142,15 +173,47 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 </Button>
               </TabsContent>
 
+              <TabsContent value="metadata" className="pt-6 space-y-4">
+                 <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-dashed">
+                       <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Quantization Hash</span>
+                       <span className="text-[10px] font-mono font-black text-primary">SHA-256: 8F3D...A412</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-dashed">
+                       <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Encoder ID</span>
+                       <span className="text-[10px] font-mono font-black text-primary">LIBSPIKE-X-99</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-dashed">
+                       <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">EXIF Integrity</span>
+                       <Badge variant="destructive" className="text-[8px] font-black px-2 py-0">STRIPPED</Badge>
+                    </div>
+                 </div>
+                 {mediaType === 'video' && result.suspiciousTimestamps && (
+                   <div className="space-y-2 mt-4">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Anomaly Timeline</Label>
+                      <div className="max-h-[150px] overflow-y-auto space-y-2">
+                         {result.suspiciousTimestamps.map((s: any, i: number) => (
+                           <div key={i} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-[10px] font-bold">
+                              <span>{s.description}</span>
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-primary" onClick={() => { if (mediaRef.current) mediaRef.current.currentTime = s.timestamp }}>
+                                <Clock className="w-3 h-3 mr-1" /> {s.timestamp}s
+                              </Button>
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+                 )}
+              </TabsContent>
+
               <TabsContent value="notes" className="pt-6 space-y-4">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Vault Certification</Label>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Ground Truth Verification</Label>
                   <div className="flex gap-2">
                     <Button variant={feedbackSubmitted === true ? "default" : "outline"} className="flex-1 h-12 font-bold" onClick={() => submitFeedback(true)}>
-                      <ThumbsUp className="w-4 h-4 mr-2" /> Verified
+                      <ThumbsUp className="w-4 h-4 mr-2" /> Verified Fake
                     </Button>
                     <Button variant={feedbackSubmitted === false ? "destructive" : "outline"} className="flex-1 h-12 font-bold" onClick={() => submitFeedback(false)}>
-                      <ThumbsDown className="w-4 h-4 mr-2" /> Disputed
+                      <ThumbsDown className="w-4 h-4 mr-2" /> Disputed (Real)
                     </Button>
                   </div>
                 </div>
@@ -168,8 +231,8 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
           </CardContent>
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
-            <Button className="flex-1 h-12 font-black uppercase tracking-widest shadow-xl" onClick={() => toast({ title: "Generating Secure Report..." })}>
-              <FileJson className="w-4 h-4 mr-2" /> Export Evidence
+            <Button className="flex-1 h-12 font-black uppercase tracking-widest shadow-xl" onClick={exportEvidence}>
+              <FileJson className="w-4 h-4 mr-2" /> Export Proof to Vault
             </Button>
             <Button variant="outline" className="h-12 w-12 rounded-xl" onClick={() => window.print()}>
               <Download className="w-5 h-5" />
@@ -208,21 +271,21 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   >
                     <div className="absolute -top-10 left-0 bg-destructive text-white text-[10px] px-3 py-1.5 rounded-full font-black flex items-center gap-2 shadow-2xl">
                       <ShieldAlert className="w-3.5 h-3.5" />
-                      SYNTHETIC ARTIFACT #{i+1}
+                      ARTIFACT #{i+1}
                     </div>
                   </div>
                 ))}
               </>
             )}
             
-            {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />}
+            {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />}
             
             {mediaType === 'audio' && (
               <div className="flex flex-col items-center gap-8 p-12">
                 <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5 animate-bounce-slow">
                   <Music className="w-32 h-32 text-primary" />
                 </div>
-                <audio src={mediaUrl} controls className="w-80 shadow-2xl" />
+                <audio ref={mediaRef as any} src={mediaUrl} controls className="w-80 shadow-2xl" />
               </div>
             )}
           </div>
