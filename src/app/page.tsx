@@ -162,11 +162,11 @@ export default function DeepScanHome() {
                   <Cpu className="w-4 h-4" />
                   FORENSIC SINGULARITY ENGINE V3.1
                 </div>
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-tight">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-tight">
                   Stop the <br />
                   <span className="text-primary italic">AI Ghost.</span>
                 </h1>
-                <p className="text-muted-foreground text-base max-w-xl leading-relaxed">
+                <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
                   Deploy the ultimate forensic workstation to detect, neutralize, and vaccinate digital identities against synthetic manipulation.
                 </p>
               </div>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -300,12 +301,12 @@ I reserve all legal rights to further action.
         </Card>
 
         <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex flex-col items-center justify-center p-0 rounded-3xl min-h-[500px]">
-          <div className={cn(
-            "absolute inset-0 z-20 pointer-events-none transition-all duration-700",
-            showSpectralMode ? "opacity-100 grayscale invert brightness-200" : "opacity-0"
-          )}>
-            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-30 mix-blend-overlay animate-pulse" />
-          </div>
+          {/* SPECTRAL NOISE OVERLAY - Flat effect */}
+          {showSpectralMode && (
+            <div className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-500 bg-primary/20 mix-blend-difference animate-pulse-slow">
+              <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-40 grayscale contrast-150" />
+            </div>
+          )}
 
           <div className="relative flex items-center justify-center p-4 w-full h-full">
             <div className="relative inline-block max-w-full max-h-full">
@@ -313,7 +314,7 @@ I reserve all legal rights to further action.
                 <div className="relative">
                   <img 
                     src={mediaUrl} 
-                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "blur-[1px]")} 
+                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "grayscale invert contrast-150")} 
                   />
                   {result.highlightedRegions?.map((region: any, i: number) => (
                     <div 
