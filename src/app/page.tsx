@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -131,8 +130,12 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-background sticky top-0 z-50">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Background Neural Grid */}
+      <div className="absolute inset-0 forensic-grid pointer-events-none opacity-[0.4] dark:opacity-[0.2]" />
+      <div className="absolute inset-0 forensic-grid animate-drift pointer-events-none opacity-[0.2] dark:opacity-[0.1]" />
+
+      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
           <div className="flex items-center gap-6">
@@ -141,11 +144,11 @@ export default function DeepScanHome() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
+      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10">
         <div className="flex flex-col gap-12">
           
-          <section>
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white dark:bg-card border border-border rounded-none shadow-none">
+          <section className="perspective-1000">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border rounded-none shadow-xl transition-all duration-500 hover:shadow-2xl">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
                   <Brain className="w-3.5 h-3.5" />
@@ -169,11 +172,11 @@ export default function DeepScanHome() {
                 </div>
               </div>
 
-              <div className="w-full lg:w-auto flex flex-col gap-4">
+              <div className="w-full lg:w-auto flex flex-col gap-4 perspective-1000">
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest shadow-none bg-primary hover:bg-primary/90 text-white gap-3"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white gap-3 transition-transform duration-300 hover:scale-[1.02] hover:-rotate-y-2 hover:-translate-z-4 active:scale-95"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-5 h-5" />
@@ -182,7 +185,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white dark:bg-card shadow-none"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm shadow-md transition-transform duration-300 hover:scale-[1.02] hover:rotate-y-2 hover:-translate-z-4 active:scale-95"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -197,28 +200,28 @@ export default function DeepScanHome() {
               <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
                 <TabsTrigger 
                   value="analyze" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   ANALYZE
                 </TabsTrigger>
                 <TabsTrigger 
                   value="protect" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   PROTECT
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   HISTORY
                 </TabsTrigger>
                 <TabsTrigger 
                   value="datasets" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
                 >
                   <Database className="w-3.5 h-3.5" />
                   DATASETS
@@ -234,12 +237,12 @@ export default function DeepScanHome() {
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10">
                         <div className="flex items-center gap-4">
                           <div className="p-2.5 bg-primary/20 rounded-none">
                             <Shield className="w-5 h-5 text-primary" />
                           </div>
-                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground">FORENSIC CAPABILITIES</h4>
+                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground text-glow-sm">FORENSIC CAPABILITIES</h4>
                         </div>
                         <ul className="space-y-4">
                           {[
@@ -293,7 +296,7 @@ export default function DeepScanHome() {
         </div>
       </main>
 
-      <footer className="border-t py-12 mt-auto">
+      <footer className="border-t py-12 mt-auto bg-background/50 backdrop-blur-sm z-10">
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
