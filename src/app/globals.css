@@ -65,26 +65,6 @@
 }
 
 @layer utilities {
-  .perspective-2000 {
-    perspective: 2000px;
-  }
-  
-  .grid-3d-floor {
-    background-image: 
-      linear-gradient(to right, rgba(0, 149, 255, 0.1) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0, 149, 255, 0.1) 1px, transparent 1px);
-    background-size: 50px 50px;
-    transform: rotateX(60deg) translateY(-200px);
-    transform-origin: top;
-    height: 200%;
-    width: 200%;
-    position: absolute;
-    top: 0;
-    left: -50%;
-    z-index: -1;
-    mask-image: linear-gradient(to bottom, transparent, black, transparent);
-  }
-
   .volumetric-shadow {
     box-shadow: 
       0 10px 15px -3px rgba(0, 0, 0, 0.1), 
@@ -95,30 +75,6 @@
   .hover-glow:hover {
     box-shadow: 0 0 20px rgba(0, 149, 255, 0.3);
   }
-}
-
-@keyframes data-fall {
-  0% { transform: translateY(-100%); opacity: 0; }
-  50% { opacity: 0.5; }
-  100% { transform: translateY(100vh); opacity: 0; }
-}
-
-.animate-data-stream {
-  position: absolute;
-  top: 0;
-  width: 1px;
-  height: 100px;
-  background: linear-gradient(to bottom, transparent, hsl(var(--primary)), transparent);
-  animation: data-fall 4s linear infinite;
-}
-
-@keyframes text-decipher {
-  0% { opacity: 0; filter: blur(10px); letter-spacing: 10px; }
-  100% { opacity: 1; filter: blur(0); letter-spacing: normal; }
-}
-
-.animate-decipher {
-  animation: text-decipher 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 @keyframes pulse-ring {

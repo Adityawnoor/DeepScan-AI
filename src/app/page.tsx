@@ -130,25 +130,7 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-2000">
-      {/* 3D Spatial Environment */}
-      <div className="fixed inset-0 grid-3d-floor pointer-events-none opacity-[0.4] dark:opacity-[0.2]" />
-      
-      {/* Data Streams */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {[...Array(8)].map((_, i) => (
-          <div 
-            key={i} 
-            className="animate-data-stream" 
-            style={{ 
-              left: `${12.5 * i + Math.random() * 5}%`, 
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${3 + Math.random() * 4}s`
-            }} 
-          />
-        ))}
-      </div>
-
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
@@ -168,7 +150,7 @@ export default function DeepScanHome() {
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase animate-decipher">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
