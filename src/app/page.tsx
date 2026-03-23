@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -17,9 +18,8 @@ import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Zap, 
-  Network, Microscope as MicroscopeIcon,
-  ShieldAlert, Brain, Activity, Cpu, Layers,
-  Sparkles, Clock, Shield
+  Microscope as MicroscopeIcon,
+  Brain, Activity, Shield, Sparkles, Clock
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -31,7 +31,6 @@ export default function DeepScanHome() {
   const [activeTab, setActiveTab] = React.useState("analyze")
   const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
   const [localScans, setLocalScans] = React.useState<any[]>([])
-  const [connectedFolderName, setConnectedFolderName] = React.useState<string | null>(null)
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
@@ -40,12 +39,10 @@ export default function DeepScanHome() {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
     const savedScans = localStorage.getItem("deepscan-scans-metadata")
-    const savedFolderName = localStorage.getItem("deepscan-last-folder")
 
     if (savedHistory) setHistory(JSON.parse(savedHistory))
     if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
     if (savedScans) setLocalScans(JSON.parse(savedScans))
-    if (savedFolderName) setConnectedFolderName(savedFolderName)
   }, [])
 
   const knowledgeCount = React.useMemo(() => {
@@ -58,8 +55,11 @@ export default function DeepScanHome() {
     setIsAnalyzing(true)
     try {
       let context = `### PRIVATE INTELLIGENCE REPORT ###\n`
-      localScans.filter(s => s.userFeedback !== undefined).slice(0, 10).forEach(s => {
+      localScans.filter(s => s.userFeedback !== undefined).slice(0, 15).forEach(s => {
         context += `- Record ${s.id.substring(0,8)} verified as ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`
+      })
+      localDatasets.filter(d => d.notes).forEach(d => {
+        context += `- Labeled Dataset [${d.label}]: ${d.notes}\n`
       })
 
       let output: any
@@ -123,9 +123,16 @@ export default function DeepScanHome() {
     workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const refreshLocalData = () => {
+    const savedScans = localStorage.getItem("deepscan-scans-metadata")
+    if (savedScans) setLocalScans(JSON.parse(savedScans))
+    const savedDatasets = localStorage.getItem("deepscan-datasets")
+    if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b bg-background sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
           <div className="flex items-center gap-6">
@@ -137,10 +144,10 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12">
         <div className="flex flex-col gap-12">
           
-          <section className="relative">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white dark:bg-card border border-border rounded-2xl shadow-sm">
+          <section>
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white dark:bg-card border border-border rounded-none shadow-none">
               <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
@@ -151,11 +158,11 @@ export default function DeepScanHome() {
                   DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
                 <div className="flex gap-4 pt-4">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-none border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
                     <Zap className="w-3 h-3" />
                     {knowledgeCount} LESSONS LEARNED
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-none border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
                     <Activity className="w-3 h-3" />
                     LATENT SPACE AUDIT ACTIVE
                   </div>
@@ -166,7 +173,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-xl font-black uppercase tracking-widest shadow-sm bg-primary hover:bg-primary/90 text-white gap-3"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest shadow-none bg-primary hover:bg-primary/90 text-white gap-3"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-5 h-5" />
@@ -175,7 +182,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 backdrop-blur-sm shadow-sm"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white dark:bg-card shadow-none"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -227,9 +234,9 @@ export default function DeepScanHome() {
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-2xl space-y-6 shadow-sm">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none">
                         <div className="flex items-center gap-4">
-                          <div className="p-2.5 bg-primary/20 rounded-xl">
+                          <div className="p-2.5 bg-primary/20 rounded-none">
                             <Shield className="w-5 h-5 text-primary" />
                           </div>
                           <h4 className="font-black uppercase text-xs tracking-widest text-foreground">FORENSIC CAPABILITIES</h4>
@@ -257,10 +264,7 @@ export default function DeepScanHome() {
                         mediaUrl={currentResult.mediaUrl} 
                         mediaType={currentResult.mediaType}
                         vaultHandle={localFolderHandle}
-                        onUpdate={() => {
-                          const savedScans = localStorage.getItem("deepscan-scans-metadata")
-                          if (savedScans) setLocalScans(JSON.parse(savedScans))
-                        }}
+                        onUpdate={refreshLocalData}
                       />
                     )}
                   </div>
@@ -279,8 +283,8 @@ export default function DeepScanHome() {
                 <DatasetManager 
                   knowledgeCount={knowledgeCount} 
                   onRefresh={(name, handle) => {
-                    if (name) setConnectedFolderName(name);
                     if (handle) setLocalFolderHandle(handle);
+                    refreshLocalData();
                   }} 
                 />
               </TabsContent>
