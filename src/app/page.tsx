@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -18,7 +19,8 @@ import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
-  Brain, Activity, Shield, Sparkles, Clock
+  Brain, Activity, Shield, Sparkles, Clock,
+  Network
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -136,7 +138,22 @@ export default function DeepScanHome() {
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50 preserve-3d">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
-          <div className="flex items-center gap-6">
+          
+          <div className="flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
+                  NEURAL ENGINE: <span className="text-foreground">ONLINE</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Network className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
+                  PRIVATE VAULT: <span className="text-foreground">{localFolderHandle ? localFolderHandle.name.toUpperCase() : "DEEPSCANAI DATABASE"}</span>
+                </span>
+              </div>
+            </div>
             <ThemeToggle />
           </div>
         </div>
@@ -183,7 +200,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm rounded-none volumetric-shadow transition-all duration-300 hover:scale-[1.05] active:scale-95 hover-glow relative overflow-visible transform translate-z-10"
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.05] active:scale-95 hover-glow relative overflow-visible transform translate-z-10"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
