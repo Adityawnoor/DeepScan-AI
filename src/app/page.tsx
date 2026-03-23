@@ -11,7 +11,6 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
-import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -19,7 +18,8 @@ import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Zap, 
   Network, Microscope as MicroscopeIcon,
-  ShieldAlert, Brain, Activity, Cpu, Layers
+  ShieldAlert, Brain, Activity, Cpu, Layers,
+  Sparkles, Clock, Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -53,18 +53,6 @@ export default function DeepScanHome() {
     const verifiedScanCount = localScans.filter(s => s.userFeedback !== undefined).length
     return datasetCount + verifiedScanCount
   }, [localDatasets, localScans])
-
-  const syncToPCFile = async (data: { datasets: any[], scans: any[] }) => {
-    if (!localFolderHandle) return
-    try {
-      const fileHandle = await localFolderHandle.getFileHandle('deepscan-private-metadata.json', { create: true })
-      const writable = await fileHandle.createWritable()
-      await writable.write(JSON.stringify(data, null, 2))
-      await writable.close()
-    } catch (err) {
-      console.error("Auto-sync failed:", err)
-    }
-  }
 
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
@@ -115,7 +103,6 @@ export default function DeepScanHome() {
       
       setHistory(updatedHistory)
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
-      syncToPCFile({ datasets: localDatasets, scans: updatedScans })
 
       toast({ title: "Analysis Complete", description: "Neural ancestry identified." })
     } catch (e) {
@@ -132,21 +119,11 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-primary selection:text-white">
-      <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span>Engine: Online</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Network className="w-3 h-3 text-primary" />
-                <span>Vault: {connectedFolderName || "Scanning..."}</span>
-              </div>
-            </div>
             <ThemeToggle />
           </div>
         </div>
@@ -156,81 +133,94 @@ export default function DeepScanHome() {
         <div className="flex flex-col gap-12">
           
           <section className="relative">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-12 bg-card/50 backdrop-blur-xl border border-primary/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-12 bg-white dark:bg-card border border-primary/10 rounded-[2.5rem] shadow-xl">
               <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                  <Cpu className="w-4 h-4" />
-                  FORENSIC SINGULARITY ENGINE V3.1
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
+                  <Brain className="w-3.5 h-3.5" />
+                  ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-tight">
-                  Stop the <br />
-                  <span className="text-primary italic">AI Ghost.</span>
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[1.1] text-[#1a1a1a] dark:text-white uppercase">
+                  IDENTIFY THE <span className="text-primary italic">SYNTHETIC GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  Deploy the ultimate forensic workstation to detect, neutralize, and vaccinate digital identities against synthetic manipulation.
+                  DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
+                <div className="flex gap-4 pt-4">
+                  <Badge variant="outline" className="rounded-lg px-4 py-2 border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest gap-2">
+                    <Zap className="w-3 h-3" />
+                    {knowledgeCount} LESSONS LEARNED
+                  </Badge>
+                  <Badge variant="outline" className="rounded-lg px-4 py-2 border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest gap-2">
+                    <Activity className="w-3 h-3" />
+                    LATENT SPACE AUDIT ACTIVE
+                  </Badge>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-4 w-full lg:w-auto">
+              <div className="w-full lg:w-auto">
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90 text-white"
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90 text-white gap-3"
                   onClick={handleBeginInvestigation}
                 >
-                  <MicroscopeIcon className="w-5 h-5 mr-3" />
+                  <MicroscopeIcon className="w-5 h-5" />
                   BEGIN INVESTIGATION
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:bg-primary/5"
-                  onClick={() => setActiveTab("protect")}
-                >
-                  <ShieldCheck className="w-5 h-5 mr-3 text-primary" />
-                  VACCINATE IDENTITY
                 </Button>
               </div>
             </div>
           </section>
 
-          <div ref={workstationRef} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div ref={workstationRef} className="space-y-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-muted/50 p-1 rounded-2xl mb-12 h-14 gap-2">
-                {["analyze", "protect", "history", "datasets"].map((tab) => (
-                  <TabsTrigger 
-                    key={tab}
-                    value={tab} 
-                    className="flex-1 rounded-xl font-black uppercase text-xs tracking-widest data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md"
-                  >
-                    {tab}
-                  </TabsTrigger>
-                ))}
+              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
+                <TabsTrigger 
+                  value="analyze" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  ANALYZE
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="history" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  HISTORY
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="datasets" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  DATASETS
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
-                <div className="space-y-12">
+                <div className="space-y-8">
                   <div className={cn(
-                    "grid grid-cols-1 gap-12 transition-all duration-700",
+                    "grid grid-cols-1 gap-8 transition-all duration-700",
                     currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
                   )}>
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
+                      
                       <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-[2rem] space-y-6">
                         <div className="flex items-center gap-4">
                           <div className="p-2.5 bg-primary/20 rounded-xl">
-                            <Brain className="w-5 h-5 text-primary" />
+                            <Shield className="w-5 h-5 text-primary" />
                           </div>
-                          <h4 className="font-black uppercase text-sm tracking-widest">Forensic Core Active</h4>
+                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground">FORENSIC CAPABILITIES</h4>
                         </div>
                         <ul className="space-y-4">
                           {[
-                            "Microscopic rPPG Pulse Scanning",
-                            "Neural Origin DNA Mapping",
-                            "Spectral High-Pass Fingerprinting",
-                            "Adversarial Immune Protection"
+                            "GENERATIVE MODEL FINGERPRINTING",
+                            "HIGH-FREQUENCY NOISE FLOOR ANALYSIS",
+                            "TEMPORAL CONSISTENCY CHECKS",
+                            "METADATA CHAIN-OF-CUSTODY"
                           ].map(item => (
-                            <li key={item} className="flex items-center gap-3 text-xs font-bold text-muted-foreground uppercase">
+                            <li key={item} className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                               <ShieldCheck className="w-4 h-4 text-primary" />
                               {item}
                             </li>
@@ -256,26 +246,25 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="protect" className="mt-0">
-                <AuthenticityShield />
-              </TabsContent>
-
               <TabsContent value="history" className="mt-0">
                 <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
               </TabsContent>
 
               <TabsContent value="datasets" className="mt-0">
-                <DatasetManager knowledgeCount={knowledgeCount} onRefresh={(name, handle) => {
-                  if (name) setConnectedFolderName(name);
-                  if (handle) setLocalFolderHandle(handle);
-                }} />
+                <DatasetManager 
+                  knowledgeCount={knowledgeCount} 
+                  onRefresh={(name, handle) => {
+                    if (name) setConnectedFolderName(name);
+                    if (handle) setLocalFolderHandle(handle);
+                  }} 
+                />
               </TabsContent>
             </Tabs>
           </div>
         </div>
       </main>
 
-      <footer className="border-t py-12 bg-card/30 mt-auto">
+      <footer className="border-t py-12 mt-auto">
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -288,6 +277,18 @@ export default function DeepScanHome() {
           </div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+function Badge({ children, variant = "default", className }: { children: React.ReactNode, variant?: "default" | "outline", className?: string }) {
+  return (
+    <div className={cn(
+      "px-3 py-1 rounded-full text-xs font-bold",
+      variant === "default" ? "bg-primary text-white" : "border bg-background",
+      className
+    )}>
+      {children}
     </div>
   )
 }

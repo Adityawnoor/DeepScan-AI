@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, Link as LinkIcon } from "lucide-react"
+import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, Link as LinkIcon, Clipboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -153,14 +153,37 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
     if (preview) onUpload(preview)
   }
 
+  const handlePaste = async () => {
+    try {
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        for (const type of item.types) {
+          if (type.startsWith('image/') || type.startsWith('audio/') || type.startsWith('video/')) {
+            const blob = await item.getType(type)
+            const reader = new FileReader()
+            reader.onloadend = () => {
+              setPreview(reader.result as string)
+              setMediaType(type.split('/')[0] as any)
+            }
+            reader.readAsDataURL(blob)
+            return
+          }
+        }
+      }
+      toast({ title: "No media found in clipboard" })
+    } catch (e) {
+      toast({ variant: "destructive", title: "Paste failed", description: "Grant clipboard permissions." })
+    }
+  }
+
   return (
-    <Card className="p-8 border-dashed border-2 bg-card/40 backdrop-blur-xl rounded-[2rem] shadow-xl">
+    <Card className="p-0 border-dashed border-2 bg-white dark:bg-card/50 rounded-[1.5rem] shadow-sm overflow-hidden">
       {!preview && !isWebcamOpen ? (
-        <div className="flex flex-col items-center justify-center min-h-[350px]">
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
           <div
             className={cn(
-              "flex flex-col items-center justify-center w-full flex-1 border-4 border-dashed rounded-[1.5rem] transition-all cursor-pointer group mb-6",
-              dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/10 hover:border-primary/40 hover:bg-primary/5"
+              "flex flex-col items-center justify-center w-full flex-1 transition-all cursor-pointer group px-8 text-center",
+              dragActive ? "bg-primary/5" : "hover:bg-primary/5"
             )}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -175,39 +198,64 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               accept="image/*,audio/*,video/*"
               onChange={handleInputChange}
             />
-            <div className="flex gap-4 mb-4">
-              <ImageIcon className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-              <Music className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
-              <Video className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+            <div className="flex gap-4 mb-6">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <ImageIcon className="w-5 h-5 text-primary" />
+              </div>
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Music className="w-5 h-5 text-primary" />
+              </div>
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Video className="w-5 h-5 text-primary" />
+              </div>
             </div>
-            <h3 className="font-black text-xl mb-1 uppercase tracking-tighter">Deploy Evidence</h3>
-            <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest opacity-60">
-              Drag & drop or <span className="text-primary font-black">Browse</span>
+            <h3 className="font-bold text-lg mb-2 text-foreground">Analyze Media</h3>
+            <p className="text-muted-foreground text-xs font-medium mb-8">
+              Drag & drop, click to browse, or <button className="text-primary hover:underline" onClick={(e) => { e.stopPropagation(); handlePaste(); }}>paste directly</button>
             </p>
-            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openWebcam(); }} className="mt-6 rounded-xl border-primary/20 h-10 px-6 font-black uppercase tracking-widest hover:bg-primary/5">
-              <Camera className="w-4 h-4 mr-2" />
-              Live Capture
-            </Button>
+            
+            <div className="flex gap-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => { e.stopPropagation(); openWebcam(); }} 
+                className="rounded-xl border-primary/20 h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Use Webcam
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => { e.stopPropagation(); handlePaste(); }} 
+                className="rounded-xl border-primary/20 h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 bg-muted/30"
+              >
+                <Clipboard className="w-4 h-4" />
+                CTRL + V TO PASTE
+              </Button>
+            </div>
           </div>
 
-          <div className="w-full max-w-sm flex gap-2">
-            <div className="relative flex-1">
-              <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Paste remote URL..."
-                className="pl-10 h-10 rounded-xl bg-muted/30 border-none"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}
-              />
+          <div className="w-full border-t p-4 bg-muted/5">
+            <div className="flex gap-2 max-w-md mx-auto">
+              <div className="relative flex-1">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Paste media URL..."
+                  className="pl-9 h-10 rounded-xl bg-background border shadow-none text-xs"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}
+                />
+              </div>
+              <Button size="sm" onClick={handleUrlUpload} disabled={!urlInput || isLoadingUrl} className="rounded-xl h-10 px-6 font-black uppercase tracking-widest bg-primary/60 hover:bg-primary">
+                {isLoadingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load"}
+              </Button>
             </div>
-            <Button size="sm" onClick={handleUrlUpload} disabled={!urlInput || isLoadingUrl} className="rounded-xl h-10 px-6 font-black uppercase tracking-widest">
-              {isLoadingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load"}
-            </Button>
           </div>
         </div>
       ) : isWebcamOpen ? (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-6 p-8">
           <div className="relative w-full aspect-video bg-black rounded-[1.5rem] overflow-hidden shadow-2xl border-2 border-primary/20">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
           </div>
@@ -217,8 +265,8 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-8">
-          <div className="relative w-full max-w-lg aspect-square rounded-[2rem] overflow-hidden bg-black shadow-2xl flex items-center justify-center border-4 border-primary/10">
+        <div className="flex flex-col items-center gap-8 p-8">
+          <div className="relative w-full max-w-lg aspect-square rounded-[1.5rem] overflow-hidden bg-black shadow-2xl flex items-center justify-center border">
             {mediaType === 'image' && <img src={preview!} alt="Preview" className="w-full h-full object-contain" />}
             {mediaType === 'video' && <video src={preview!} controls className="w-full h-full object-contain" />}
             {mediaType === 'audio' && (
