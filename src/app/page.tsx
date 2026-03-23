@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -150,7 +149,7 @@ export default function DeepScanHome() {
               <div className="flex items-center gap-2">
                 <Network className="w-3.5 h-3.5 text-primary" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                  PRIVATE VAULT: <span className="text-foreground">{localFolderHandle ? localFolderHandle.name.toUpperCase() : "DEEPSCANAI DATABASE"}</span>
+                  PRIVATE VAULT: <span className="text-foreground">{localFolderHandle ? localFolderHandle.name.toUpperCase() : "NO DATABASE"}</span>
                 </span>
               </div>
             </div>
