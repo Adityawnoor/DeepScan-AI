@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -115,19 +114,19 @@ Content violates safety policies regarding synthetic identity manipulation.
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <Card className="border border-border shadow-none flex flex-col bg-card rounded-none overflow-hidden">
-          <CardHeader className="border-b bg-muted/20 p-6">
+        <Card className="border border-border shadow-none flex flex-col bg-card rounded-none overflow-hidden volumetric-shadow group hover:border-primary/30 transition-all duration-300">
+          <CardHeader className="border-b bg-muted/20 p-6 relative">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
                 <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter text-foreground uppercase">
-                  <Target className="w-6 h-6 text-primary" />
+                  <Target className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
                   SINGULARITY REPORT
                 </CardTitle>
                 <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                   Case ID: {scanId.substring(0, 12)}
                 </CardDescription>
               </div>
-              <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest rounded-none">
+              <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest rounded-none hover-glow transition-all">
                 {isFake ? "SYNTHETIC" : "AUTHENTIC"}
               </Badge>
             </div>
@@ -147,37 +146,37 @@ Content violates safety policies regarding synthetic identity manipulation.
             </div>
 
             <Tabs defaultValue="biometrics" className="w-full">
-              <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-none h-11">
-                <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+              <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-none h-11 border">
+                <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <HeartPulse className="w-3.5 h-3.5" /> Vital
                 </TabsTrigger>
-                <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <Dna className="w-3.5 h-3.5" /> DNA
                 </TabsTrigger>
-                <TabsTrigger value="origin" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                <TabsTrigger value="origin" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <MapIcon className="w-3.5 h-3.5" /> Origin
                 </TabsTrigger>
-                <TabsTrigger value="feedback" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                <TabsTrigger value="feedback" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <ShieldCheck className="w-3.5 h-3.5" /> Audit
                 </TabsTrigger>
-                <TabsTrigger value="actions" className="text-[9px] font-black uppercase tracking-tighter gap-1">
+                <TabsTrigger value="actions" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white">
                   <Gavel className="w-3.5 h-3.5" /> Action
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="biometrics" className="pt-6 space-y-4">
+              <TabsContent value="biometrics" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
                 <div className="grid grid-cols-2 gap-4">
                   <div className={cn(
-                    "p-4 rounded-none border flex flex-col items-center justify-center text-center gap-2",
+                    "p-4 rounded-none border flex flex-col items-center justify-center text-center gap-2 transition-all hover-glow cursor-default",
                     result.biometricVitals?.pulseDetected ? "bg-green-500/10 border-green-500/20" : "bg-destructive/10 border-destructive/20"
                   )}>
-                    <HeartPulse className={cn("w-8 h-8", result.biometricVitals?.pulseDetected ? "text-green-500" : "text-destructive")} />
+                    <HeartPulse className={cn("w-8 h-8", result.biometricVitals?.pulseDetected ? "text-green-500 animate-pulse" : "text-destructive")} />
                     <div className="space-y-1">
                       <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">rPPG Pulse</span>
                       <p className="text-xs font-black">{result.biometricVitals?.pulseDetected ? "DETECTED" : "ABSENT"}</p>
                     </div>
                   </div>
-                  <div className="p-4 rounded-none bg-primary/5 border border-primary/20 flex flex-col items-center justify-center text-center gap-2">
+                  <div className="p-4 rounded-none bg-primary/5 border border-primary/20 flex flex-col items-center justify-center text-center gap-2 hover-glow transition-all">
                     <Activity className="w-8 h-8 text-primary" />
                     <div className="space-y-1">
                       <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Vital Flow</span>
@@ -191,13 +190,13 @@ Content violates safety policies regarding synthetic identity manipulation.
                 </div>
               </TabsContent>
 
-              <TabsContent value="ancestry" className="pt-6 space-y-4">
+              <TabsContent value="ancestry" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-none bg-primary/5 border border-primary/10 space-y-1">
+                  <div className="p-4 rounded-none bg-primary/5 border border-primary/10 space-y-1 hover:bg-primary/10 transition-colors">
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Model Family</span>
                     <p className="text-sm font-black text-primary">{result.neuralAncestry?.modelFamily || "Unknown"}</p>
                   </div>
-                  <div className="p-4 rounded-none bg-primary/5 border border-primary/10 space-y-1">
+                  <div className="p-4 rounded-none bg-primary/5 border border-primary/10 space-y-1 hover:bg-primary/10 transition-colors">
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Likely Source</span>
                     <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Hybrid"}</p>
                   </div>
@@ -209,8 +208,8 @@ Content violates safety policies regarding synthetic identity manipulation.
                 </div>
               </TabsContent>
 
-              <TabsContent value="origin" className="pt-6 space-y-4">
-                 <div className="h-[200px] w-full bg-muted/20 rounded-none border relative overflow-hidden">
+              <TabsContent value="origin" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
+                 <div className="h-[200px] w-full bg-muted/20 rounded-none border relative overflow-hidden hover-glow transition-all">
                     <ResponsiveContainer width="100%" height="100%">
                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                           <XAxis type="number" dataKey="x" hide domain={[-100, 100]} />
@@ -233,7 +232,7 @@ Content violates safety policies regarding synthetic identity manipulation.
                  </p>
               </TabsContent>
 
-              <TabsContent value="feedback" className="pt-6 space-y-4">
+              <TabsContent value="feedback" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
                 <div className="p-6 rounded-none bg-muted/30 border border-dashed text-center space-y-6">
                   <div className="space-y-2">
                     <h4 className="text-xs font-black uppercase tracking-widest">Human Verification Audit</h4>
@@ -244,44 +243,47 @@ Content violates safety policies regarding synthetic identity manipulation.
                     <div className="flex gap-4 justify-center">
                       <Button 
                         variant="outline" 
-                        className="h-12 flex-1 rounded-none border-green-500/30 text-green-600 hover:bg-green-500/10 font-black uppercase tracking-widest"
+                        className="h-12 flex-1 rounded-none border-green-500/30 text-green-600 hover:bg-green-500/10 font-black uppercase tracking-widest hover-glow transition-all"
                         onClick={() => handleFeedback(true)}
                       >
                         <ThumbsUp className="w-4 h-4 mr-2" /> Correct
                       </Button>
                       <Button 
                         variant="outline" 
-                        className="h-12 flex-1 rounded-none border-destructive/30 text-destructive hover:bg-destructive/10 font-black uppercase tracking-widest"
+                        className="h-12 flex-1 rounded-none border-destructive/30 text-destructive hover:bg-destructive/10 font-black uppercase tracking-widest hover-glow transition-all"
                         onClick={() => handleFeedback(false)}
                       >
                         <ThumbsDown className="w-4 h-4 mr-2" /> Incorrect
                       </Button>
                     </div>
                   ) : (
-                    <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest">
+                    <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest animate-pulse">
                       Audit Logged: System updated with Ground Truth.
                     </div>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="actions" className="pt-6 space-y-4">
+              <TabsContent value="actions" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
                 <div className="space-y-4">
                   <Button 
                     variant="outline" 
-                    className={cn("w-full h-12 font-black uppercase tracking-widest border rounded-none", showSpectralMode ? "bg-primary text-white" : "")}
+                    className={cn(
+                      "w-full h-12 font-black uppercase tracking-widest border rounded-none transition-all duration-300", 
+                      showSpectralMode ? "bg-primary text-white hover-glow" : "hover:bg-primary/5"
+                    )}
                     onClick={() => setShowSpectralMode(!showSpectralMode)}
                   >
                     <Layers className="w-4 h-4 mr-2" /> Spectral View
                   </Button>
                   {isFake && (
                     <>
-                      <Button className="w-full h-12 bg-destructive hover:bg-destructive/90 font-black uppercase tracking-widest rounded-none" onClick={() => setShowTakedown(!showTakedown)}>
+                      <Button className="w-full h-12 bg-destructive hover:bg-destructive/90 font-black uppercase tracking-widest rounded-none hover-glow transition-all animate-pulse-ring relative overflow-visible" onClick={() => setShowTakedown(!showTakedown)}>
                         <ShieldX className="w-4 h-4 mr-2" /> Takedown Pilot
                       </Button>
                       {showTakedown && (
-                        <div className="p-4 rounded-none bg-muted font-mono text-[9px] whitespace-pre-wrap leading-relaxed relative group border">
-                          <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-8 w-8" onClick={copyTakedown}>
+                        <div className="p-4 rounded-none bg-muted font-mono text-[9px] whitespace-pre-wrap leading-relaxed relative group border animate-in slide-in-from-top-2">
+                          <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-8 w-8 hover:bg-primary/20" onClick={copyTakedown}>
                             <Copy className="w-4 h-4" />
                           </Button>
                           {takedownTemplate}
@@ -295,31 +297,31 @@ Content violates safety policies regarding synthetic identity manipulation.
           </CardContent>
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
-            <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-none" onClick={exportEvidence}>
+            <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-none hover-glow transition-all" onClick={exportEvidence}>
               <FileJson className="w-4 h-4 mr-2" /> Export to Vault
             </Button>
-            <Button variant="outline" className="h-12 w-12 rounded-none" onClick={() => window.print()}>
+            <Button variant="outline" className="h-12 w-12 rounded-none hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => window.print()}>
               <Download className="w-5 h-5" />
             </Button>
           </CardFooter>
         </Card>
 
-        <Card className="relative overflow-hidden border border-border shadow-none bg-black flex flex-col items-center justify-center p-0 rounded-none min-h-[500px]">
+        <Card className="relative overflow-hidden border border-border shadow-none bg-black flex flex-col items-center justify-center p-0 rounded-none min-h-[500px] volumetric-shadow">
           {showSpectralMode && (
-            <div className="absolute inset-0 z-20 pointer-events-none bg-primary/20 mix-blend-difference" />
+            <div className="absolute inset-0 z-20 pointer-events-none bg-primary/20 mix-blend-difference animate-pulse" />
           )}
 
           <div className="relative flex items-center justify-center p-4 w-full h-full">
             {mediaType === 'image' && (
-              <div className="relative">
+              <div className="relative group">
                 <img 
                   src={mediaUrl} 
-                  className={cn("max-w-full h-auto object-contain transition-all", showSpectralMode && "grayscale invert contrast-150")} 
+                  className={cn("max-w-full h-auto object-contain transition-all duration-700", showSpectralMode && "grayscale invert contrast-150")} 
                 />
                 {result.highlightedRegions?.map((region: any, i: number) => (
                   <div 
                     key={i}
-                    className="absolute border-2 border-destructive"
+                    className="absolute border-2 border-destructive animate-pulse"
                     style={{
                       left: `${region.x}%`,
                       top: `${region.y}%`,
@@ -330,11 +332,13 @@ Content violates safety policies regarding synthetic identity manipulation.
                 ))}
               </div>
             )}
-            {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto" />}
+            {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto shadow-2xl" />}
             {mediaType === 'audio' && (
               <div className="flex flex-col items-center gap-8 p-12">
-                <Music className="w-32 h-32 text-primary" />
-                <audio src={mediaUrl} controls className="w-80" />
+                <div className="p-8 bg-primary/10 rounded-full hover-glow transition-all duration-500">
+                  <Music className="w-24 h-24 text-primary animate-pulse" />
+                </div>
+                <audio src={mediaUrl} controls className="w-80 shadow-xl" />
               </div>
             )}
           </div>

@@ -144,7 +144,7 @@ export default function DeepScanHome() {
         <div className="flex flex-col gap-12">
           
           <section>
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
                   <Brain className="w-3.5 h-3.5" />
@@ -181,7 +181,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.02] active:scale-95 hover-glow"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.02] active:scale-95 hover-glow relative overflow-visible animate-pulse-ring"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -196,28 +196,28 @@ export default function DeepScanHome() {
               <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
                 <TabsTrigger 
                   value="analyze" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   ANALYZE
                 </TabsTrigger>
                 <TabsTrigger 
                   value="protect" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   PROTECT
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   HISTORY
                 </TabsTrigger>
                 <TabsTrigger 
                   value="datasets" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Database className="w-3.5 h-3.5" />
                   DATASETS
@@ -233,10 +233,10 @@ export default function DeepScanHome() {
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10 volumetric-shadow">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10 volumetric-shadow group hover-glow relative overflow-visible">
                         <div className="flex items-center gap-4">
-                          <div className="p-2.5 bg-primary/20 rounded-none">
-                            <Shield className="w-5 h-5 text-primary" />
+                          <div className="p-2.5 bg-primary/20 rounded-none group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                            <Shield className="w-5 h-5" />
                           </div>
                           <h4 className="font-black uppercase text-xs tracking-widest text-foreground">FORENSIC CAPABILITIES</h4>
                         </div>
@@ -247,7 +247,7 @@ export default function DeepScanHome() {
                             "TEMPORAL CONSISTENCY CHECKS",
                             "METADATA CHAIN-OF-CUSTODY"
                           ].map(item => (
-                            <li key={item} className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            <li key={item} className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors duration-300">
                               <ShieldCheck className="w-4 h-4 text-primary" />
                               {item}
                             </li>
