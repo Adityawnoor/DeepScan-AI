@@ -176,7 +176,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white gap-3 transition-transform duration-300 hover:scale-[1.02] hover:-rotate-y-2 hover:-translate-z-4 active:scale-95"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white gap-3 transition-transform duration-300 hover:scale-[1.02] active:scale-95"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-5 h-5" />
@@ -185,7 +185,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm shadow-md transition-transform duration-300 hover:scale-[1.02] hover:rotate-y-2 hover:-translate-z-4 active:scale-95"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm shadow-md transition-transform duration-300 hover:scale-[1.02] active:scale-95"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -261,14 +261,16 @@ export default function DeepScanHome() {
                     </div>
 
                     {currentResult && (
-                      <AnalysisResult 
-                        scanId={currentResult.id}
-                        result={currentResult.output} 
-                        mediaUrl={currentResult.mediaUrl} 
-                        mediaType={currentResult.mediaType}
-                        vaultHandle={localFolderHandle}
-                        onUpdate={refreshLocalData}
-                      />
+                      <div className="animate-scanline">
+                        <AnalysisResult 
+                          scanId={currentResult.id}
+                          result={currentResult.output} 
+                          mediaUrl={currentResult.mediaUrl} 
+                          mediaType={currentResult.mediaType}
+                          vaultHandle={localFolderHandle}
+                          onUpdate={refreshLocalData}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
