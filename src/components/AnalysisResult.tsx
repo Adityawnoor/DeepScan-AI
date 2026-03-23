@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -107,7 +106,7 @@ I reserve all legal rights to further action.
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <Card className="border-2 border-primary/20 shadow-2xl flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden">
@@ -166,7 +165,7 @@ I reserve all legal rights to further action.
                     "p-4 rounded-2xl border flex flex-col items-center justify-center text-center gap-2",
                     result.biometricVitals?.pulseDetected ? "bg-green-500/10 border-green-500/20" : "bg-destructive/10 border-destructive/20"
                   )}>
-                    <HeartPulse className={cn("w-8 h-8", result.biometricVitals?.pulseDetected ? "text-green-500 animate-pulse" : "text-destructive")} />
+                    <HeartPulse className={cn("w-8 h-8", result.biometricVitals?.pulseDetected ? "text-green-500" : "text-destructive")} />
                     <div className="space-y-1">
                       <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">rPPG Pulse</span>
                       <p className="text-xs font-black">{result.biometricVitals?.pulseDetected ? "DETECTED" : "ABSENT"}</p>
@@ -218,7 +217,6 @@ I reserve all legal rights to further action.
                                <Cell 
                                  key={`cell-${index}`} 
                                  fill={entry.type === 'subject' ? 'hsl(var(--primary))' : entry.type === 'real' ? '#22c55e' : 'rgba(0,0,0,0.2)'} 
-                                 className={cn(entry.type === 'subject' && "animate-pulse")}
                                />
                              ))}
                           </Scatter>
@@ -292,7 +290,7 @@ I reserve all legal rights to further action.
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
             <Button className="flex-1 h-12 font-black uppercase tracking-widest shadow-xl group" onClick={exportEvidence}>
-              <FileJson className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" /> Export Proof to Vault
+              <FileJson className="w-4 h-4 mr-2" /> Export Proof to Vault
             </Button>
             <Button variant="outline" className="h-12 w-12 rounded-xl" onClick={() => window.print()}>
               <Download className="w-5 h-5" />
@@ -301,9 +299,8 @@ I reserve all legal rights to further action.
         </Card>
 
         <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex flex-col items-center justify-center p-0 rounded-3xl min-h-[500px]">
-          {/* SPECTRAL NOISE OVERLAY - Flat effect */}
           {showSpectralMode && (
-            <div className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-500 bg-primary/20 mix-blend-difference animate-pulse-slow">
+            <div className="absolute inset-0 z-20 pointer-events-none bg-primary/20 mix-blend-difference">
               <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-40 grayscale contrast-150" />
             </div>
           )}
@@ -314,12 +311,12 @@ I reserve all legal rights to further action.
                 <div className="relative">
                   <img 
                     src={mediaUrl} 
-                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all duration-700", showSpectralMode && "grayscale invert contrast-150")} 
+                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all", showSpectralMode && "grayscale invert contrast-150")} 
                   />
                   {result.highlightedRegions?.map((region: any, i: number) => (
                     <div 
                       key={i}
-                      className="absolute border-2 border-destructive shadow-[0_0_15px_rgba(255,0,0,0.5)] animate-in fade-in zoom-in duration-500 group"
+                      className="absolute border-2 border-destructive shadow-[0_0_15px_rgba(255,0,0,0.5)] group"
                       style={{
                         left: `${region.x}%`,
                         top: `${region.y}%`,
@@ -354,7 +351,7 @@ I reserve all legal rights to further action.
               <Zap className="w-3 h-3 mr-1.5" /> Singularity Engine
             </Badge>
             {showSpectralMode && (
-              <Badge variant="destructive" className="font-black text-[10px] px-3 py-1 uppercase tracking-tighter animate-pulse">
+              <Badge variant="destructive" className="font-black text-[10px] px-3 py-1 uppercase tracking-tighter">
                 Spectral Mode
               </Badge>
             )}

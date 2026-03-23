@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -222,7 +221,7 @@ export default function DeepScanHome() {
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
                 <div className="space-y-8">
                   <div className={cn(
-                    "grid grid-cols-1 gap-8 transition-all duration-700",
+                    "grid grid-cols-1 gap-8",
                     currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
                   )}>
                     <div className="space-y-8">

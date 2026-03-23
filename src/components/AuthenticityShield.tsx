@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -40,14 +39,12 @@ export function AuthenticityShield() {
     setIsProcessing(true)
     setProgress(0)
 
-    // Simulate adversarial noise injection (proactive defense)
     const steps = [20, 45, 70, 90, 100]
     for (const step of steps) {
       setProgress(step)
       await new Promise(r => setTimeout(r, 600))
     }
 
-    // In a real app, this would modify pixels to confuse neural networks
     setShieldedImage(originalImage) 
     setIsProcessing(false)
     toast({ title: "Immunity Spark Injected", description: "This image is now cloaked from AI facial mapping." })
@@ -62,7 +59,7 @@ export function AuthenticityShield() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       
       {/* EXPLANATION PANEL */}
       <div className="lg:col-span-4 space-y-6">
@@ -119,7 +116,7 @@ export function AuthenticityShield() {
                 onClick={() => inputRef.current?.click()}
               >
                 <input type="file" ref={inputRef} onChange={handleFile} className="hidden" accept="image/*" />
-                <div className="p-6 bg-primary/10 rounded-full mb-6 group-hover:scale-110 transition-transform">
+                <div className="p-6 bg-primary/10 rounded-full mb-6 transition-transform">
                   <Upload className="w-12 h-12 text-primary" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Vaccinate Your Source</h3>
@@ -140,7 +137,7 @@ export function AuthenticityShield() {
                       {shieldedImage ? (
                         <>
                           <img src={shieldedImage} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-primary/5 mix-blend-overlay animate-pulse" />
+                          <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
                           <div className="absolute bottom-4 right-4">
                              <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px] shadow-2xl">
                                <ShieldCheck className="w-3.5 h-3.5 mr-2" /> PROTECTED
@@ -153,7 +150,7 @@ export function AuthenticityShield() {
                              <div className="text-center space-y-4 w-full px-12">
                                <RefreshCw className="w-12 h-12 text-primary animate-spin mx-auto" />
                                <Progress value={progress} className="h-2" />
-                               <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Injecting Immune Sparks...</p>
+                               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Injecting Immune Sparks...</p>
                              </div>
                            ) : (
                              <Lock className="w-12 h-12 text-muted-foreground/20" />
