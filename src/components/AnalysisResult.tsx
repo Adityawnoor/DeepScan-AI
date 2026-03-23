@@ -109,11 +109,11 @@ I reserve all legal rights to further action.
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <Card className="border-2 border-primary/20 shadow-2xl flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="border-b bg-muted/20">
+        <Card className="border border-border shadow-sm flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden rounded-2xl">
+          <CardHeader className="border-b bg-muted/20 p-6">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter text-foreground">
+                <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter text-foreground uppercase">
                   <Target className="w-6 h-6 text-primary" />
                   SINGULARITY REPORT
                 </CardTitle>
@@ -121,7 +121,7 @@ I reserve all legal rights to further action.
                   Case ID: {scanId.substring(0, 12)}
                 </CardDescription>
               </div>
-              <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest shadow-lg">
+              <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest">
                 {isFake ? "SYNTHETIC" : "AUTHENTIC"}
               </Badge>
             </div>
@@ -137,7 +137,7 @@ I reserve all legal rights to further action.
                   {confidence}%
                 </span>
               </div>
-              <Progress value={confidence} className={cn("h-4 rounded-full bg-muted shadow-inner", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
+              <Progress value={confidence} className={cn("h-4 rounded-full bg-muted", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
             </div>
 
             <Tabs defaultValue="biometrics" className="w-full">
@@ -247,7 +247,7 @@ I reserve all legal rights to further action.
                  </div>
                  <Button 
                   variant="outline" 
-                  className={cn("w-full h-12 font-black uppercase tracking-widest border-2 transition-all", showSpectralMode ? "bg-primary text-white border-primary" : "hover:border-primary")}
+                  className={cn("w-full h-12 font-black uppercase tracking-widest border transition-all", showSpectralMode ? "bg-primary text-white border-primary" : "hover:border-primary")}
                   onClick={() => setShowSpectralMode(!showSpectralMode)}
                 >
                   <Layers className="w-4 h-4 mr-2" />
@@ -257,7 +257,7 @@ I reserve all legal rights to further action.
 
               <TabsContent value="actions" className="pt-6 space-y-4">
                 {!isFake ? (
-                  <div className="p-6 rounded-2xl bg-green-500/10 border-2 border-dashed border-green-500/20 text-center space-y-3">
+                  <div className="p-6 rounded-2xl bg-green-500/10 border border-dashed border-green-500/20 text-center space-y-3">
                     <ShieldCheck className="w-12 h-12 text-green-500 mx-auto" />
                     <p className="text-xs font-bold text-green-700">Content verified as authentic. No action required.</p>
                   </div>
@@ -289,7 +289,7 @@ I reserve all legal rights to further action.
           </CardContent>
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
-            <Button className="flex-1 h-12 font-black uppercase tracking-widest shadow-xl group" onClick={exportEvidence}>
+            <Button className="flex-1 h-12 font-black uppercase tracking-widest group" onClick={exportEvidence}>
               <FileJson className="w-4 h-4 mr-2" /> Export Proof to Vault
             </Button>
             <Button variant="outline" className="h-12 w-12 rounded-xl" onClick={() => window.print()}>
@@ -298,7 +298,7 @@ I reserve all legal rights to further action.
           </CardFooter>
         </Card>
 
-        <Card className="relative overflow-hidden border-2 border-primary/10 shadow-inner bg-black flex flex-col items-center justify-center p-0 rounded-3xl min-h-[500px]">
+        <Card className="relative overflow-hidden border border-border shadow-sm bg-black flex flex-col items-center justify-center p-0 rounded-2xl min-h-[500px]">
           {showSpectralMode && (
             <div className="absolute inset-0 z-20 pointer-events-none bg-primary/20 mix-blend-difference">
               <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/noise/1000/1000')] opacity-40 grayscale contrast-150" />
@@ -311,12 +311,12 @@ I reserve all legal rights to further action.
                 <div className="relative">
                   <img 
                     src={mediaUrl} 
-                    className={cn("max-w-full h-auto object-contain rounded-xl transition-all", showSpectralMode && "grayscale invert contrast-150")} 
+                    className={cn("max-w-full h-auto object-contain rounded-lg transition-all", showSpectralMode && "grayscale invert contrast-150")} 
                   />
                   {result.highlightedRegions?.map((region: any, i: number) => (
                     <div 
                       key={i}
-                      className="absolute border-2 border-destructive shadow-[0_0_15px_rgba(255,0,0,0.5)] group"
+                      className="absolute border-2 border-destructive group"
                       style={{
                         left: `${region.x}%`,
                         top: `${region.y}%`,
@@ -324,7 +324,7 @@ I reserve all legal rights to further action.
                         height: `${region.height}%`,
                       }}
                     >
-                      <div className="absolute -top-6 left-0 bg-destructive text-white text-[8px] px-2 py-0.5 rounded-sm font-black flex items-center gap-1 shadow-xl whitespace-nowrap opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute -top-6 left-0 bg-destructive text-white text-[8px] px-2 py-0.5 rounded-sm font-black flex items-center gap-1 shadow-sm whitespace-nowrap opacity-80 group-hover:opacity-100 transition-opacity">
                         <ShieldAlert className="w-3 h-3" />
                         ARTIFACT #{i+1}
                       </div>
@@ -333,14 +333,14 @@ I reserve all legal rights to further action.
                 </div>
               )}
               
-              {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full h-auto rounded-xl shadow-2xl" />}
+              {mediaType === 'video' && <video ref={mediaRef as any} src={mediaUrl} controls className="max-w-full h-auto rounded-lg" />}
               
               {mediaType === 'audio' && (
                 <div className="flex flex-col items-center gap-8 p-12">
-                  <div className="p-12 rounded-full bg-primary/10 border-8 border-primary/5">
+                  <div className="p-12 rounded-full bg-primary/10 border-4 border-primary/5">
                     <Music className="w-32 h-32 text-primary" />
                   </div>
-                  <audio ref={mediaRef as any} src={mediaUrl} controls className="w-80 shadow-2xl" />
+                  <audio ref={mediaRef as any} src={mediaUrl} controls className="w-80 shadow-sm" />
                 </div>
               )}
             </div>

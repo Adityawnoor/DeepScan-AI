@@ -138,13 +138,13 @@ export default function DeepScanHome() {
         <div className="flex flex-col gap-12">
           
           <section className="relative">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-12 bg-white dark:bg-card border border-primary/10 rounded-[2.5rem] shadow-xl">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white dark:bg-card border border-border rounded-2xl shadow-sm">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-[#1a1a1a] dark:text-white uppercase">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
@@ -166,7 +166,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90 text-white gap-3"
+                  className="h-16 px-10 rounded-xl font-black uppercase tracking-widest shadow-sm bg-primary hover:bg-primary/90 text-white gap-3"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-5 h-5" />
@@ -175,7 +175,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 backdrop-blur-sm"
+                  className="h-16 px-10 rounded-xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 backdrop-blur-sm shadow-sm"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -227,7 +227,7 @@ export default function DeepScanHome() {
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-[2rem] space-y-6">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-2xl space-y-6 shadow-sm">
                         <div className="flex items-center gap-4">
                           <div className="p-2.5 bg-primary/20 rounded-xl">
                             <Shield className="w-5 h-5 text-primary" />

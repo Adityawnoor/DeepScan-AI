@@ -63,8 +63,8 @@ export function AuthenticityShield() {
       
       {/* EXPLANATION PANEL */}
       <div className="lg:col-span-4 space-y-6">
-        <Card className="border-primary/20 bg-primary/5 shadow-2xl overflow-hidden">
-          <CardHeader className="bg-primary/10 border-b">
+        <Card className="border border-primary/20 bg-primary/5 shadow-sm overflow-hidden rounded-2xl">
+          <CardHeader className="bg-primary/10 border-b p-6">
             <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
               <ShieldCheck className="w-6 h-6 text-primary" />
               AUTHENTICITY SHIELD
@@ -89,8 +89,8 @@ export function AuthenticityShield() {
                  { icon: EyeOff, text: "Privacy Obfuscation", sub: "Prevents high-res facial scraping" },
                  { icon: BrainCircuit, text: "Adversarial Defense", sub: "Disrupts neural network processing" }
                ].map((item, i) => (
-                 <div key={i} className="flex gap-4 items-start p-4 rounded-2xl bg-background border shadow-sm">
-                   <div className="p-2 bg-primary/10 rounded-xl">
+                 <div key={i} className="flex gap-4 items-start p-4 rounded-xl bg-background border shadow-sm">
+                   <div className="p-2 bg-primary/10 rounded-lg">
                      <item.icon className="w-5 h-5 text-primary" />
                    </div>
                    <div>
@@ -103,20 +103,20 @@ export function AuthenticityShield() {
           </CardContent>
         </Card>
 
-        <AlertTriangle className="w-full text-muted-foreground/30 p-8 h-auto" />
+        <AlertTriangle className="w-full text-muted-foreground/20 p-8 h-auto" />
       </div>
 
       {/* INTERACTIVE WORKBENCH */}
       <div className="lg:col-span-8 space-y-6">
-        <Card className="border-2 border-dashed border-primary/20 bg-card/30 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
-          <CardContent className="p-12">
+        <Card className="border border-border bg-card/30 backdrop-blur-md rounded-2xl overflow-hidden shadow-sm">
+          <CardContent className="p-10">
             {!originalImage ? (
               <div 
-                className="flex flex-col items-center justify-center min-h-[400px] border-4 border-dashed rounded-[2rem] hover:bg-primary/5 transition-all cursor-pointer group"
+                className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed rounded-xl hover:bg-primary/5 transition-all cursor-pointer group"
                 onClick={() => inputRef.current?.click()}
               >
                 <input type="file" ref={inputRef} onChange={handleFile} className="hidden" accept="image/*" />
-                <div className="p-6 bg-primary/10 rounded-full mb-6 transition-transform">
+                <div className="p-6 bg-primary/10 rounded-full mb-6">
                   <Upload className="w-12 h-12 text-primary" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Vaccinate Your Source</h3>
@@ -127,19 +127,19 @@ export function AuthenticityShield() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Original Data Stream</Label>
-                    <div className="aspect-square rounded-3xl overflow-hidden border-2 shadow-inner bg-black">
+                    <div className="aspect-square rounded-2xl overflow-hidden border shadow-inner bg-black">
                       <img src={originalImage} className="w-full h-full object-cover opacity-60" />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Cloaked Authenticity Shield</Label>
-                    <div className="aspect-square rounded-3xl overflow-hidden border-4 border-primary/30 shadow-2xl bg-black relative">
+                    <div className="aspect-square rounded-2xl overflow-hidden border-2 border-primary/30 shadow-sm bg-black relative">
                       {shieldedImage ? (
                         <>
                           <img src={shieldedImage} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
                           <div className="absolute bottom-4 right-4">
-                             <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px] shadow-2xl">
+                             <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px]">
                                <ShieldCheck className="w-3.5 h-3.5 mr-2" /> PROTECTED
                              </Badge>
                           </div>
@@ -165,7 +165,7 @@ export function AuthenticityShield() {
                   {!shieldedImage ? (
                     <Button 
                       size="lg" 
-                      className="h-16 px-12 rounded-2xl font-black uppercase tracking-widest shadow-2xl"
+                      className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-sm"
                       disabled={isProcessing}
                       onClick={applyShield}
                     >
@@ -176,7 +176,7 @@ export function AuthenticityShield() {
                       <Button 
                         size="lg" 
                         variant="default"
-                        className="h-16 px-12 rounded-2xl font-black uppercase tracking-widest shadow-2xl"
+                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-sm"
                         onClick={downloadShielded}
                       >
                         <Download className="w-5 h-5 mr-3" /> Download Shielded Image
@@ -184,7 +184,7 @@ export function AuthenticityShield() {
                       <Button 
                         size="lg" 
                         variant="outline"
-                        className="h-16 px-12 rounded-2xl font-black uppercase tracking-widest"
+                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest"
                         onClick={() => { setOriginalImage(null); setShieldedImage(null); }}
                       >
                         Protect Another
@@ -198,7 +198,7 @@ export function AuthenticityShield() {
           <CardFooter className="bg-muted/10 p-6 border-t flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Immunity Strength: High (Adversarial L2-Bound)</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Immunity Strength: High</span>
             </div>
             <div className="text-[10px] font-bold text-muted-foreground italic">
               * Shielding slightly modifies pixel values to break AI perception.
