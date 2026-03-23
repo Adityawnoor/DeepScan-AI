@@ -130,10 +130,24 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      {/* Background Neural Grid */}
-      <div className="absolute inset-0 forensic-grid pointer-events-none opacity-[0.4] dark:opacity-[0.2]" />
-      <div className="absolute inset-0 forensic-grid animate-drift pointer-events-none opacity-[0.2] dark:opacity-[0.1]" />
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-2000">
+      {/* 3D Spatial Environment */}
+      <div className="fixed inset-0 grid-3d-floor pointer-events-none opacity-[0.4] dark:opacity-[0.2]" />
+      
+      {/* Data Streams */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {[...Array(8)].map((_, i) => (
+          <div 
+            key={i} 
+            className="animate-data-stream" 
+            style={{ 
+              left: `${12.5 * i + Math.random() * 5}%`, 
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${3 + Math.random() * 4}s`
+            }} 
+          />
+        ))}
+      </div>
 
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
@@ -147,36 +161,36 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10">
         <div className="flex flex-col gap-12">
           
-          <section className="perspective-1000">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border rounded-none shadow-xl transition-all duration-500 hover:shadow-2xl">
+          <section>
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow">
               <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-none bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase animate-decipher">
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
                   DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
                 <div className="flex gap-4 pt-4">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-none border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
                     <Zap className="w-3 h-3" />
                     {knowledgeCount} LESSONS LEARNED
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-none border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
                     <Activity className="w-3 h-3" />
                     LATENT SPACE AUDIT ACTIVE
                   </div>
                 </div>
               </div>
 
-              <div className="w-full lg:w-auto flex flex-col gap-4 perspective-1000">
+              <div className="w-full lg:w-auto flex flex-col gap-4">
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-white gap-3 transition-transform duration-300 hover:scale-[1.02] active:scale-95"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest volumetric-shadow bg-primary hover:bg-primary/90 text-white gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-95 animate-pulse-ring relative overflow-visible"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-5 h-5" />
@@ -185,7 +199,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm shadow-md transition-transform duration-300 hover:scale-[1.02] active:scale-95"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.02] active:scale-95 hover-glow"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -237,12 +251,12 @@ export default function DeepScanHome() {
                     <div className="space-y-8">
                       <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10 volumetric-shadow">
                         <div className="flex items-center gap-4">
                           <div className="p-2.5 bg-primary/20 rounded-none">
                             <Shield className="w-5 h-5 text-primary" />
                           </div>
-                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground text-glow-sm">FORENSIC CAPABILITIES</h4>
+                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground">FORENSIC CAPABILITIES</h4>
                         </div>
                         <ul className="space-y-4">
                           {[
@@ -261,7 +275,7 @@ export default function DeepScanHome() {
                     </div>
 
                     {currentResult && (
-                      <div className="animate-scanline">
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <AnalysisResult 
                           scanId={currentResult.id}
                           result={currentResult.output} 

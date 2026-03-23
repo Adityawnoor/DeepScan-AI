@@ -23,7 +23,7 @@
     --border: 210 20% 90%;
     --input: 210 20% 90%;
     --ring: 211 100% 50%;
-    --radius: 0.5rem;
+    --radius: 0rem;
     --chart-1: 211 100% 50%;
     --chart-2: 208 7% 46%;
     --chart-3: 197 37% 24%;
@@ -59,59 +59,82 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased overflow-x-hidden;
+    @apply bg-background text-foreground antialiased overflow-x-hidden font-body;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer utilities {
-  .perspective-1000 {
-    perspective: 1000px;
+  .perspective-2000 {
+    perspective: 2000px;
   }
-  .preserve-3d {
-    transform-style: preserve-3d;
+  
+  .grid-3d-floor {
+    background-image: 
+      linear-gradient(to right, rgba(0, 149, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 149, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform: rotateX(60deg) translateY(-200px);
+    transform-origin: top;
+    height: 200%;
+    width: 200%;
+    position: absolute;
+    top: 0;
+    left: -50%;
+    z-index: -1;
+    mask-image: linear-gradient(to bottom, transparent, black, transparent);
   }
-  .backface-hidden {
-    backface-visibility: hidden;
+
+  .volumetric-shadow {
+    box-shadow: 
+      0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+      0 4px 6px -2px rgba(0, 0, 0, 0.05),
+      0 0 0 1px rgba(0, 149, 255, 0.05);
   }
-  .forensic-grid {
-    background-image: linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-  .dark .forensic-grid {
-    background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px rgba(0, 149, 255, 0.3);
   }
 }
 
-@keyframes drift {
-  from { transform: translateY(0); }
-  to { transform: translateY(-40px); }
+@keyframes data-fall {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: translateY(100vh); opacity: 0; }
 }
 
-.animate-drift {
-  animation: drift 10s linear infinite;
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(1000%); }
-}
-
-.animate-scanline {
-  position: relative;
-  overflow: hidden;
-}
-
-.animate-scanline::after {
-  content: "";
+.animate-data-stream {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(to right, transparent, hsl(var(--primary)), transparent);
-  opacity: 0.5;
-  animation: scanline 3s linear infinite;
+  width: 1px;
+  height: 100px;
+  background: linear-gradient(to bottom, transparent, hsl(var(--primary)), transparent);
+  animation: data-fall 4s linear infinite;
+}
+
+@keyframes text-decipher {
+  0% { opacity: 0; filter: blur(10px); letter-spacing: 10px; }
+  100% { opacity: 1; filter: blur(0); letter-spacing: normal; }
+}
+
+.animate-decipher {
+  animation: text-decipher 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.animate-pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border: 1px solid hsl(var(--primary));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.animate-pulse-ring:hover::before {
+  animation: pulse-ring 1s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
