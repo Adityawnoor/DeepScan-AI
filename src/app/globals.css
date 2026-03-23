@@ -61,6 +61,7 @@
   body {
     @apply bg-background text-foreground antialiased overflow-x-hidden font-body;
     font-feature-settings: "rlig" 1, "calt" 1;
+    perspective: 1200px;
   }
 }
 
@@ -75,11 +76,69 @@
   .hover-glow:hover {
     box-shadow: 0 0 20px rgba(0, 149, 255, 0.3);
   }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .spatial-lift {
+    transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.4s ease;
+  }
+
+  .spatial-lift:hover {
+    transform: translateZ(30px) translateY(-5px);
+    box-shadow: 
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 30px rgba(0, 123, 255, 0.15);
+  }
+
+  .holographic-scanline {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .holographic-scanline::after {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(0, 123, 255, 0.05),
+      rgba(0, 123, 255, 0.15),
+      rgba(0, 123, 255, 0.05),
+      transparent
+    );
+    animation: scanline 4s linear infinite;
+    pointer-events: none;
+    z-index: 50;
+  }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(200%); }
 }
 
 @keyframes pulse-ring {
   0% { transform: scale(0.8); opacity: 0.5; }
   100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
 .animate-pulse-ring::before {
@@ -93,4 +152,18 @@
 
 .animate-pulse-ring:hover::before {
   animation: pulse-ring 1s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.perspective-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 123, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 123, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  transform: rotateX(60deg) translateY(-200px);
+  transform-origin: top;
+  position: absolute;
+  inset: 0;
+  height: 200%;
+  z-index: -1;
+  mask-image: linear-gradient(to bottom, black, transparent);
 }

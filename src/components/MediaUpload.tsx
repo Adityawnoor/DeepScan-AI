@@ -176,12 +176,12 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   }
 
   return (
-    <Card className="p-0 border-dashed border-2 bg-white dark:bg-card/50 rounded-none shadow-sm overflow-hidden volumetric-shadow group hover:border-primary/30 transition-all duration-500">
+    <Card className="p-0 border-dashed border-2 bg-white dark:bg-card/50 rounded-none shadow-sm overflow-hidden volumetric-shadow group hover:border-primary/30 transition-all duration-500 holographic-scanline preserve-3d">
       {!preview && !isWebcamOpen ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center min-h-[400px] preserve-3d">
           <div
             className={cn(
-              "flex flex-col items-center justify-center w-full flex-1 transition-all cursor-pointer group px-8 text-center",
+              "flex flex-col items-center justify-center w-full flex-1 transition-all cursor-pointer group px-8 text-center preserve-3d",
               dragActive ? "bg-primary/5" : "hover:bg-primary/5"
             )}
             onDragEnter={handleDrag}
@@ -197,23 +197,23 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               accept="image/*,audio/*,video/*"
               onChange={handleInputChange}
             />
-            <div className="flex gap-4 mb-6">
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
+            <div className="flex gap-4 mb-6 preserve-3d">
+              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-125 transition-transform duration-500 transform translate-z-10">
                 <ImageIcon className="w-5 h-5 text-primary" />
               </div>
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform delay-75">
+              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-125 transition-transform duration-500 transform translate-z-10 delay-75">
                 <Music className="w-5 h-5 text-primary" />
               </div>
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-110 transition-transform delay-150">
+              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-125 transition-transform duration-500 transform translate-z-10 delay-150">
                 <Video className="w-5 h-5 text-primary" />
               </div>
             </div>
-            <h3 className="font-black uppercase text-lg mb-2 text-foreground tracking-tighter">Analyze Media</h3>
-            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-8">
+            <h3 className="font-black uppercase text-lg mb-2 text-foreground tracking-tighter transform translate-z-20">Analyze Media</h3>
+            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-8 transform translate-z-10">
               Drag & drop, click to browse, or <button className="text-primary hover:underline underline-offset-4" onClick={(e) => { e.stopPropagation(); handlePaste(); }}>paste directly</button>
             </p>
             
-            <div className="flex gap-4">
+            <div className="flex gap-4 transform translate-z-15">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -235,7 +235,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             </div>
           </div>
 
-          <div className="w-full border-t p-4 bg-muted/5">
+          <div className="w-full border-t p-4 bg-muted/5 transform translate-z-5">
             <div className="flex gap-2 max-w-md mx-auto">
               <div className="relative flex-1">
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -254,24 +254,24 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
           </div>
         </div>
       ) : isWebcamOpen ? (
-        <div className="flex flex-col items-center gap-6 p-8">
-          <div className="relative w-full aspect-video bg-black rounded-none overflow-hidden shadow-2xl border-2 border-primary/20 hover-glow transition-all duration-500">
+        <div className="flex flex-col items-center gap-6 p-8 preserve-3d">
+          <div className="relative w-full aspect-video bg-black rounded-none overflow-hidden shadow-2xl border-2 border-primary/20 hover-glow transition-all duration-500 spatial-lift transform translate-z-10">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
             <div className="absolute inset-0 pointer-events-none border border-primary/20 animate-pulse" />
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 transform translate-z-20">
             <Button onClick={captureWebcam} className="rounded-none h-12 px-8 font-black uppercase tracking-widest animate-pulse-ring relative overflow-visible">Capture DNA</Button>
             <Button variant="outline" onClick={closeWebcam} className="rounded-none h-12 px-8 font-black uppercase tracking-widest hover:bg-destructive/10">Cancel</Button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-8 p-8">
-          <div className="relative w-full max-w-lg aspect-square rounded-none overflow-hidden bg-black shadow-2xl flex items-center justify-center border hover-glow transition-all duration-700">
+        <div className="flex flex-col items-center gap-8 p-8 preserve-3d">
+          <div className="relative w-full max-w-lg aspect-square rounded-none overflow-hidden bg-black shadow-2xl flex items-center justify-center border hover-glow transition-all duration-700 spatial-lift transform translate-z-10">
             {mediaType === 'image' && <img src={preview!} alt="Preview" className="w-full h-full object-contain" />}
             {mediaType === 'video' && <video src={preview!} controls className="w-full h-full object-contain" />}
             {mediaType === 'audio' && (
-              <div className="flex flex-col items-center gap-6 p-12 w-full">
-                <div className="p-6 bg-primary/10 rounded-full animate-pulse">
+              <div className="flex flex-col items-center gap-6 p-12 w-full preserve-3d">
+                <div className="p-6 bg-primary/10 rounded-full animate-float">
                   <Music className="w-20 h-20 text-primary" />
                 </div>
                 <audio src={preview!} controls className="w-full" />
@@ -279,12 +279,12 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
             )}
             <button
               onClick={clearPreview}
-              className="absolute top-4 right-4 p-2 bg-black/60 text-white rounded-full hover:bg-destructive transition-all hover:scale-110"
+              className="absolute top-4 right-4 p-2 bg-black/60 text-white rounded-full hover:bg-destructive transition-all hover:scale-125 transform translate-z-20"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 transform translate-z-20">
             <Button 
               size="lg" 
               className="px-10 h-14 rounded-none font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 animate-pulse-ring relative overflow-visible"

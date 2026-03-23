@@ -130,8 +130,10 @@ export default function DeepScanHome() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-1000">
+      <div className="perspective-grid" />
+      
+      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50 preserve-3d">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
           <div className="flex items-center gap-6">
@@ -140,39 +142,39 @@ export default function DeepScanHome() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10">
+      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
         <div className="flex flex-col gap-12">
           
-          <section>
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500">
-              <div className="flex-1 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20">
+          <section className="preserve-3d">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 spatial-lift preserve-3d">
+              <div className="flex-1 space-y-6 preserve-3d">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 animate-float">
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
-                <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
+                <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
                   DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
-                <div className="flex gap-4 pt-4">
-                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
+                <div className="flex gap-4 pt-4 preserve-3d">
+                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest spatial-lift">
                     <Zap className="w-3 h-3" />
                     {knowledgeCount} LESSONS LEARNED
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest spatial-lift">
                     <Activity className="w-3 h-3" />
                     LATENT SPACE AUDIT ACTIVE
                   </div>
                 </div>
               </div>
 
-              <div className="w-full lg:w-auto flex flex-col gap-4">
+              <div className="w-full lg:w-auto flex flex-col gap-4 preserve-3d">
                 <Button 
                   variant="default" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest volumetric-shadow bg-primary hover:bg-primary/90 text-white gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-95 animate-pulse-ring relative overflow-visible"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest volumetric-shadow bg-primary hover:bg-primary/90 text-white gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 animate-pulse-ring relative overflow-visible transform translate-z-20"
                   onClick={handleBeginInvestigation}
                 >
                   <MicroscopeIcon className="w-5 h-5" />
@@ -181,7 +183,7 @@ export default function DeepScanHome() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.02] active:scale-95 hover-glow relative overflow-visible animate-pulse-ring"
+                  className="h-16 px-10 rounded-none font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.05] active:scale-95 hover-glow relative overflow-visible transform translate-z-10"
                   onClick={handleVaccinateIdentity}
                 >
                   <Zap className="w-5 h-5" />
@@ -191,9 +193,9 @@ export default function DeepScanHome() {
             </div>
           </section>
 
-          <div ref={workstationRef} className="space-y-8">
+          <div ref={workstationRef} className="space-y-8 preserve-3d">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
+              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8 preserve-3d">
                 <TabsTrigger 
                   value="analyze" 
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
@@ -224,16 +226,18 @@ export default function DeepScanHome() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
-                <div className="space-y-8">
+              <TabsContent value="analyze" className="mt-0 focus-visible:ring-0 preserve-3d">
+                <div className="space-y-8 preserve-3d">
                   <div className={cn(
                     "grid grid-cols-1 gap-8",
                     currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
                   )}>
-                    <div className="space-y-8">
-                      <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
+                    <div className="space-y-8 preserve-3d">
+                      <div className="spatial-lift preserve-3d">
+                        <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
+                      </div>
                       
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10 volumetric-shadow group hover-glow relative overflow-visible">
+                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-none space-y-6 shadow-none transition-all hover:bg-primary/10 volumetric-shadow group hover-glow relative overflow-visible spatial-lift">
                         <div className="flex items-center gap-4">
                           <div className="p-2.5 bg-primary/20 rounded-none group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                             <Shield className="w-5 h-5" />
@@ -257,7 +261,7 @@ export default function DeepScanHome() {
                     </div>
 
                     {currentResult && (
-                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 spatial-lift preserve-3d">
                         <AnalysisResult 
                           scanId={currentResult.id}
                           result={currentResult.output} 
@@ -272,15 +276,15 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="protect" className="mt-0">
+              <TabsContent value="protect" className="mt-0 spatial-lift">
                 <AuthenticityShield />
               </TabsContent>
 
-              <TabsContent value="history" className="mt-0">
+              <TabsContent value="history" className="mt-0 spatial-lift">
                 <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
               </TabsContent>
 
-              <TabsContent value="datasets" className="mt-0">
+              <TabsContent value="datasets" className="mt-0 spatial-lift">
                 <DatasetManager 
                   knowledgeCount={knowledgeCount} 
                   onRefresh={(name, handle) => {
@@ -294,7 +298,7 @@ export default function DeepScanHome() {
         </div>
       </main>
 
-      <footer className="border-t py-12 mt-auto bg-background/50 backdrop-blur-sm z-10">
+      <footer className="border-t py-12 mt-auto bg-background/50 backdrop-blur-sm z-10 preserve-3d">
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
