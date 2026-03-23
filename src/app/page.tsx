@@ -11,6 +11,7 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
+import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -118,6 +119,11 @@ export default function DeepScanHome() {
     workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const handleVaccinateIdentity = () => {
+    setActiveTab("protect")
+    workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
@@ -139,25 +145,25 @@ export default function DeepScanHome() {
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[1.1] text-[#1a1a1a] dark:text-white uppercase">
-                  IDENTIFY THE <span className="text-primary italic">SYNTHETIC GHOST.</span>
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-[#1a1a1a] dark:text-white uppercase">
+                  STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
                   DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
                 <div className="flex gap-4 pt-4">
-                  <Badge variant="outline" className="rounded-lg px-4 py-2 border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest gap-2">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
                     <Zap className="w-3 h-3" />
                     {knowledgeCount} LESSONS LEARNED
-                  </Badge>
-                  <Badge variant="outline" className="rounded-lg px-4 py-2 border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest gap-2">
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
                     <Activity className="w-3 h-3" />
                     LATENT SPACE AUDIT ACTIVE
-                  </Badge>
+                  </div>
                 </div>
               </div>
 
-              <div className="w-full lg:w-auto">
+              <div className="w-full lg:w-auto flex flex-col gap-4">
                 <Button 
                   variant="default" 
                   size="lg" 
@@ -166,6 +172,15 @@ export default function DeepScanHome() {
                 >
                   <MicroscopeIcon className="w-5 h-5" />
                   BEGIN INVESTIGATION
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 backdrop-blur-sm"
+                  onClick={handleVaccinateIdentity}
+                >
+                  <Zap className="w-5 h-5" />
+                  VACCINATE IDENTITY
                 </Button>
               </div>
             </div>
@@ -180,6 +195,13 @@ export default function DeepScanHome() {
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   ANALYZE
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="protect" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  PROTECT
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
@@ -246,6 +268,10 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="protect" className="mt-0">
+                <AuthenticityShield />
+              </TabsContent>
+
               <TabsContent value="history" className="mt-0">
                 <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
               </TabsContent>
@@ -277,18 +303,6 @@ export default function DeepScanHome() {
           </div>
         </div>
       </footer>
-    </div>
-  )
-}
-
-function Badge({ children, variant = "default", className }: { children: React.ReactNode, variant?: "default" | "outline", className?: string }) {
-  return (
-    <div className={cn(
-      "px-3 py-1 rounded-full text-xs font-bold",
-      variant === "default" ? "bg-primary text-white" : "border bg-background",
-      className
-    )}>
-      {children}
     </div>
   )
 }
