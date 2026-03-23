@@ -176,7 +176,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
   }
 
   return (
-    <Card className="p-0 border-dashed border-2 bg-white dark:bg-card/50 rounded-none shadow-sm overflow-hidden volumetric-shadow group hover:border-primary/30 transition-all duration-500 holographic-scanline preserve-3d">
+    <Card className="p-0 border-dashed border-2 bg-white dark:bg-card/50 rounded-3xl shadow-sm overflow-hidden volumetric-shadow group hover:border-primary/30 transition-all duration-500 holographic-scanline preserve-3d">
       {!preview && !isWebcamOpen ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] preserve-3d">
           <div
@@ -198,13 +198,13 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               onChange={handleInputChange}
             />
             <div className="flex gap-4 mb-6 preserve-3d">
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-125 transition-transform duration-500 transform translate-z-10">
+              <div className="p-3 bg-primary/10 rounded-2xl group-hover:scale-125 transition-transform duration-500 transform translate-z-10">
                 <ImageIcon className="w-5 h-5 text-primary" />
               </div>
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-125 transition-transform duration-500 transform translate-z-10 delay-75">
+              <div className="p-3 bg-primary/10 rounded-2xl group-hover:scale-125 transition-transform duration-500 transform translate-z-10 delay-75">
                 <Music className="w-5 h-5 text-primary" />
               </div>
-              <div className="p-3 bg-primary/10 rounded-full group-hover:scale-125 transition-transform duration-500 transform translate-z-10 delay-150">
+              <div className="p-3 bg-primary/10 rounded-2xl group-hover:scale-125 transition-transform duration-500 transform translate-z-10 delay-150">
                 <Video className="w-5 h-5 text-primary" />
               </div>
             </div>
@@ -218,7 +218,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
                 variant="outline" 
                 size="sm" 
                 onClick={(e) => { e.stopPropagation(); openWebcam(); }} 
-                className="rounded-none border-primary/20 h-10 px-6 font-black uppercase text-[10px] tracking-widest gap-2 hover-glow transition-all"
+                className="rounded-xl border-primary/20 h-10 px-6 font-black uppercase text-[10px] tracking-widest gap-2 hover-glow transition-all"
               >
                 <Camera className="w-4 h-4" />
                 Use Webcam
@@ -227,7 +227,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
                 variant="outline" 
                 size="sm" 
                 onClick={(e) => { e.stopPropagation(); handlePaste(); }} 
-                className="rounded-none border-primary/20 h-10 px-6 font-black uppercase text-[10px] tracking-widest gap-2 bg-muted/30 hover-glow transition-all"
+                className="rounded-xl border-primary/20 h-10 px-6 font-black uppercase text-[10px] tracking-widest gap-2 bg-muted/30 hover-glow transition-all"
               >
                 <Clipboard className="w-4 h-4" />
                 CTRL + V TO PASTE
@@ -241,13 +241,13 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Paste media URL..."
-                  className="pl-9 h-10 rounded-none bg-background border shadow-none text-[10px] font-bold uppercase tracking-widest"
+                  className="pl-9 h-10 rounded-xl bg-background border shadow-none text-[10px] font-bold uppercase tracking-widest"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}
                 />
               </div>
-              <Button size="sm" onClick={handleUrlUpload} disabled={!urlInput || isLoadingUrl} className="rounded-none h-10 px-6 font-black uppercase tracking-widest bg-primary/60 hover:bg-primary transition-all hover-glow">
+              <Button size="sm" onClick={handleUrlUpload} disabled={!urlInput || isLoadingUrl} className="rounded-xl h-10 px-6 font-black uppercase tracking-widest bg-primary/60 hover:bg-primary transition-all hover-glow">
                 {isLoadingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load"}
               </Button>
             </div>
@@ -255,18 +255,18 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
         </div>
       ) : isWebcamOpen ? (
         <div className="flex flex-col items-center gap-6 p-8 preserve-3d">
-          <div className="relative w-full aspect-video bg-black rounded-none overflow-hidden shadow-2xl border-2 border-primary/20 hover-glow transition-all duration-500 spatial-lift transform translate-z-10">
+          <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-primary/20 hover-glow transition-all duration-500 spatial-lift transform translate-z-10">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
             <div className="absolute inset-0 pointer-events-none border border-primary/20 animate-pulse" />
           </div>
           <div className="flex gap-4 transform translate-z-20">
-            <Button onClick={captureWebcam} className="rounded-none h-12 px-8 font-black uppercase tracking-widest animate-pulse-ring relative overflow-visible">Capture DNA</Button>
-            <Button variant="outline" onClick={closeWebcam} className="rounded-none h-12 px-8 font-black uppercase tracking-widest hover:bg-destructive/10">Cancel</Button>
+            <Button onClick={captureWebcam} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest animate-pulse-ring relative overflow-visible">Capture DNA</Button>
+            <Button variant="outline" onClick={closeWebcam} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest hover:bg-destructive/10">Cancel</Button>
           </div>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-8 p-8 preserve-3d">
-          <div className="relative w-full max-w-lg aspect-square rounded-none overflow-hidden bg-black shadow-2xl flex items-center justify-center border hover-glow transition-all duration-700 spatial-lift transform translate-z-10">
+          <div className="relative w-full max-w-lg aspect-square rounded-2xl overflow-hidden bg-black shadow-2xl flex items-center justify-center border hover-glow transition-all duration-700 spatial-lift transform translate-z-10">
             {mediaType === 'image' && <img src={preview!} alt="Preview" className="w-full h-full object-contain" />}
             {mediaType === 'video' && <video src={preview!} controls className="w-full h-full object-contain" />}
             {mediaType === 'audio' && (
@@ -287,7 +287,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
           <div className="flex gap-4 transform translate-z-20">
             <Button 
               size="lg" 
-              className="px-10 h-14 rounded-none font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 animate-pulse-ring relative overflow-visible"
+              className="px-10 h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 animate-pulse-ring relative overflow-visible"
               onClick={handleStartAnalysis}
               disabled={isAnalyzing}
             >
@@ -303,7 +303,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
                 </>
               )}
             </Button>
-            <Button variant="outline" size="lg" onClick={clearPreview} disabled={isAnalyzing} className="h-14 rounded-none font-black uppercase tracking-widest px-8 border-2 hover:bg-primary/5">
+            <Button variant="outline" size="lg" onClick={clearPreview} disabled={isAnalyzing} className="h-14 rounded-2xl font-black uppercase tracking-widest px-8 border-2 hover:bg-primary/5">
               New Case
             </Button>
           </div>

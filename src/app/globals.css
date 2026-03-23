@@ -23,7 +23,7 @@
     --border: 210 20% 90%;
     --input: 210 20% 90%;
     --ring: 211 100% 50%;
-    --radius: 0rem;
+    --radius: 0.75rem;
     --chart-1: 211 100% 50%;
     --chart-2: 208 7% 46%;
     --chart-3: 197 37% 24%;
@@ -146,6 +146,7 @@
   position: absolute;
   inset: -10px;
   border: 1px solid hsl(var(--primary));
+  border-radius: inherit;
   opacity: 0;
   pointer-events: none;
 }
