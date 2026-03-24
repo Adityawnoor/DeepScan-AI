@@ -93,16 +93,21 @@ export default function DeepScanHome() {
       }
     } catch (error: any) {
       // HANDLE QUOTA ERROR (429)
-      if (error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED')) {
-        if (retryCount < 3) {
+      const isQuotaError = error.message?.includes('429') || 
+                           error.message?.includes('RESOURCE_EXHAUSTED') ||
+                           error.message?.includes('quota');
+      
+      if (isQuotaError) {
+        if (retryCount < 5) {
+          const waitTime = 15000; // 15 seconds backoff
           toast({ 
-            title: "Neural Engine Busy", 
-            description: `Quota reached. Retrying automatically in 5s (Attempt ${retryCount + 1}/3)...` 
+            title: "Neural Engine Cooling Down", 
+            description: `AI Quota reached. Retrying automatically in 15s (Attempt ${retryCount + 1}/5)...` 
           })
-          await new Promise(resolve => setTimeout(resolve, 5000))
+          await new Promise(resolve => setTimeout(resolve, waitTime))
           return runAnalysisWithRetry(dataUri, retryCount + 1)
         }
-        throw new Error("Neural Engine Quota Exhausted. Please retry in a minute.")
+        throw new Error("Neural Engine Quota Exhausted. The Free Tier limit has been reached. Please wait 60 seconds and try again.")
       }
       throw error
     }
