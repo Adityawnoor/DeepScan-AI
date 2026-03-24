@@ -6,7 +6,7 @@ import {
   Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
   FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
   Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage,
-  Download, ExternalLink
+  Download, ExternalLink, ShieldAlert
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -124,8 +124,8 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
     if (isIframe) {
       toast({ 
         variant: "destructive", 
-        title: "Security Restriction", 
-        description: "Browser Security blocks folder access inside preview frames. Please open the app in a new full browser window to link your local PC vault." 
+        title: "Browser Security Restriction", 
+        description: "Chrome and Edge block folder access when apps run inside a preview window. Please open the app in a new browser tab to link your PC vault." 
       })
       return
     }
@@ -150,7 +150,7 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
       
       let errorMessage = err.message || "Failed to link PC folder."
       if (err.name === 'SecurityError' || errorMessage.includes('Cross origin')) {
-        errorMessage = "Browser Security: This feature is blocked because the app is running in a preview window. Please open the app in a full browser tab to use the Local PC Vault."
+        errorMessage = "Security Lock: Browser is blocking file access from this preview window. Open the app in a full browser tab to use the Local PC Vault."
       }
 
       toast({ 
@@ -255,16 +255,18 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
         </Card>
 
         <Card className={cn(
-          "bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer transition-all",
+          "bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer transition-all relative overflow-hidden",
           vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80",
           isIframe && !vaultHandle && "opacity-80 grayscale-[0.5] border-destructive/20"
         )} onClick={handleConnectLocalPC}>
-          <div className="space-y-1">
+          <div className="space-y-1 z-10">
              {isIframe && !vaultHandle ? (
                <>
-                 <AlertCircle className="w-8 h-8 mx-auto text-destructive/50" />
-                 <p className="text-sm font-black uppercase tracking-tighter text-destructive/70">Vault Locked</p>
-                 <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Open in New Tab to Link</p>
+                 <ShieldAlert className="w-8 h-8 mx-auto text-destructive/70" />
+                 <p className="text-sm font-black uppercase tracking-tighter text-destructive/90">Vault Locked</p>
+                 <p className="text-[9px] font-bold uppercase text-muted-foreground/80 leading-tight">
+                   Security Policy: Open app in <br/> a new tab to link PC folder.
+                 </p>
                </>
              ) : (
                <>
@@ -280,6 +282,9 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
                </>
              )}
           </div>
+          {isIframe && !vaultHandle && (
+            <div className="absolute inset-0 bg-destructive/5 pointer-events-none" />
+          )}
         </Card>
       </div>
 
