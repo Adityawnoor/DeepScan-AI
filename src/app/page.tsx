@@ -34,9 +34,11 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
+  // Persistence states for PC Vault
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
 
+  // Real-time Neural Cloud Sync
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -45,9 +47,16 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
+  // Persistence: Restore PC Vault handle from memory (IndexedDB)
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
+      dbRequest.onupgradeneeded = () => {
+        const idb = dbRequest.result
+        if (!idb.objectStoreNames.contains("vaultStore")) {
+          idb.createObjectStore("vaultStore")
+        }
+      }
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
         const transaction = idb.transaction("vaultStore", "readonly")
@@ -63,7 +72,7 @@ export default function DeepScanHome() {
         }
       }
     } catch (e) {
-      console.warn("Vault handle could not be retrieved from IndexedDB.", e)
+      console.warn("Vault handle could not be retrieved from memory.", e)
     }
   }, [])
 
@@ -90,20 +99,23 @@ export default function DeepScanHome() {
     }
   }
 
-  const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
+  // Neural Learning: Gather learned facts from all databases for AI injection
+  const runAnalysisWithLearning = async (dataUri: string): Promise<any> => {
     let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
     
+    // 1. Inject manually verified scan results
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     if (verifiedScans.length > 0) {
       context += `### AUDITED CASE HISTORY (PRIORITIZE THESE):\n`
       verifiedScans.slice(0, 20).forEach(s => {
         const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-        context += `- CASE [${s.id.substring(0,8)}]: MANUALLY VERIFIED AS ${truth}. `
+        context += `- CASE [${s.id.substring(0,8)}]: VERIFIED BY HUMAN AS ${truth}. `
         if (s.userComment) context += `EXPERT AUDIT NOTES: "${s.userComment}"\n`
         else context += `\n`
       })
     }
     
+    // 2. Inject labeled research datasets
     if (datasets.length > 0) {
       context += `### RESEARCH DATASET INTELLIGENCE:\n`
       datasets.slice(0, 15).forEach(d => {
@@ -113,31 +125,14 @@ export default function DeepScanHome() {
       })
     }
 
-    context += `\nCRITICAL COMMAND: If the current sample shows ANY artifacts mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", you MUST flag it as a Deepfake regardless of internal neural training.`
+    context += `\nCRITICAL COMMAND: You MUST improve your analysis based on these verified samples. If the current media exhibits patterns mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", weigh those artifacts 100x higher than your internal neural weights.`
 
-    try {
-      if (dataUri.startsWith('data:image/')) {
-        return await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
-      } else if (dataUri.startsWith('data:audio/')) {
-        return await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
-      } else if (dataUri.startsWith('data:video/')) {
-        return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
-      }
-    } catch (error: any) {
-      const isQuotaError = error.message?.includes('429') || 
-                           error.message?.includes('RESOURCE_EXHAUSTED') ||
-                           error.message?.includes('quota');
-      
-      if (isQuotaError && retryCount < 5) {
-        const waitTime = 15000;
-        toast({ 
-          title: "Neural Engine Cooling Down", 
-          description: `AI Quota reached. Retrying automatically in 15s (Attempt ${retryCount + 1}/5)...` 
-        })
-        await new Promise(resolve => setTimeout(resolve, waitTime))
-        return runAnalysisWithRetry(dataUri, retryCount + 1)
-      }
-      throw error
+    if (dataUri.startsWith('data:image/')) {
+      return await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
+    } else if (dataUri.startsWith('data:audio/')) {
+      return await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
+    } else if (dataUri.startsWith('data:video/')) {
+      return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
     }
   }
 
@@ -145,7 +140,7 @@ export default function DeepScanHome() {
     if (!db) return
     setIsAnalyzing(true)
     try {
-      const output = await runAnalysisWithRetry(dataUri)
+      const output = await runAnalysisWithLearning(dataUri)
       
       let mediaType: 'image' | 'audio' | 'video' = 'image'
       if (dataUri.startsWith('data:audio/')) mediaType = 'audio'
@@ -176,7 +171,7 @@ export default function DeepScanHome() {
         errorEmitter.emit('permission-error', permissionError)
       })
 
-      toast({ title: "Analysis Complete", description: "Forensic lesson synced to Global Brain." })
+      toast({ title: "Analysis Complete", description: "Intelligence synced to Global Brain." })
     } catch (e: any) {
       toast({ 
         variant: "destructive", 
@@ -266,7 +261,7 @@ export default function DeepScanHome() {
                   AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan dual-database mode detects <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> across all training environments.
+                  DeepScan learns from every audit. Our <span className="font-bold text-foreground">Cloud Brain</span> ensures analysis persistence between Studio and Localhost, while your <span className="font-bold text-foreground">PC Vault</span> stores hard forensic evidence.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -407,7 +402,7 @@ export default function DeepScanHome() {
                                 explanation: scan.explanation,
                                 neuralAncestry: scan.neuralAncestry,
                                 biometricVitals: scan.biometricVitals,
-                                scale: scan.noiseArtifacts
+                                noiseArtifacts: scan.noiseArtifacts
                               },
                               mediaUrl: scan.mediaUrl || "", 
                               mediaType: scan.mediaType

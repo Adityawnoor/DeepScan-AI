@@ -139,6 +139,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     }
 
     try {
+      // Dual-Write: Physical PC Vault
       if (vaultHandle && vaultPermissionStatus === 'granted') {
         const fileHandle = await vaultHandle.getFileHandle(`TRAINING_${file.name}`, { create: true })
         const writable = await (fileHandle as any).createWritable()
@@ -146,6 +147,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
         await writable.close()
       }
 
+      // Dual-Write: Cloud Brain (Firestore)
       const datasetId = crypto.randomUUID()
       const datasetRef = doc(db, "datasets", datasetId)
       const datasetData = {
