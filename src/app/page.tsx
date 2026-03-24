@@ -11,7 +11,6 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
-import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -35,11 +34,9 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Vault handles are stored in IndexedDB to persist across sessions and environments
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
 
-  // Global Intelligence Queries
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -48,15 +45,9 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // Load vault handle from local memory (IndexedDB)
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-      dbRequest.onupgradeneeded = () => {
-        if (!dbRequest.result.objectStoreNames.contains("vaultStore")) {
-          dbRequest.result.createObjectStore("vaultStore")
-        }
-      }
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
         const transaction = idb.transaction("vaultStore", "readonly")
@@ -92,19 +83,16 @@ export default function DeepScanHome() {
       const status = await localFolderHandle.requestPermission({ mode: 'readwrite' })
       setVaultPermissionStatus(status)
       if (status === 'granted') {
-        toast({ title: "Vault Re-verified", description: "PC Database is now active and writable." })
+        toast({ title: "Vault Re-verified", description: "Physical Database is active and writable." })
       }
     } catch (e) {
       toast({ variant: "destructive", title: "Permission Denied", description: "Could not activate physical vault." })
     }
   }
 
-  // BUILD THE GLOBAL INTELLIGENCE CONTEXT FOR THE AI
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
-    // Collect all learned context from previous training (Firestore)
     let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
     
-    // Add verified audits
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     if (verifiedScans.length > 0) {
       context += `### AUDITED CASE HISTORY (PRIORITIZE THESE):\n`
@@ -116,7 +104,6 @@ export default function DeepScanHome() {
       })
     }
     
-    // Add dataset intelligence
     if (datasets.length > 0) {
       context += `### RESEARCH DATASET INTELLIGENCE:\n`
       datasets.slice(0, 15).forEach(d => {
@@ -137,7 +124,6 @@ export default function DeepScanHome() {
         return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
       }
     } catch (error: any) {
-      // Handle AI Quota/Rate limits gracefully
       const isQuotaError = error.message?.includes('429') || 
                            error.message?.includes('RESOURCE_EXHAUSTED') ||
                            error.message?.includes('quota');
@@ -168,7 +154,6 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      // Save metadata to Global Cloud Memory (Firestore)
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
         timestamp: new Date().toISOString(),
@@ -176,7 +161,7 @@ export default function DeepScanHome() {
         aiVerdict: output.isDeepfake,
         aiConfidence: output.confidence,
         explanation: output.explanation,
-        mediaUrl: "Stored in Private Vault",
+        mediaUrl: "Protected in Vault",
         neuralAncestry: output.neuralAncestry || null,
         biometricVitals: output.biometricVitals || null,
         noiseArtifacts: output.noiseArtifacts || null
@@ -191,9 +176,8 @@ export default function DeepScanHome() {
         errorEmitter.emit('permission-error', permissionError)
       })
 
-      toast({ title: "Analysis Complete", description: "Intelligence synced to Cloud Research Base." })
+      toast({ title: "Analysis Complete", description: "Forensic lesson synced to Global Brain." })
     } catch (e: any) {
-      console.error(e)
       toast({ 
         variant: "destructive", 
         title: "Scan Failed", 
@@ -214,7 +198,7 @@ export default function DeepScanHome() {
       transaction.oncomplete = () => {
         setLocalFolderHandle(null)
         setVaultPermissionStatus('prompt')
-        toast({ title: "Vault Disconnected", description: "Local PC database unlinked." })
+        toast({ title: "Vault Disconnected", description: "Persistent physical link removed." })
       }
     }
   }
@@ -222,7 +206,7 @@ export default function DeepScanHome() {
   const historyItems = React.useMemo(() => scans.map(s => ({
     id: s.id,
     timestamp: s.timestamp,
-    fileName: "Case_" + s.id.substring(0, 6),
+    fileName: "Forensic_Case_" + s.id.substring(0, 6),
     isDeepfake: s.aiVerdict,
     confidence: s.aiConfidence,
     type: s.mediaType
@@ -271,19 +255,18 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
         <div className="flex flex-col gap-12">
           
-          {/* HERO SECTION */}
           <section className="preserve-3d">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 rounded-2xl spatial-lift preserve-3d">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6 preserve-3d">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
                   <Activity className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
-                  STOP THE <span className="text-primary italic">AI GHOST.</span>
+                  AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
+                  DeepScan dual-database mode detects <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> across all training environments.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -292,7 +275,7 @@ export default function DeepScanHome() {
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Activity className="w-3 h-3" />
-                    LATENT SPACE AUDIT ACTIVE
+                    DUAL-SYNC ACTIVE
                   </div>
                 </div>
               </div>
@@ -314,7 +297,7 @@ export default function DeepScanHome() {
                   className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 transform translate-z-15"
                   onClick={() => setActiveTab("protect")}
                 >
-                  <Sparkles className="w-5 h-5 text-primary" />
+                  <ShieldIcon className="w-5 h-5 text-primary" />
                   VACCINATE IDENTITY
                 </Button>
               </div>
@@ -350,7 +333,7 @@ export default function DeepScanHome() {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Database className="w-3.5 h-3.5" />
-                  DATASETS
+                  TRAINING
                 </TabsTrigger>
               </TabsList>
 
@@ -379,7 +362,6 @@ export default function DeepScanHome() {
                     )}
                   </div>
 
-                  {/* FORENSIC CAPABILITIES SECTION */}
                   <div className="py-12 border rounded-2xl bg-primary/5 p-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
                     <div className="flex flex-col gap-6">
                       <div className="flex items-center gap-3">
@@ -438,11 +420,24 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="protect" className="mt-0 focus-visible:ring-0 spatial-lift">
-                <AuthenticityShield vaultHandle={localFolderHandle} />
+              <TabsContent value="protect" className="mt-0 focus-visible:ring-0">
+                <DatasetManager 
+                  knowledgeCount={knowledgeCount} 
+                  vaultHandle={localFolderHandle}
+                  vaultPermissionStatus={vaultPermissionStatus}
+                  onVaultChange={(name, handle) => {
+                    if (handle) {
+                      setLocalFolderHandle(handle);
+                      setVaultPermissionStatus('granted');
+                    } else {
+                      setLocalFolderHandle(null);
+                      setVaultPermissionStatus('prompt');
+                    }
+                  }} 
+                />
               </TabsContent>
 
-              <TabsContent value="history" className="mt-0 spatial-lift">
+              <TabsContent value="history" className="mt-0">
                 <DetectionHistory 
                   items={historyItems} 
                   onClear={() => {}} 
@@ -468,7 +463,7 @@ export default function DeepScanHome() {
                 />
               </TabsContent>
 
-              <TabsContent value="datasets" className="mt-0 spatial-lift">
+              <TabsContent value="datasets" className="mt-0">
                 <DatasetManager 
                   knowledgeCount={knowledgeCount} 
                   vaultHandle={localFolderHandle}

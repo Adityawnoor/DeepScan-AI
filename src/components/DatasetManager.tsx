@@ -6,7 +6,7 @@ import {
   Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
   FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
   Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage,
-  Download, ExternalLink, ShieldAlert, Settings2, LogOut
+  Download, ExternalLink, ShieldAlert, Settings2, LogOut, Sparkles
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,7 +40,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Firebase Data Hooks
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc")) : null, [db])
   
@@ -106,25 +105,14 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     if (isIframe) {
       toast({ 
         variant: "destructive", 
-        title: "Browser Security Restriction", 
-        description: "Folder access is restricted in the preview. Open the app in a new tab to link your PC vault." 
+        title: "Security Policy Check", 
+        description: "Folder access requires the app to be opened in a new tab." 
       })
       return
     }
 
     try {
-      if (!('showDirectoryPicker' in window)) {
-        toast({ 
-          variant: "destructive", 
-          title: "Browser Unsupported", 
-          description: "Your browser does not support local folder access." 
-        })
-        return
-      }
-      
       const handle = await (window as any).showDirectoryPicker()
-      
-      // Save to IndexedDB for persistence (Works across sessions and on localhost)
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
@@ -132,30 +120,12 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
         const store = transaction.objectStore("vaultStore")
         store.put(handle, "localFolderHandle")
       }
-
       onVaultChange(handle.name, handle)
-      toast({ title: "Vault Connected", description: `Linked to ${handle.name}` })
+      toast({ title: "Vault Connected", description: `Dual-sync active with ${handle.name}` })
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       toast({ variant: "destructive", title: "Vault Access Blocked", description: err.message })
     }
-  }
-
-  const exportFullDatabase = () => {
-    const fullDb = {
-      timestamp: new Date().toISOString(),
-      datasets,
-      scansMetadata: scans,
-      learnedFacts: learnedFactsSummary
-    }
-    const blob = new Blob([JSON.stringify(fullDb, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `DeepScan_Intelligence_Export_${new Date().toISOString().split('T')[0]}.json`
-    link.click()
-    URL.revokeObjectURL(url)
-    toast({ title: "Database Exported", description: "Full intelligence base downloaded to PC." })
   }
 
   const handleTrainingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,12 +134,11 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     if (!file) return
 
     if (!datasetNotes.trim()) {
-      toast({ variant: "destructive", title: "Missing Audit Notes", description: "Describe the artifacts for the Neural Engine." })
+      toast({ variant: "destructive", title: "Audit Notes Required", description: "Describe the artifacts for the Neural Engine." })
       return
     }
 
     try {
-      // DUAL-WRITE: Local Backup to PC Vault if linked
       if (vaultHandle && vaultPermissionStatus === 'granted') {
         const fileHandle = await vaultHandle.getFileHandle(`TRAINING_${file.name}`, { create: true })
         const writable = await (fileHandle as any).createWritable()
@@ -177,7 +146,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
         await writable.close()
       }
 
-      // DUAL-WRITE: Primary Cloud Intelligence Base (Firestore)
       const datasetId = crypto.randomUUID()
       const datasetRef = doc(db, "datasets", datasetId)
       const datasetData = {
@@ -200,7 +168,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       })
 
       setDatasetNotes("")
-      toast({ title: "Neural Sample Ingested", description: `Intelligence updated with ${trainingLabel.toUpperCase()} ground truth.` })
+      toast({ title: "Intelligence Ingested", description: `Neural Engine updated with ${trainingLabel.toUpperCase()} Ground Truth.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Training Failed", description: err.message })
     }
@@ -216,21 +184,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       })
       errorEmitter.emit('permission-error', permissionError)
     })
-  }
-
-  const disconnectVault = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-    dbRequest.onsuccess = () => {
-      const idb = dbRequest.result
-      const transaction = idb.transaction("vaultStore", "readwrite")
-      const store = transaction.objectStore("vaultStore")
-      store.delete("localFolderHandle")
-      transaction.oncomplete = () => {
-        onVaultChange(undefined, undefined)
-        toast({ title: "Vault Disconnected", description: "Persistent PC link removed." })
-      }
-    }
   }
 
   return (
@@ -256,42 +209,15 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
         </Card>
 
         <Card className={cn(
-          "bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer transition-all relative overflow-hidden",
-          vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80",
-          isIframe && !vaultHandle && "opacity-80 grayscale-[0.5] border-destructive/20"
+          "bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer transition-all",
+          vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80"
         )} onClick={handleConnectLocalPC}>
-          <div className="space-y-1 z-10 w-full px-4">
-             {isIframe && !vaultHandle ? (
-               <>
-                 <ShieldAlert className="w-8 h-8 mx-auto text-destructive/70" />
-                 <p className="text-sm font-black uppercase tracking-tighter text-destructive/90">Vault Locked</p>
-                 <p className="text-[9px] font-bold uppercase text-muted-foreground/80 leading-tight">
-                   Security Policy: Open in a <br/> new tab to link PC folder.
-                 </p>
-               </>
-             ) : (
-               <>
-                 <FolderOpen className={cn("w-8 h-8 mx-auto mb-2", vaultHandle ? "text-primary" : "text-muted-foreground")} />
-                 <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
-                   {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
-                 </p>
-                 {vaultHandle ? (
-                   <div className="flex flex-col gap-2 mt-2">
-                     <p className="text-[8px] font-bold uppercase text-primary/60">Persistent Dual-Sync Active</p>
-                     <div className="flex gap-2 justify-center">
-                        <Button variant="outline" size="sm" className="h-6 text-[7px] px-2 font-black uppercase rounded-md border-primary/20 hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); handleConnectLocalPC(); }}>
-                          <Settings2 className="w-2.5 h-2.5 mr-1" /> Change
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-6 text-[7px] px-2 font-black uppercase rounded-md border-destructive/20 text-destructive hover:bg-destructive/10" onClick={disconnectVault}>
-                          <LogOut className="w-2.5 h-2.5 mr-1" /> Disconnect
-                        </Button>
-                     </div>
-                   </div>
-                 ) : (
-                   <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Local PC Forensic Backup</p>
-                 )}
-               </>
-             )}
+          <div className="space-y-1">
+             <FolderOpen className={cn("w-8 h-8 mx-auto mb-2", vaultHandle ? "text-primary" : "text-muted-foreground")} />
+             <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
+               {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
+             </p>
+             <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Persistent Physical Storage</p>
           </div>
         </Card>
       </div>
@@ -299,15 +225,10 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
            <Card className="shadow-none border border-border rounded-xl overflow-hidden volumetric-shadow">
-            <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
+            <CardHeader className="bg-muted/30 pb-4">
                <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
                   <Activity className="w-5 h-5 text-primary" /> Forensic Intelligence Audit
                 </CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg gap-2" onClick={exportFullDatabase}>
-                    <Download className="w-3.5 h-3.5" /> Intelligence Export
-                  </Button>
-                </div>
             </CardHeader>
             <CardContent className="pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -342,7 +263,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
               </div>
 
               <div className="mt-12 space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Verified Training Samples (Cloud Sync)</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Verified Training Samples (Dual-Sync)</h4>
                 <div className="border rounded-xl overflow-hidden">
                   <Table>
                     <TableHeader className="bg-muted/30">
@@ -350,20 +271,20 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
                         <TableHead className="text-[10px] font-black">Sample</TableHead>
                         <TableHead className="text-[10px] font-black">Truth Label</TableHead>
                         <TableHead className="text-[10px] font-black">Expert Observations</TableHead>
-                        <TableHead className="text-[10px] font-black text-right">Database Actions</TableHead>
+                        <TableHead className="text-[10px] font-black text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {datasets.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-30">
-                            No cloud training samples found
+                            Ingest samples to train the engine
                           </TableCell>
                         </TableRow>
                       ) : (
                         datasets.map((item) => (
                           <TableRow key={item.id}>
-                            <TableCell className="font-bold text-xs truncate max-w-[150px]">{item.fileName || "Note Entry"}</TableCell>
+                            <TableCell className="font-bold text-xs truncate max-w-[150px]">{item.fileName || "Audit Entry"}</TableCell>
                             <TableCell>
                               <Badge variant={item.label === 'fake' ? "destructive" : "default"} className="text-[9px] font-black uppercase px-2 rounded-lg">
                                 {item.label}
@@ -411,8 +332,8 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="real" className="text-[10px] font-black uppercase">Verified Authentic (Human)</SelectItem>
-                    <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Verified Synthetic (AI)</SelectItem>
+                    <SelectItem value="real" className="text-[10px] font-black uppercase">Verified Authentic</SelectItem>
+                    <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Verified Synthetic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -426,8 +347,8 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
                 >
                   <Upload className="w-5 h-5 mr-3" /> Sync to Intelligence base
                 </Button>
-                <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-3 leading-relaxed">
-                  Persistent Cloud Storage + PC Vault Backup active.<br/>Learned context persists across Studio & Localhost.
+                <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-3">
+                  Training persists across Studio and Localhost via Cloud Sync.
                 </p>
               </div>
             </div>
@@ -446,7 +367,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
             {learnedFactsSummary}
           </div>
           <DialogFooter>
-            <Button onClick={() => setShowBrainViewer(false)} className="rounded-xl font-black uppercase tracking-widest w-full py-6 bg-primary hover:bg-primary/90 text-white">Close Intelligence HUD</Button>
+            <Button onClick={() => setShowBrainViewer(false)} className="rounded-xl font-black uppercase tracking-widest w-full py-6">Close HUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

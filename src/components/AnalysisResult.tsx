@@ -53,7 +53,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     if (!db) return
     setFeedbackSubmitted(isCorrect)
     
-    // DUAL-DATABASE SYNC: Persistent Cloud Intelligence (Firestore)
     const scanRef = doc(db, "scans", scanId)
     const updateData = {
       userFeedback: isCorrect ? isFake : !isFake,
@@ -70,13 +69,13 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       errorEmitter.emit('permission-error', permissionError)
     })
     
-    toast({ title: "Forensic Fact Logged", description: "Audit synced to Intelligence Base for mandatory future learning." })
+    toast({ title: "Audit Logged", description: "This lesson is now part of the global intelligence base." })
   }
 
   const promoteToDataset = () => {
     if (!db) return
     if (feedbackSubmitted === null) {
-      toast({ variant: "destructive", title: "Human Audit Required", description: "Verify the AI result before promoting to Dataset." })
+      toast({ variant: "destructive", title: "Audit Required", description: "Verify the result before promoting to Dataset." })
       return
     }
 
@@ -86,7 +85,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       fileName: `AUDIT_${scanId.substring(0, 8)}`,
       uploadDate: new Date().toISOString(),
       label: feedbackSubmitted ? (isFake ? "fake" : "real") : (isFake ? "real" : "fake"),
-      notes: userComment || `Manual promotion from Investigative Case ${scanId}`,
+      notes: userComment || `Manual audit promotion from Case ${scanId}`,
       status: "processed",
       scanId
     }
@@ -101,38 +100,22 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     })
 
     setIsPromoted(true)
-    toast({ title: "Dataset Training Complete", description: "Case synced to global Research Base." })
+    toast({ title: "Intelligence Promoted", description: "Knowledge successfully synced to Cloud Brain." })
   }
 
   const mapData = [
     { x: 0, y: 0, name: "Authentic Human", type: "real" },
-    { x: result.neuralAncestry?.latentCoordinates?.x || 0, y: result.neuralAncestry?.latentCoordinates?.y || 0, name: "Subject Asset", type: "subject" },
-    { x: 80, y: 70, name: "Stable Diffusion Cluster", type: "cluster" },
-    { x: -70, y: 85, name: "Midjourney Cluster", type: "cluster" },
-    { x: 20, y: -90, name: "Flux.1 Cluster", type: "cluster" },
+    { x: result.neuralAncestry?.latentCoordinates?.x || 0, y: result.neuralAncestry?.latentCoordinates?.y || 0, name: "Subject", type: "subject" },
+    { x: 80, y: 70, name: "SDXL Cluster", type: "cluster" },
+    { x: -70, y: 85, name: "MJv6 Cluster", type: "cluster" },
   ]
-
-  const takedownTemplate = `
-Subject: URGENT: Forensic Deepfake Takedown Request - Case ID: ${scanId.substring(0, 8)}
-
-To the Safety Team,
-
-I am requesting the immediate removal of non-consensual synthetic content.
-FORENSIC EVIDENCE:
-- Case ID: ${scanId}
-- Status: VERIFIED SYNTHETIC
-- AI Confidence: ${confidence}%
-- Identified Neural DNA: ${result.neuralAncestry?.likelyModel || "Advanced AI Synthesis"}
-
-Content violates safety policies regarding synthetic identity manipulation.
-`
 
   const exportEvidence = async () => {
     if (!vaultHandle) {
       toast({ 
         variant: "destructive", 
-        title: "PC Vault Unlinked", 
-        description: "Select a PC folder in the DATABASE tab for persistent physical evidence storage." 
+        title: "PC Vault Required", 
+        description: "Select a folder in the TRAINING tab to save physical evidence." 
       })
       return
     }
@@ -149,24 +132,17 @@ Content violates safety policies regarding synthetic identity manipulation.
         confidence,
         neuralDNA: result.neuralAncestry,
         biometrics: result.biometricVitals,
-        artifacts: result.noiseArtifacts,
         humanVerification: feedbackSubmitted,
-        userComment,
-        cloudSync: "Verified"
+        userComment
       }
 
       await writable.write(JSON.stringify(evidence, null, 2))
       await writable.close()
       
-      toast({ title: "Evidence Exported", description: `Physical report saved to your PC vault.` })
+      toast({ title: "Evidence Exported", description: `Report saved to your PC vault.` })
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Vault Export Failed", description: e.message })
+      toast({ variant: "destructive", title: "Export Failed", description: e.message })
     }
-  }
-
-  const copyTakedown = () => {
-    navigator.clipboard.writeText(takedownTemplate)
-    toast({ title: "Copied to Clipboard", description: "Takedown notice ready for submission." })
   }
 
   return (
@@ -179,7 +155,7 @@ Content violates safety policies regarding synthetic identity manipulation.
               <div className="space-y-1">
                 <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter text-foreground uppercase">
                   <Target className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-                  FORENSIC SINGULARITY
+                  FORENSIC REPORT
                 </CardTitle>
                 <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                   Case ID: {scanId.substring(0, 12)}
@@ -215,7 +191,7 @@ Content violates safety policies regarding synthetic identity manipulation.
                 <TabsTrigger value="origin" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <MapIcon className="w-3.5 h-3.5" /> Origin
                 </TabsTrigger>
-                <TabsTrigger value="feedback" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                <TabsTrigger value="audit" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <ShieldCheck className="w-3.5 h-3.5" /> Audit
                 </TabsTrigger>
                 <TabsTrigger value="actions" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
@@ -223,7 +199,7 @@ Content violates safety policies regarding synthetic identity manipulation.
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="biometrics" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
+              <TabsContent value="biometrics" className="pt-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className={cn(
                     "p-4 rounded-xl border flex flex-col items-center justify-center text-center gap-2 transition-all hover-glow cursor-default",
@@ -231,51 +207,45 @@ Content violates safety policies regarding synthetic identity manipulation.
                   )}>
                     <HeartPulse className={cn("w-8 h-8", result.biometricVitals?.pulseDetected ? "text-green-500 animate-pulse" : "text-destructive")} />
                     <div className="space-y-1">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Micro-Pulse (rPPG)</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Pulse (rPPG)</span>
                       <p className="text-xs font-black">{result.biometricVitals?.pulseDetected ? "DETECTED" : "ABSENT"}</p>
                     </div>
                   </div>
                   <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col items-center justify-center text-center gap-2 hover-glow transition-all">
                     <Activity className="w-8 h-8 text-primary" />
                     <div className="space-y-1">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Vital Consistency</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Naturalness</span>
                       <p className="text-xs font-black">{result.biometricVitals?.biometricConsistency || 0}% Score</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-muted/30 border border-dashed text-[10px] font-medium leading-relaxed italic text-muted-foreground">
-                  <Info className="w-3.5 h-3.5 inline mr-1 text-primary" />
-                  {result.biometricVitals?.notes || "Biometric analysis completed. No rhythmic skin blood flow patterns detected."}
-                </div>
               </TabsContent>
 
-              <TabsContent value="ancestry" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
+              <TabsContent value="ancestry" className="pt-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1 hover:bg-primary/10 transition-colors">
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1">
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Model Family</span>
                     <p className="text-sm font-black text-primary">{result.neuralAncestry?.modelFamily || "Proprietary"}</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1 hover:bg-primary/10 transition-colors">
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1">
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Neural Origin</span>
-                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Advanced Hybrid"}</p>
+                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Unknown"}</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl border-2 border-dashed border-primary/10 bg-muted/10">
-                   <p className="text-xs font-medium leading-relaxed text-foreground/80">
-                    {result.explanation}
-                  </p>
-                </div>
+                <p className="text-xs font-medium leading-relaxed text-foreground/80 p-4 border rounded-xl bg-muted/10">
+                  {result.explanation}
+                </p>
               </TabsContent>
 
-              <TabsContent value="origin" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
-                 <div className="h-[200px] w-full bg-muted/20 rounded-xl border relative overflow-hidden hover-glow transition-all">
+              <TabsContent value="origin" className="pt-6 space-y-4">
+                 <div className="h-[200px] w-full bg-muted/20 rounded-xl border relative overflow-hidden">
                     <ResponsiveContainer width="100%" height="100%">
                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                           <XAxis type="number" dataKey="x" hide domain={[-100, 100]} />
                           <YAxis type="number" dataKey="y" hide domain={[-100, 100]} />
                           <ReferenceLine x={0} stroke="rgba(0,0,0,0.1)" strokeDasharray="3 3" />
                           <ReferenceLine y={0} stroke="rgba(0,0,0,0.1)" strokeDasharray="3 3" />
-                          <Scatter name="Clusters" data={mapData}>
+                          <Scatter name="DNA" data={mapData}>
                              {mapData.map((entry, index) => (
                                <Cell 
                                  key={`cell-${index}`} 
@@ -286,108 +256,61 @@ Content violates safety policies regarding synthetic identity manipulation.
                        </ScatterChart>
                     </ResponsiveContainer>
                  </div>
-                 <p className="text-[9px] text-center font-bold text-muted-foreground uppercase tracking-widest">
-                   Latent Origin Map: Neural coordinates identified.
-                 </p>
               </TabsContent>
 
-              <TabsContent value="feedback" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
+              <TabsContent value="audit" className="pt-6 space-y-4">
                 <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-6">
-                  <div className="space-y-2 text-center">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">Neural Intelligence Audit</h4>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Teach the AI from its mistakes</p>
-                  </div>
-                  
                   {feedbackSubmitted === null ? (
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5" /> Audit Observation
-                        </Label>
-                        <Textarea 
-                          placeholder="Identify artifacts AI missed (e.g., metallic vocal texture, chin-warping)..."
-                          className="text-xs bg-background/50 rounded-xl min-h-[80px]"
-                          value={userComment}
-                          onChange={(e) => setUserComment(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex gap-4 justify-center">
-                        <Button 
-                          variant="outline" 
-                          className="h-12 flex-1 rounded-xl border-green-500/30 text-green-600 hover:bg-green-500/10 font-black uppercase tracking-widest hover-glow transition-all"
-                          onClick={() => handleFeedback(true)}
-                        >
-                          <ThumbsUp className="w-4 h-4 mr-2" /> Verdict Correct
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5" /> Human Observation
+                      </Label>
+                      <Textarea 
+                        placeholder="Explain the artifacts the AI missed..."
+                        className="text-xs bg-background/50 rounded-xl"
+                        value={userComment}
+                        onChange={(e) => setUserComment(e.target.value)}
+                      />
+                      <div className="flex gap-4">
+                        <Button variant="outline" className="flex-1 rounded-xl border-green-500/30 text-green-600 font-black uppercase text-[10px]" onClick={() => handleFeedback(true)}>
+                          <ThumbsUp className="w-4 h-4 mr-2" /> Correct
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          className="h-12 flex-1 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 font-black uppercase tracking-widest hover-glow transition-all"
-                          onClick={() => handleFeedback(false)}
-                        >
-                          <ThumbsDown className="w-4 h-4 mr-2" /> Verdict Incorrect
+                        <Button variant="outline" className="flex-1 rounded-xl border-destructive/30 text-destructive font-black uppercase text-[10px]" onClick={() => handleFeedback(false)}>
+                          <ThumbsDown className="w-4 h-4 mr-2" /> Incorrect
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
-                      <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest text-center rounded-xl">
-                        Fact Synchronized: Cloud Intelligence Base Updated.
-                      </div>
+                    <div className="space-y-4 text-center">
+                      <p className="text-[10px] font-black text-primary uppercase">Audit synced to Global Brain ✓</p>
                       {!isPromoted && (
-                        <Button 
-                          className="w-full h-12 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 rounded-xl font-black uppercase tracking-widest text-[10px] gap-2"
-                          onClick={promoteToDataset}
-                        >
-                          <Database className="w-4 h-4" /> Promote to Research Dataset
+                        <Button className="w-full h-12 bg-primary/20 text-primary border-primary/20 rounded-xl font-black uppercase text-[10px]" onClick={promoteToDataset}>
+                          <Database className="w-4 h-4 mr-2" /> Ingest into Training Base
                         </Button>
-                      )}
-                      {isPromoted && (
-                        <div className="p-3 border border-dashed border-primary/30 rounded-xl text-[9px] font-black text-primary text-center uppercase tracking-widest">
-                          Research Intelligence Base Updated ✓
-                        </div>
                       )}
                     </div>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="actions" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
-                <div className="space-y-4">
-                  <Button 
-                    variant="outline" 
-                    className={cn(
-                      "w-full h-12 font-black uppercase tracking-widest border rounded-xl transition-all duration-300", 
-                      showSpectralMode ? "bg-primary text-white hover-glow" : "hover:bg-primary/5"
-                    )}
-                    onClick={() => setShowSpectralMode(!showSpectralMode)}
-                  >
-                    <Layers className="w-4 h-4 mr-2" /> Spectral DNA View
+              <TabsContent value="actions" className="pt-6 space-y-4">
+                <Button variant="outline" className="w-full h-12 font-black uppercase tracking-widest rounded-xl" onClick={() => setShowSpectralMode(!showSpectralMode)}>
+                  <Layers className="w-4 h-4 mr-2" /> {showSpectralMode ? "Disable" : "Enable"} Spectral DNA View
+                </Button>
+                {isFake && (
+                  <Button className="w-full h-12 bg-destructive hover:bg-destructive/90 font-black uppercase tracking-widest rounded-xl" onClick={() => setShowTakedown(!showTakedown)}>
+                    <ShieldX className="w-4 h-4 mr-2" /> Takedown Notice
                   </Button>
-                  {isFake && (
-                    <>
-                      <Button className="w-full h-12 bg-destructive hover:bg-destructive/90 font-black uppercase tracking-widest rounded-xl hover-glow transition-all animate-pulse-ring relative overflow-visible" onClick={() => setShowTakedown(!showTakedown)}>
-                        <ShieldX className="w-4 h-4 mr-2" /> Takedown Pilot
-                      </Button>
-                      {showTakedown && (
-                        <div className="p-4 rounded-xl bg-muted font-mono text-[9px] whitespace-pre-wrap leading-relaxed relative group border animate-in slide-in-from-top-2">
-                          <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-8 w-8 hover:bg-primary/20" onClick={copyTakedown}>
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          {takedownTemplate}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
-            <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-xl hover-glow transition-all" onClick={exportEvidence}>
-              <FileJson className="w-4 h-4 mr-2" /> Persistent Vault Backup
+            <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-xl" onClick={exportEvidence}>
+              <FileJson className="w-4 h-4 mr-2" /> Export Persistent Backup
             </Button>
-            <Button variant="outline" className="h-12 w-12 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => window.print()}>
+            <Button variant="outline" className="h-12 w-12 rounded-xl" onClick={() => window.print()}>
               <Download className="w-5 h-5" />
             </Button>
           </CardFooter>
@@ -399,20 +322,11 @@ Content violates safety policies regarding synthetic identity manipulation.
           )}
 
           <div className="relative flex items-center justify-center p-4 w-full h-full">
-            {mediaType === 'image' && (
-              <div className="relative group">
-                <img 
-                  src={mediaUrl} 
-                  className={cn("max-w-full h-auto object-contain transition-all duration-700 rounded-xl", showSpectralMode && "grayscale invert contrast-150")} 
-                />
-              </div>
-            )}
-            {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto shadow-2xl rounded-xl" />}
+            {mediaType === 'image' && <img src={mediaUrl} className={cn("max-w-full h-auto object-contain rounded-xl", showSpectralMode && "grayscale invert contrast-150")} />}
+            {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto rounded-xl" />}
             {mediaType === 'audio' && (
               <div className="flex flex-col items-center gap-8 p-12">
-                <div className="p-8 bg-primary/10 rounded-full hover-glow transition-all duration-500">
-                  <Music className="w-24 h-24 text-primary animate-pulse" />
-                </div>
+                <Music className="w-24 h-24 text-primary animate-pulse" />
                 <audio src={mediaUrl} controls className="w-80 shadow-xl" />
               </div>
             )}
