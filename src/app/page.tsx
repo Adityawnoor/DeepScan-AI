@@ -14,7 +14,6 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { 
   ShieldCheck, History, Database, Zap, 
