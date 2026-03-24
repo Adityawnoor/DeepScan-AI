@@ -20,7 +20,8 @@ import {
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
-  Network, Loader2, LogOut, ShieldCheck as ShieldIcon
+  Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
+  Cpu, Fingerprint, Layers
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -385,7 +386,7 @@ export default function DeepScanHome() {
                                 biometricVitals: scan.biometricVitals,
                                 noiseArtifacts: scan.noiseArtifacts
                               },
-                              mediaUrl: scan.mediaUrl || "", // In a real app, this would be retrieved from Storage
+                              mediaUrl: scan.mediaUrl || "", 
                               mediaType: scan.mediaType
                             })
                           }
@@ -443,6 +444,36 @@ export default function DeepScanHome() {
                 />
               </TabsContent>
             </Tabs>
+
+            {/* Restored Neural Network Traceability Section */}
+            <div className="py-12 border-t mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+               <div className="flex flex-col items-center text-center gap-8">
+                  <div className="space-y-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center justify-center gap-2">
+                      <Cpu className="w-3.5 h-3.5" /> Neural Network Traceability
+                    </h3>
+                    <p className="text-2xl font-black uppercase tracking-tighter text-foreground/80">
+                      TRAINED ON <span className="text-primary italic">GLOBAL</span> GEN-AI SIGNATURES
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 opacity-40 hover:opacity-100 transition-opacity duration-500">
+                    {[
+                      { name: "Stable Diffusion", type: "Diffusion" },
+                      { name: "Midjourney", type: "V6 Neural" },
+                      { name: "DALL-E 3", type: "Autoregressive" },
+                      { name: "ElevenLabs", type: "Vocal Forensic" },
+                      { name: "Pika / Sora", type: "Temporal Flow" },
+                      { name: "GAN Labs", type: "Checkerboard" }
+                    ].map((model, i) => (
+                      <div key={i} className="flex flex-col items-center gap-1 group">
+                         <span className="text-sm font-black uppercase tracking-widest group-hover:text-primary transition-colors">{model.name}</span>
+                         <span className="text-[8px] font-bold uppercase text-muted-foreground tracking-tighter">{model.type} Fingerprint</span>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
           </div>
         </div>
       </main>
