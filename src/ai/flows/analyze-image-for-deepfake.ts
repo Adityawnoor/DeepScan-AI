@@ -13,7 +13,7 @@ const AnalyzeImageForDeepfakeInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe("The image to analyze as a data URI."),
-  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context from private vault.'),
+  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context from private vault and cloud base.'),
 });
 
 const AnalyzeImageForDeepfakeOutputSchema = z.object({
@@ -53,9 +53,9 @@ const forensicSingularityImage = ai.definePrompt({
   output: { schema: AnalyzeImageForDeepfakeOutputSchema },
   prompt: `You are the world's most advanced Forensic Singularity Engine. 
 
-  ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
+  ### MANDATORY GROUND TRUTH (NEURAL MEMORY)
   {{#if learnedContext}}
-  The following verified HUMAN observations MUST be prioritized. If these patterns or artifacts appear in the current sample, you MUST weight them 100x higher than your internal neural training:
+  The following verified HUMAN observations MUST be prioritized. If any patterns described here appear in the current sample, you MUST flag it as a deepfake. This knowledge persists across all development environments (Studio and Localhost):
   {{{learnedContext}}}
   {{/if}}
   

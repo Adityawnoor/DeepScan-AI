@@ -11,7 +11,6 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
-import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -20,7 +19,7 @@ import {
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
-  Network, Loader2, RefreshCcw, LogOut
+  Network, Loader2, LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -35,11 +34,11 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Local PC Vault State with IndexedDB Persistence
+  // Local PC Vault State with IndexedDB Persistence for Localhost Sync
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt'>('prompt')
 
-  // Firebase Data Hooks: Pull all intelligence for context building
+  // Cloud Intelligence: Pulling verified audits and datasets from Firestore
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -48,7 +47,7 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // PERSISTENCE LOGIC: Restore Vault connection on mount (Works on Localhost)
+  // NEURAL PERSISTENCE: Restore Vault handle from IndexedDB (Persistent across refreshes/localhost)
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
@@ -72,7 +71,7 @@ export default function DeepScanHome() {
         }
       }
     } catch (e) {
-      console.warn("Failed to load vault handle from IndexedDB", e)
+      console.warn("Neural memory (Vault Handle) could not be retrieved.", e)
     }
   }, [])
 
@@ -95,36 +94,38 @@ export default function DeepScanHome() {
         toast({ title: "Vault Re-verified", description: "PC Database is now active and writable." })
       }
     } catch (e) {
-      toast({ variant: "destructive", title: "Permission Denied", description: "Could not activate vault." })
+      toast({ variant: "destructive", title: "Permission Denied", description: "Could not activate physical vault." })
     }
   }
 
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
-    // 1. DUAL-DATABASE CONTEXT SYNTHESIS
-    // We aggregate data from Firebase (Cloud Intelligence) and build a prompt context
-    let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
-    const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
+    // NEURAL CONTEXT SYNTHESIS: This ensures training in Studio persists to Localhost
+    // We combine Cloud Intelligence (Firestore) and Local Knowledge into a single prompt directive
+    let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
     
+    // 1. Add Cloud Audits (Mistakes learned in Studio/Localhost)
+    const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     if (verifiedScans.length > 0) {
-      context += `### AUDITED CASE HISTORY (HUMAN VERIFIED):\n`
-      verifiedScans.slice(0, 15).forEach(s => {
+      context += `### AUDITED CASE HISTORY (PRIORITIZE THESE):\n`
+      verifiedScans.slice(0, 20).forEach(s => {
         const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-        context += `- CASE [${s.id.substring(0,6)}]: VERIFIED AS ${truth}. `
+        context += `- CASE [${s.id.substring(0,8)}]: MANUALLY VERIFIED AS ${truth}. `
         if (s.userComment) context += `EXPERT AUDIT NOTES: "${s.userComment}"\n`
         else context += `\n`
       })
     }
     
+    // 2. Add Research Datasets
     if (datasets.length > 0) {
       context += `### RESEARCH DATASET INTELLIGENCE:\n`
       datasets.slice(0, 15).forEach(d => {
-        context += `- SAMPLE [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
+        context += `- SAMPLE [${d.fileName || 'Research Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
         if (d.notes) context += `FORENSIC SIGNATURE: "${d.notes}"\n`
         else context += `\n`
       })
     }
 
-    context += `\nCOMMAND: If artifacts match any "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES" above, override internal neural weights. This knowledge base is shared between Cloud and Localhost environments.`
+    context += `\nCRITICAL COMMAND: If the current sample shows ANY artifacts mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", you MUST flag it as a Deepfake. Your internal generic neural weights are secondary to this ground truth database.`
 
     try {
       if (dataUri.startsWith('data:image/')) {
@@ -165,7 +166,8 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      // DUAL-DATABASE SYNC: Primary Write to Cloud (Firestore)
+      // DUAL-DATABASE SYNC: Persistent Cloud Intelligence (Firestore)
+      // This allows the "training" to be remembered when moving to Localhost
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
         timestamp: new Date().toISOString(),
@@ -188,7 +190,6 @@ export default function DeepScanHome() {
         errorEmitter.emit('permission-error', permissionError)
       })
 
-      // Secondary Backup to PC Vault will happen on manual export or promotional audit
       toast({ title: "Analysis Complete", description: "Intelligence synced to Cloud Research Base." })
     } catch (e: any) {
       console.error(e)
@@ -200,16 +201,6 @@ export default function DeepScanHome() {
     } finally {
       setIsAnalyzing(false)
     }
-  }
-
-  const handleBeginInvestigation = () => {
-    setActiveTab("analyze")
-    workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }
-
-  const handleVaccinateIdentity = () => {
-    setActiveTab("protect")
-    workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   const disconnectVault = async () => {
@@ -275,13 +266,13 @@ export default function DeepScanHome() {
               <div className="flex-1 space-y-6 preserve-3d">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
                   <Brain className="w-3.5 h-3.5" />
-                  DUAL-DATABASE NEURAL TRAINING
+                  NEURAL SINGULARITY ENGINE
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
-                  LEARN FROM <span className="text-primary italic">MISTAKES.</span>
+                  SELF-LEARNING <span className="text-primary italic">FORENSICS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan learns from your manual audits. Verified cases are stored in your PC Vault and Cloud base to ensure accuracy on both Studio and Localhost.
+                  DeepScan uses a Dual-Database Sync to ensure training performed in the Studio persists to Localhost. Every verified audit makes the AI smarter.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -300,20 +291,11 @@ export default function DeepScanHome() {
                   variant="default" 
                   size="lg" 
                   className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest volumetric-shadow bg-primary hover:bg-primary/90 text-white gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 animate-pulse-ring relative overflow-visible transform translate-z-20"
-                  onClick={handleBeginInvestigation}
+                  onClick={() => workstationRef.current?.scrollIntoView({ behavior: "smooth" })}
                   disabled={isAnalyzing}
                 >
                   {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MicroscopeIcon className="w-5 h-5" />}
                   {isAnalyzing ? "ANALYZING..." : "BEGIN INVESTIGATION"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 border-primary/20 hover:border-primary text-primary gap-3 bg-white/50 dark:bg-card/50 backdrop-blur-sm volumetric-shadow transition-all duration-300 hover:scale-[1.05] active:scale-95 hover-glow relative overflow-visible transform translate-z-10"
-                  onClick={handleVaccinateIdentity}
-                >
-                  <Zap className="w-5 h-5" />
-                  VACCINATE IDENTITY
                 </Button>
               </div>
             </div>
@@ -343,13 +325,6 @@ export default function DeepScanHome() {
                   <Database className="w-3.5 h-3.5" />
                   DATABASE & TRAINING
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="protect" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  PROTECT
-                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0 preserve-3d">
@@ -362,28 +337,6 @@ export default function DeepScanHome() {
                       <div className="spatial-lift preserve-3d">
                         <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       </div>
-                      
-                      <Card className="bg-primary/5 border border-dashed border-primary/20 p-8 rounded-2xl space-y-6 shadow-none transition-all hover:bg-primary/10 volumetric-shadow group hover-glow relative overflow-visible spatial-lift">
-                        <div className="flex items-center gap-4">
-                          <div className="p-2.5 bg-primary/20 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                            <Shield className="w-5 h-5" />
-                          </div>
-                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground">TRAINING CAPABILITIES</h4>
-                        </div>
-                        <ul className="space-y-4">
-                          {[
-                            "NEURAL DNA TRACEBACK",
-                            "MANDATORY GROUND TRUTH",
-                            "DUAL-DB SYNCHRONIZATION",
-                            "SELF-CORRECTING LOGIC"
-                          ].map(item => (
-                            <li key={item} className="flex items-center gap-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors duration-300">
-                              <ShieldCheck className="w-4 h-4 text-primary" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </Card>
                     </div>
 
                     {currentResult && (
@@ -431,10 +384,6 @@ export default function DeepScanHome() {
                     }
                   }} 
                 />
-              </TabsContent>
-
-              <TabsContent value="protect" className="mt-0 spatial-lift">
-                <AuthenticityShield />
               </TabsContent>
             </Tabs>
           </div>
