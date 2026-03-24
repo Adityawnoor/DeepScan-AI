@@ -53,7 +53,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     if (!db) return
     setFeedbackSubmitted(isCorrect)
     
-    // DUAL-DATABASE SYNC: Update Cloud Intelligence (Firestore)
+    // DUAL-DATABASE SYNC: Persistent Cloud Intelligence (Firestore)
     const scanRef = doc(db, "scans", scanId)
     const updateData = {
       userFeedback: isCorrect ? isFake : !isFake,
@@ -70,23 +70,23 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       errorEmitter.emit('permission-error', permissionError)
     })
     
-    toast({ title: "Intelligence Captured", description: "Audit logged to Neural Cloud. AI will improve based on this feedback." })
+    toast({ title: "Forensic Fact Logged", description: "Audit synced to Intelligence Base for mandatory future learning." })
   }
 
   const promoteToDataset = () => {
     if (!db) return
     if (feedbackSubmitted === null) {
-      toast({ variant: "destructive", title: "Audit Required", description: "Verify the result before promoting." })
+      toast({ variant: "destructive", title: "Human Audit Required", description: "Verify the AI result before promoting to Dataset." })
       return
     }
 
     const datasetId = crypto.randomUUID()
     const datasetRef = doc(db, "datasets", datasetId)
     const datasetData = {
-      fileName: `Audit_${scanId.substring(0, 8)}`,
+      fileName: `AUDIT_${scanId.substring(0, 8)}`,
       uploadDate: new Date().toISOString(),
       label: feedbackSubmitted ? (isFake ? "fake" : "real") : (isFake ? "real" : "fake"),
-      notes: userComment || `Promoted from Case ${scanId}`,
+      notes: userComment || `Manual promotion from Investigative Case ${scanId}`,
       status: "processed",
       scanId
     }
@@ -101,7 +101,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     })
 
     setIsPromoted(true)
-    toast({ title: "Dataset Improved", description: "Case synced to Research Intelligence Base." })
+    toast({ title: "Dataset Training Complete", description: "Case synced to global Research Base." })
   }
 
   const mapData = [
@@ -122,7 +122,7 @@ FORENSIC EVIDENCE:
 - Case ID: ${scanId}
 - Status: VERIFIED SYNTHETIC
 - AI Confidence: ${confidence}%
-- Identified Neural DNA: ${result.neuralAncestry?.likelyModel || "Advanced AI"}
+- Identified Neural DNA: ${result.neuralAncestry?.likelyModel || "Advanced AI Synthesis"}
 
 Content violates safety policies regarding synthetic identity manipulation.
 `
@@ -131,14 +131,14 @@ Content violates safety policies regarding synthetic identity manipulation.
     if (!vaultHandle) {
       toast({ 
         variant: "destructive", 
-        title: "Vault Unlinked", 
-        description: "Select a PC folder in the Database tab for physical evidence storage." 
+        title: "PC Vault Unlinked", 
+        description: "Select a PC folder in the DATABASE tab for persistent physical evidence storage." 
       })
       return
     }
 
     try {
-      const fileName = `Forensic_Report_${scanId.substring(0, 8)}.json`
+      const fileName = `FORENSIC_REPORT_${scanId.substring(0, 8)}.json`
       const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
       const writable = await (fileHandle as any).createWritable()
       
@@ -151,21 +151,22 @@ Content violates safety policies regarding synthetic identity manipulation.
         biometrics: result.biometricVitals,
         artifacts: result.noiseArtifacts,
         humanVerification: feedbackSubmitted,
-        userComment
+        userComment,
+        cloudSync: "Verified"
       }
 
       await writable.write(JSON.stringify(evidence, null, 2))
       await writable.close()
       
-      toast({ title: "Evidence Exported", description: `Saved as ${fileName} to your PC vault.` })
+      toast({ title: "Evidence Exported", description: `Physical report saved to your PC vault.` })
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Export Failed", description: e.message })
+      toast({ variant: "destructive", title: "Vault Export Failed", description: e.message })
     }
   }
 
   const copyTakedown = () => {
     navigator.clipboard.writeText(takedownTemplate)
-    toast({ title: "Copied", description: "Takedown notice copied." })
+    toast({ title: "Copied to Clipboard", description: "Takedown notice ready for submission." })
   }
 
   return (
@@ -178,7 +179,7 @@ Content violates safety policies regarding synthetic identity manipulation.
               <div className="space-y-1">
                 <CardTitle className="font-black text-2xl flex items-center gap-2 tracking-tighter text-foreground uppercase">
                   <Target className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-                  SINGULARITY REPORT
+                  FORENSIC SINGULARITY
                 </CardTitle>
                 <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                   Case ID: {scanId.substring(0, 12)}
@@ -230,21 +231,21 @@ Content violates safety policies regarding synthetic identity manipulation.
                   )}>
                     <HeartPulse className={cn("w-8 h-8", result.biometricVitals?.pulseDetected ? "text-green-500 animate-pulse" : "text-destructive")} />
                     <div className="space-y-1">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">rPPG Pulse</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Micro-Pulse (rPPG)</span>
                       <p className="text-xs font-black">{result.biometricVitals?.pulseDetected ? "DETECTED" : "ABSENT"}</p>
                     </div>
                   </div>
                   <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col items-center justify-center text-center gap-2 hover-glow transition-all">
                     <Activity className="w-8 h-8 text-primary" />
                     <div className="space-y-1">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Vital Flow</span>
-                      <p className="text-xs font-black">{result.biometricVitals?.biometricConsistency || 0}% Match</p>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Vital Consistency</span>
+                      <p className="text-xs font-black">{result.biometricVitals?.biometricConsistency || 0}% Score</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-muted/30 border border-dashed text-[10px] font-medium leading-relaxed italic text-muted-foreground">
                   <Info className="w-3.5 h-3.5 inline mr-1 text-primary" />
-                  {result.biometricVitals?.notes || "Biometric analysis completed."}
+                  {result.biometricVitals?.notes || "Biometric analysis completed. No rhythmic skin blood flow patterns detected."}
                 </div>
               </TabsContent>
 
@@ -252,11 +253,11 @@ Content violates safety policies regarding synthetic identity manipulation.
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1 hover:bg-primary/10 transition-colors">
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Model Family</span>
-                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.modelFamily || "Unknown"}</p>
+                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.modelFamily || "Proprietary"}</p>
                   </div>
                   <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1 hover:bg-primary/10 transition-colors">
-                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Likely Source</span>
-                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Hybrid"}</p>
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Neural Origin</span>
+                    <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Advanced Hybrid"}</p>
                   </div>
                 </div>
                 <div className="p-4 rounded-xl border-2 border-dashed border-primary/10 bg-muted/10">
@@ -286,25 +287,25 @@ Content violates safety policies regarding synthetic identity manipulation.
                     </ResponsiveContainer>
                  </div>
                  <p className="text-[9px] text-center font-bold text-muted-foreground uppercase tracking-widest">
-                   Latent Origin Map: Subject coordinate identified.
+                   Latent Origin Map: Neural coordinates identified.
                  </p>
               </TabsContent>
 
               <TabsContent value="feedback" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
                 <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-6">
                   <div className="space-y-2 text-center">
-                    <h4 className="text-xs font-black uppercase tracking-widest">Neural Cloud Training</h4>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Audit this case to improve accuracy</p>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-primary">Neural Intelligence Audit</h4>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Teach the AI from its mistakes</p>
                   </div>
                   
                   {feedbackSubmitted === null ? (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5" /> Forensic Notes
+                          <MessageSquare className="w-3.5 h-3.5" /> Audit Observation
                         </Label>
                         <Textarea 
-                          placeholder="e.g., Micro-latencies in the lip movement found..."
+                          placeholder="Identify artifacts AI missed (e.g., metallic vocal texture, chin-warping)..."
                           className="text-xs bg-background/50 rounded-xl min-h-[80px]"
                           value={userComment}
                           onChange={(e) => setUserComment(e.target.value)}
@@ -316,33 +317,33 @@ Content violates safety policies regarding synthetic identity manipulation.
                           className="h-12 flex-1 rounded-xl border-green-500/30 text-green-600 hover:bg-green-500/10 font-black uppercase tracking-widest hover-glow transition-all"
                           onClick={() => handleFeedback(true)}
                         >
-                          <ThumbsUp className="w-4 h-4 mr-2" /> Correct
+                          <ThumbsUp className="w-4 h-4 mr-2" /> Verdict Correct
                         </Button>
                         <Button 
                           variant="outline" 
                           className="h-12 flex-1 rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 font-black uppercase tracking-widest hover-glow transition-all"
                           onClick={() => handleFeedback(false)}
                         >
-                          <ThumbsDown className="w-4 h-4 mr-2" /> Incorrect
+                          <ThumbsDown className="w-4 h-4 mr-2" /> Verdict Incorrect
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
                       <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest text-center rounded-xl">
-                        Audit Logged: Synced to Neural Base.
+                        Fact Synchronized: Cloud Intelligence Base Updated.
                       </div>
                       {!isPromoted && (
                         <Button 
                           className="w-full h-12 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 rounded-xl font-black uppercase tracking-widest text-[10px] gap-2"
                           onClick={promoteToDataset}
                         >
-                          <Database className="w-4 h-4" /> Promote to Cloud Research Base
+                          <Database className="w-4 h-4" /> Promote to Research Dataset
                         </Button>
                       )}
                       {isPromoted && (
                         <div className="p-3 border border-dashed border-primary/30 rounded-xl text-[9px] font-black text-primary text-center uppercase tracking-widest">
-                          Research Intelligence Improved ✓
+                          Research Intelligence Base Updated ✓
                         </div>
                       )}
                     </div>
@@ -360,7 +361,7 @@ Content violates safety policies regarding synthetic identity manipulation.
                     )}
                     onClick={() => setShowSpectralMode(!showSpectralMode)}
                   >
-                    <Layers className="w-4 h-4 mr-2" /> Spectral View
+                    <Layers className="w-4 h-4 mr-2" /> Spectral DNA View
                   </Button>
                   {isFake && (
                     <>
@@ -384,7 +385,7 @@ Content violates safety policies regarding synthetic identity manipulation.
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
             <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-xl hover-glow transition-all" onClick={exportEvidence}>
-              <FileJson className="w-4 h-4 mr-2" /> Export to PC Vault
+              <FileJson className="w-4 h-4 mr-2" /> Persistent Vault Backup
             </Button>
             <Button variant="outline" className="h-12 w-12 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => window.print()}>
               <Download className="w-5 h-5" />

@@ -24,7 +24,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
-import { collection, doc, setDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore"
+import { collection, doc, setDoc, query, orderBy, limit } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
@@ -35,12 +35,12 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Local PC Vault State
+  // Local PC Vault State with IndexedDB Persistence
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt'>('prompt')
 
-  // Firebase Data Hooks
-  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(50)) : null, [db])
+  // Firebase Data Hooks: Pull all intelligence for context building
+  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
   const { data: scans } = useCollection(scansQuery)
@@ -48,12 +48,14 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // PERSISTENCE LOGIC: Load Vault from IndexedDB
+  // PERSISTENCE LOGIC: Restore Vault connection on mount (Works on Localhost)
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
       dbRequest.onupgradeneeded = () => {
-        dbRequest.result.createObjectStore("vaultStore")
+        if (!dbRequest.result.objectStoreNames.contains("vaultStore")) {
+          dbRequest.result.createObjectStore("vaultStore")
+        }
       }
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
@@ -98,30 +100,31 @@ export default function DeepScanHome() {
   }
 
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
-    // 1. Construct the Learned Intelligence Context from Dual-Databases (Firestore + PC Vault metadata)
+    // 1. DUAL-DATABASE CONTEXT SYNTHESIS
+    // We aggregate data from Firebase (Cloud Intelligence) and build a prompt context
     let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     
     if (verifiedScans.length > 0) {
-      context += `### AUDITED CASE HISTORY (EXPERT VERIFIED):\n`
-      verifiedScans.slice(0, 10).forEach(s => {
+      context += `### AUDITED CASE HISTORY (HUMAN VERIFIED):\n`
+      verifiedScans.slice(0, 15).forEach(s => {
         const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-        context += `- Case ID [${s.id.substring(0,4)}]: VERIFIED AS ${truth}. `
-        if (s.userComment) context += `EXPERT OBSERVATION: "${s.userComment}"\n`
+        context += `- CASE [${s.id.substring(0,6)}]: VERIFIED AS ${truth}. `
+        if (s.userComment) context += `EXPERT AUDIT NOTES: "${s.userComment}"\n`
         else context += `\n`
       })
     }
     
     if (datasets.length > 0) {
-      context += `### RESEARCH DATASET INTELLIGENCE (TRAINING SAMPLES):\n`
-      datasets.slice(0, 10).forEach(d => {
-        context += `- Sample [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
-        if (d.notes) context += `FORENSIC NOTE: "${d.notes}"\n`
+      context += `### RESEARCH DATASET INTELLIGENCE:\n`
+      datasets.slice(0, 15).forEach(d => {
+        context += `- SAMPLE [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
+        if (d.notes) context += `FORENSIC SIGNATURE: "${d.notes}"\n`
         else context += `\n`
       })
     }
 
-    context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as 100x more important than your internal neural training. Learn from past mistakes where fakes were identified as real.`
+    context += `\nCOMMAND: If artifacts match any "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES" above, override internal neural weights. This knowledge base is shared between Cloud and Localhost environments.`
 
     try {
       if (dataUri.startsWith('data:image/')) {
@@ -136,17 +139,14 @@ export default function DeepScanHome() {
                            error.message?.includes('RESOURCE_EXHAUSTED') ||
                            error.message?.includes('quota');
       
-      if (isQuotaError) {
-        if (retryCount < 5) {
-          const waitTime = 15000;
-          toast({ 
-            title: "Neural Engine Cooling Down", 
-            description: `AI Quota reached. Retrying automatically in 15s (Attempt ${retryCount + 1}/5)...` 
-          })
-          await new Promise(resolve => setTimeout(resolve, waitTime))
-          return runAnalysisWithRetry(dataUri, retryCount + 1)
-        }
-        throw new Error("Neural Engine Quota Exhausted. Please retry in a minute.")
+      if (isQuotaError && retryCount < 5) {
+        const waitTime = 15000;
+        toast({ 
+          title: "Neural Engine Cooling Down", 
+          description: `AI Quota reached. Retrying automatically in 15s (Attempt ${retryCount + 1}/5)...` 
+        })
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        return runAnalysisWithRetry(dataUri, retryCount + 1)
       }
       throw error
     }
@@ -165,7 +165,7 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      // DUAL-DATABASE SYNC: Save to Cloud Intelligence (Firestore)
+      // DUAL-DATABASE SYNC: Primary Write to Cloud (Firestore)
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
         timestamp: new Date().toISOString(),
@@ -173,7 +173,7 @@ export default function DeepScanHome() {
         aiVerdict: output.isDeepfake,
         aiConfidence: output.confidence,
         explanation: output.explanation,
-        mediaUrl: "Private Data URI",
+        mediaUrl: "Stored in Private Vault",
         neuralAncestry: output.neuralAncestry || null,
         biometricVitals: output.biometricVitals || null,
         noiseArtifacts: output.noiseArtifacts || null
@@ -188,7 +188,8 @@ export default function DeepScanHome() {
         errorEmitter.emit('permission-error', permissionError)
       })
 
-      toast({ title: "Analysis Complete", description: "Intelligence synthesis finished. Results synced to Neural Cloud." })
+      // Secondary Backup to PC Vault will happen on manual export or promotional audit
+      toast({ title: "Analysis Complete", description: "Intelligence synced to Cloud Research Base." })
     } catch (e: any) {
       console.error(e)
       toast({ 
@@ -239,18 +240,18 @@ export default function DeepScanHome() {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                  NEURAL ENGINE: <span className="text-foreground">ONLINE</span>
+                  NEURAL CLOUD: <span className="text-foreground">SYNCED</span>
                 </span>
               </div>
               <div className="flex items-center gap-2 group">
                 <Network className={cn("w-3.5 h-3.5 transition-colors", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
                 <div className="flex flex-col">
                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                    PRIVATE VAULT: <span className={cn("text-foreground", !localFolderHandle && "text-destructive/70")}>{localFolderHandle ? localFolderHandle.name.toUpperCase() : "NO DATABASE"}</span>
+                    PC VAULT: <span className={cn("text-foreground", !localFolderHandle && "text-destructive/70")}>{localFolderHandle ? localFolderHandle.name.toUpperCase() : "UNLINKED"}</span>
                   </span>
                   {localFolderHandle && vaultPermissionStatus !== 'granted' && (
                     <button onClick={handleVaultPermissionRequest} className="text-[8px] font-bold text-primary uppercase text-left animate-pulse hover:underline">
-                      Re-verify Permissions Required
+                      Permission Required
                     </button>
                   )}
                 </div>
@@ -274,13 +275,13 @@ export default function DeepScanHome() {
               <div className="flex-1 space-y-6 preserve-3d">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
                   <Brain className="w-3.5 h-3.5" />
-                  ADVANCED NEURAL FORENSICS
+                  DUAL-DATABASE NEURAL TRAINING
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
-                  STOP THE <span className="text-primary italic">AI GHOST.</span>
+                  LEARN FROM <span className="text-primary italic">MISTAKES.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan dual-database mode detects microscopic artifacts and improves its accuracy by learning from every manual audit you perform.
+                  DeepScan learns from your manual audits. Verified cases are stored in your PC Vault and Cloud base to ensure accuracy on both Studio and Localhost.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -289,7 +290,7 @@ export default function DeepScanHome() {
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Activity className="w-3 h-3" />
-                    DUAL-DB SYNC ACTIVE
+                    DUAL-SYNC ACTIVE
                   </div>
                 </div>
               </div>
@@ -329,13 +330,6 @@ export default function DeepScanHome() {
                   ANALYZE
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="protect" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  PROTECT
-                </TabsTrigger>
-                <TabsTrigger 
                   value="history" 
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
@@ -347,7 +341,14 @@ export default function DeepScanHome() {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Database className="w-3.5 h-3.5" />
-                  DATASETS
+                  DATABASE & TRAINING
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="protect" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  PROTECT
                 </TabsTrigger>
               </TabsList>
 
@@ -367,16 +368,16 @@ export default function DeepScanHome() {
                           <div className="p-2.5 bg-primary/20 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                             <Shield className="w-5 h-5" />
                           </div>
-                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground">FORENSIC CAPABILITIES</h4>
+                          <h4 className="font-black uppercase text-xs tracking-widest text-foreground">TRAINING CAPABILITIES</h4>
                         </div>
                         <ul className="space-y-4">
                           {[
                             "NEURAL DNA TRACEBACK",
-                            "SPECTRUM NOISE ANALYSIS",
-                            "TEMPORAL JITTER DETECTION",
-                            "DUAL-DB AUDIT LOGGING"
+                            "MANDATORY GROUND TRUTH",
+                            "DUAL-DB SYNCHRONIZATION",
+                            "SELF-CORRECTING LOGIC"
                           ].map(item => (
-                            <li key={item} className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors duration-300">
+                            <li key={item} className="flex items-center gap-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors duration-300">
                               <ShieldCheck className="w-4 h-4 text-primary" />
                               {item}
                             </li>
@@ -398,10 +399,6 @@ export default function DeepScanHome() {
                     )}
                   </div>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="protect" className="mt-0 spatial-lift">
-                <AuthenticityShield />
               </TabsContent>
 
               <TabsContent value="history" className="mt-0 spatial-lift">
@@ -435,6 +432,10 @@ export default function DeepScanHome() {
                   }} 
                 />
               </TabsContent>
+
+              <TabsContent value="protect" className="mt-0 spatial-lift">
+                <AuthenticityShield />
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -445,11 +446,11 @@ export default function DeepScanHome() {
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
+            <a href="#" className="hover:text-primary transition-colors">Neural Sync</a>
+            <a href="#" className="hover:text-primary transition-colors">Localhost Protocol</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">
-            V3.5.0 DUAL-DB ENGINE
+            V4.2.1 NEURAL SINGULARITY
           </div>
         </div>
       </footer>

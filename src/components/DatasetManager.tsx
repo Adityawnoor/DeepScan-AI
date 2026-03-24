@@ -124,7 +124,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       
       const handle = await (window as any).showDirectoryPicker()
       
-      // Save to IDB for persistence
+      // Save to IndexedDB for persistence (Works across sessions and on localhost)
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
@@ -152,10 +152,10 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `DeepScan_Database_${new Date().toISOString().split('T')[0]}.json`
+    link.download = `DeepScan_Intelligence_Export_${new Date().toISOString().split('T')[0]}.json`
     link.click()
     URL.revokeObjectURL(url)
-    toast({ title: "Database Exported", description: "Metadata downloaded to your PC." })
+    toast({ title: "Database Exported", description: "Full intelligence base downloaded to PC." })
   }
 
   const handleTrainingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,20 +164,20 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     if (!file) return
 
     if (!datasetNotes.trim()) {
-      toast({ variant: "destructive", title: "Missing Notes", description: "Please describe the artifacts for the AI." })
+      toast({ variant: "destructive", title: "Missing Audit Notes", description: "Describe the artifacts for the Neural Engine." })
       return
     }
 
     try {
-      // DUAL-WRITE: Local Backup if Vault linked
+      // DUAL-WRITE: Local Backup to PC Vault if linked
       if (vaultHandle && vaultPermissionStatus === 'granted') {
-        const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
+        const fileHandle = await vaultHandle.getFileHandle(`TRAINING_${file.name}`, { create: true })
         const writable = await (fileHandle as any).createWritable()
         await writable.write(file)
         await writable.close()
       }
 
-      // DUAL-WRITE: Cloud Sync (Firestore)
+      // DUAL-WRITE: Primary Cloud Intelligence Base (Firestore)
       const datasetId = crypto.randomUUID()
       const datasetRef = doc(db, "datasets", datasetId)
       const datasetData = {
@@ -200,9 +200,9 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       })
 
       setDatasetNotes("")
-      toast({ title: "Neural Sample Ingested", description: `Knowledge updated with ${trainingLabel.toUpperCase()} ground truth. Synced to Cloud & PC Vault.` })
+      toast({ title: "Neural Sample Ingested", description: `Intelligence updated with ${trainingLabel.toUpperCase()} ground truth.` })
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Upload Failed", description: err.message })
+      toast({ variant: "destructive", title: "Training Failed", description: err.message })
     }
   }
 
@@ -228,7 +228,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       store.delete("localFolderHandle")
       transaction.oncomplete = () => {
         onVaultChange(undefined, undefined)
-        toast({ title: "Vault Disconnected", description: "Local folder unlinked." })
+        toast({ title: "Vault Disconnected", description: "Persistent PC link removed." })
       }
     }
   }
@@ -240,18 +240,18 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
               <Gauge className="w-4 h-4 text-primary" />
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Forensic Accuracy</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Neural Accuracy</p>
             </div>
             <p className="text-4xl font-black text-primary">{currentAccuracy}%</p>
-            <p className="mt-2 text-[10px] text-muted-foreground font-bold">{scans.filter(s => s.userFeedback !== undefined).length} Audited Cases</p>
+            <p className="mt-2 text-[10px] text-muted-foreground font-bold">{scans.filter(s => s.userFeedback !== undefined).length} Expert Audits Performed</p>
           </CardContent>
         </Card>
 
         <Card className="bg-primary/5 border-primary/20 border-dashed border-2 flex items-center justify-center p-6 text-center cursor-pointer rounded-xl hover:bg-primary/10 transition-all hover-glow" onClick={() => setShowBrainViewer(true)}>
           <div className="space-y-1">
              <BrainCircuit className="w-8 h-8 text-primary mx-auto" />
-             <p className="text-sm font-black text-primary uppercase tracking-tighter">Neural Memory</p>
-             <p className="text-[9px] text-muted-foreground">Explore {knowledgeCount} Forensic Facts</p>
+             <p className="text-sm font-black text-primary uppercase tracking-tighter">Neural Intelligence</p>
+             <p className="text-[9px] text-muted-foreground">Monitor {knowledgeCount} Forensic Facts</p>
           </div>
         </Card>
 
@@ -266,7 +266,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
                  <ShieldAlert className="w-8 h-8 mx-auto text-destructive/70" />
                  <p className="text-sm font-black uppercase tracking-tighter text-destructive/90">Vault Locked</p>
                  <p className="text-[9px] font-bold uppercase text-muted-foreground/80 leading-tight">
-                   Security Policy: Open app in <br/> a new tab to link PC folder.
+                   Security Policy: Open in a <br/> new tab to link PC folder.
                  </p>
                </>
              ) : (
@@ -277,18 +277,18 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
                  </p>
                  {vaultHandle ? (
                    <div className="flex flex-col gap-2 mt-2">
-                     <p className="text-[8px] font-bold uppercase text-primary/60">Persistent Vault Active</p>
+                     <p className="text-[8px] font-bold uppercase text-primary/60">Persistent Dual-Sync Active</p>
                      <div className="flex gap-2 justify-center">
                         <Button variant="outline" size="sm" className="h-6 text-[7px] px-2 font-black uppercase rounded-md border-primary/20 hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); handleConnectLocalPC(); }}>
                           <Settings2 className="w-2.5 h-2.5 mr-1" /> Change
                         </Button>
                         <Button variant="outline" size="sm" className="h-6 text-[7px] px-2 font-black uppercase rounded-md border-destructive/20 text-destructive hover:bg-destructive/10" onClick={disconnectVault}>
-                          <LogOut className="w-2.5 h-2.5 mr-1" /> Unlink
+                          <LogOut className="w-2.5 h-2.5 mr-1" /> Disconnect
                         </Button>
                      </div>
                    </div>
                  ) : (
-                   <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Safe Local PC Database</p>
+                   <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Local PC Forensic Backup</p>
                  )}
                </>
              )}
@@ -301,11 +301,11 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
            <Card className="shadow-none border border-border rounded-xl overflow-hidden volumetric-shadow">
             <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
                <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
-                  <Activity className="w-5 h-5 text-primary" /> Forensic Performance Audit
+                  <Activity className="w-5 h-5 text-primary" /> Forensic Intelligence Audit
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg gap-2" onClick={exportFullDatabase}>
-                    <Download className="w-3.5 h-3.5" /> Full DB Export
+                    <Download className="w-3.5 h-3.5" /> Intelligence Export
                   </Button>
                 </div>
             </CardHeader>
@@ -324,7 +324,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
                 </div>
                 
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Accuracy by Media</Label>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Training Impact by Media</Label>
                   <div className="space-y-3">
                     {auditBreakdown.map(item => (
                       <div key={item.type} className="space-y-1">
@@ -342,22 +342,22 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
               </div>
 
               <div className="mt-12 space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Neural Training Samples</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Verified Training Samples (Cloud Sync)</h4>
                 <div className="border rounded-xl overflow-hidden">
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow>
                         <TableHead className="text-[10px] font-black">Sample</TableHead>
-                        <TableHead className="text-[10px] font-black">Label</TableHead>
-                        <TableHead className="text-[10px] font-black">Observations</TableHead>
-                        <TableHead className="text-[10px] font-black text-right">Actions</TableHead>
+                        <TableHead className="text-[10px] font-black">Truth Label</TableHead>
+                        <TableHead className="text-[10px] font-black">Expert Observations</TableHead>
+                        <TableHead className="text-[10px] font-black text-right">Database Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {datasets.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-30">
-                            No research samples in cloud
+                            No cloud training samples found
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -388,46 +388,46 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
 
         <Card className="lg:col-span-4 border border-border shadow-none rounded-xl h-fit volumetric-shadow">
           <CardHeader className="bg-muted/30 border-b">
-            <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
-              <BrainCircuit className="w-5 h-5 text-primary" /> Cloud-AI Training
+            <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter text-primary">
+              <BrainCircuit className="w-5 h-5" /> Neural Education
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. Forensic Observations</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. Forensic Observation</Label>
                 <Textarea 
-                  placeholder="Describe specific artifacts (e.g., micro-latencies in lip movements)..."
-                  className="text-xs min-h-[120px] rounded-xl"
+                  placeholder="Identify specific artifacts the AI missed (e.g., metallic vocal resonances, skin pulse mismatches)..."
+                  className="text-xs min-h-[140px] rounded-xl"
                   value={datasetNotes}
                   onChange={(e) => setDatasetNotes(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Truth Label</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Ground Truth Class</Label>
                 <Select value={trainingLabel} onValueChange={(val: any) => setTrainingLabel(val)}>
-                  <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-10">
+                  <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-12">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="real" className="text-[10px] font-black uppercase">Verified Real</SelectItem>
-                    <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Verified Fake</SelectItem>
+                    <SelectItem value="real" className="text-[10px] font-black uppercase">Verified Authentic (Human)</SelectItem>
+                    <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Verified Synthetic (AI)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2 pt-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Upload & Sync</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Ingest Training Sample</Label>
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleTrainingFileUpload} accept="video/*,audio/*,image/*" />
                 <Button 
-                  className="w-full h-14 rounded-xl font-black uppercase tracking-widest animate-pulse-ring relative overflow-visible"
+                  className="w-full h-16 rounded-xl font-black uppercase tracking-widest shadow-lg animate-pulse-ring relative overflow-visible"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="w-4 h-4 mr-2" /> Sync to Neural Cloud
+                  <Upload className="w-5 h-5 mr-3" /> Sync to Intelligence base
                 </Button>
-                <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-2">
-                  Cloud training + Optional PC Vault Backup.
+                <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-3 leading-relaxed">
+                  Persistent Cloud Storage + PC Vault Backup active.<br/>Learned context persists across Studio & Localhost.
                 </p>
               </div>
             </div>
@@ -446,7 +446,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
             {learnedFactsSummary}
           </div>
           <DialogFooter>
-            <Button onClick={() => setShowBrainViewer(false)} className="rounded-xl font-black uppercase tracking-widest w-full py-6">Close HUD</Button>
+            <Button onClick={() => setShowBrainViewer(false)} className="rounded-xl font-black uppercase tracking-widest w-full py-6 bg-primary hover:bg-primary/90 text-white">Close Intelligence HUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
