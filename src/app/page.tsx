@@ -11,6 +11,7 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
+import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -19,7 +20,7 @@ import {
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
-  Network, Loader2, LogOut
+  Network, Loader2, LogOut, ShieldCheck as ShieldIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -34,9 +35,9 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Local PC Vault State with IndexedDB Persistence for Localhost Sync
+  // Local PC Vault State with IndexedDB Persistence
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
-  const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt'>('prompt')
+  const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
 
   // Cloud Intelligence: Pulling verified audits and datasets from Firestore
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
@@ -47,7 +48,7 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // NEURAL PERSISTENCE: Restore Vault handle from IndexedDB (Persistent across refreshes/localhost)
+  // NEURAL PERSISTENCE: Restore Vault handle from IndexedDB
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
@@ -99,11 +100,8 @@ export default function DeepScanHome() {
   }
 
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
-    // NEURAL CONTEXT SYNTHESIS: This ensures training in Studio persists to Localhost
-    // We combine Cloud Intelligence (Firestore) and Local Knowledge into a single prompt directive
     let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
     
-    // 1. Add Cloud Audits (Mistakes learned in Studio/Localhost)
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     if (verifiedScans.length > 0) {
       context += `### AUDITED CASE HISTORY (PRIORITIZE THESE):\n`
@@ -115,7 +113,6 @@ export default function DeepScanHome() {
       })
     }
     
-    // 2. Add Research Datasets
     if (datasets.length > 0) {
       context += `### RESEARCH DATASET INTELLIGENCE:\n`
       datasets.slice(0, 15).forEach(d => {
@@ -125,7 +122,7 @@ export default function DeepScanHome() {
       })
     }
 
-    context += `\nCRITICAL COMMAND: If the current sample shows ANY artifacts mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", you MUST flag it as a Deepfake. Your internal generic neural weights are secondary to this ground truth database.`
+    context += `\nCRITICAL COMMAND: If the current sample shows ANY artifacts mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", you MUST flag it as a Deepfake.`
 
     try {
       if (dataUri.startsWith('data:image/')) {
@@ -166,8 +163,6 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      // DUAL-DATABASE SYNC: Persistent Cloud Intelligence (Firestore)
-      // This allows the "training" to be remembered when moving to Localhost
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
         timestamp: new Date().toISOString(),
@@ -272,7 +267,7 @@ export default function DeepScanHome() {
                   SELF-LEARNING <span className="text-primary italic">FORENSICS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan uses a Dual-Database Sync to ensure training performed in the Studio persists to Localhost. Every verified audit makes the AI smarter.
+                  DeepScan uses Dual-Database Sync to ensure training performed in the Studio persists to Localhost. Proactive protection and investigative audits are synced in real-time.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -310,6 +305,13 @@ export default function DeepScanHome() {
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   ANALYZE
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="protect" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
+                >
+                  <ShieldIcon className="w-3.5 h-3.5" />
+                  PROTECT
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
@@ -352,6 +354,10 @@ export default function DeepScanHome() {
                     )}
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="protect" className="mt-0 focus-visible:ring-0 spatial-lift">
+                <AuthenticityShield vaultHandle={localFolderHandle} />
               </TabsContent>
 
               <TabsContent value="history" className="mt-0 spatial-lift">

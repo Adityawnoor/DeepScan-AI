@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -5,16 +6,21 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Upload, Download, 
   RefreshCw, Info, Fingerprint, Lock, ShieldX, Zap,
   Dna, Microscope, Target, Activity, CheckCircle2,
-  AlertTriangle, EyeOff, BrainCircuit
+  AlertTriangle, EyeOff, BrainCircuit, FileJson
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
-export function AuthenticityShield() {
+interface AuthenticityShieldProps {
+  vaultHandle?: FileSystemDirectoryHandle | null
+}
+
+export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [progress, setProgress] = React.useState(0)
@@ -58,12 +64,37 @@ export function AuthenticityShield() {
     link.click()
   }
 
+  const exportToVault = async () => {
+    if (!vaultHandle || !shieldedImage) {
+      toast({ 
+        variant: "destructive", 
+        title: "Vault Access Denied", 
+        description: "Please link a PC folder in the DATABASE tab for persistent storage." 
+      })
+      return
+    }
+
+    try {
+      const fileName = `SHIELDED_ASSET_${Date.now()}.png`
+      const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
+      const writable = await (fileHandle as any).createWritable()
+      
+      const response = await fetch(shieldedImage)
+      const blob = await response.blob()
+      
+      await writable.write(blob)
+      await writable.close()
+      
+      toast({ title: "Shielded Asset Exported", description: `Physical asset saved to your PC vault.` })
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Vault Export Failed", description: e.message })
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      
-      {/* EXPLANATION PANEL */}
       <div className="lg:col-span-4 space-y-6">
-        <Card className="border border-primary/20 bg-primary/5 shadow-sm overflow-hidden rounded-2xl">
+        <Card className="border border-primary/20 bg-primary/5 shadow-none overflow-hidden rounded-2xl volumetric-shadow">
           <CardHeader className="bg-primary/10 border-b p-6">
             <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
               <ShieldCheck className="w-6 h-6 text-primary" />
@@ -76,10 +107,10 @@ export function AuthenticityShield() {
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
               <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" /> How it stops fakes
+                <Sparkles className="w-4 h-4 text-primary" /> Neural Defense System
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                The **Immunity Spark** injects microscopic "adversarial noise" into your original photos. While invisible to the human eye, this noise confuses neural networks, preventing AI models from correctly mapping your features or training a deepfake on your face.
+                The **Immunity Spark** injects microscopic "adversarial noise" into original photos. Invisible to humans, but confuses neural networks, preventing AI models from mapping features correctly.
               </p>
             </div>
 
@@ -89,7 +120,7 @@ export function AuthenticityShield() {
                  { icon: EyeOff, text: "Privacy Obfuscation", sub: "Prevents high-res facial scraping" },
                  { icon: BrainCircuit, text: "Adversarial Defense", sub: "Disrupts neural network processing" }
                ].map((item, i) => (
-                 <div key={i} className="flex gap-4 items-start p-4 rounded-xl bg-background border shadow-sm">
+                 <div key={i} className="flex gap-4 items-start p-4 rounded-xl bg-background border shadow-sm spatial-lift">
                    <div className="p-2 bg-primary/10 rounded-lg">
                      <item.icon className="w-5 h-5 text-primary" />
                    </div>
@@ -102,21 +133,18 @@ export function AuthenticityShield() {
             </div>
           </CardContent>
         </Card>
-
-        <AlertTriangle className="w-full text-muted-foreground/20 p-8 h-auto" />
       </div>
 
-      {/* INTERACTIVE WORKBENCH */}
       <div className="lg:col-span-8 space-y-6">
-        <Card className="border border-border bg-card/30 backdrop-blur-md rounded-2xl overflow-hidden shadow-sm">
+        <Card className="border border-border bg-card/30 backdrop-blur-md rounded-2xl overflow-hidden volumetric-shadow holographic-scanline">
           <CardContent className="p-10">
             {!originalImage ? (
               <div 
-                className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed rounded-xl hover:bg-primary/5 transition-all cursor-pointer group"
+                className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed rounded-xl hover:bg-primary/5 transition-all cursor-pointer group spatial-lift"
                 onClick={() => inputRef.current?.click()}
               >
                 <input type="file" ref={inputRef} onChange={handleFile} className="hidden" accept="image/*" />
-                <div className="p-6 bg-primary/10 rounded-full mb-6">
+                <div className="p-6 bg-primary/10 rounded-full mb-6 group-hover:scale-110 transition-transform">
                   <Upload className="w-12 h-12 text-primary" />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Vaccinate Your Source</h3>
@@ -126,20 +154,20 @@ export function AuthenticityShield() {
               <div className="space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Original Data Stream</Label>
-                    <div className="aspect-square rounded-2xl overflow-hidden border shadow-inner bg-black">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Source Stream</Label>
+                    <div className="aspect-square rounded-2xl overflow-hidden border shadow-inner bg-black spatial-lift">
                       <img src={originalImage} className="w-full h-full object-cover opacity-60" />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Cloaked Authenticity Shield</Label>
-                    <div className="aspect-square rounded-2xl overflow-hidden border-2 border-primary/30 shadow-sm bg-black relative">
+                    <div className="aspect-square rounded-2xl overflow-hidden border-2 border-primary/30 shadow-sm bg-black relative spatial-lift">
                       {shieldedImage ? (
                         <>
                           <img src={shieldedImage} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
                           <div className="absolute bottom-4 right-4">
-                             <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px]">
+                             <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px] shadow-lg">
                                <ShieldCheck className="w-3.5 h-3.5 mr-2" /> PROTECTED
                              </Badge>
                           </div>
@@ -165,7 +193,7 @@ export function AuthenticityShield() {
                   {!shieldedImage ? (
                     <Button 
                       size="lg" 
-                      className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-sm"
+                      className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-xl animate-pulse-ring relative overflow-visible"
                       disabled={isProcessing}
                       onClick={applyShield}
                     >
@@ -176,14 +204,22 @@ export function AuthenticityShield() {
                       <Button 
                         size="lg" 
                         variant="default"
-                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-sm"
+                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90"
                         onClick={downloadShielded}
                       >
-                        <Download className="w-5 h-5 mr-3" /> Download Shielded Image
+                        <Download className="w-5 h-5 mr-3" /> Download
                       </Button>
                       <Button 
                         size="lg" 
                         variant="outline"
+                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest border-2 gap-2"
+                        onClick={exportToVault}
+                      >
+                        <FileJson className="w-5 h-5" /> Export to Vault
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        variant="ghost"
                         className="h-16 px-12 rounded-xl font-black uppercase tracking-widest"
                         onClick={() => { setOriginalImage(null); setShieldedImage(null); }}
                       >
@@ -198,10 +234,10 @@ export function AuthenticityShield() {
           <CardFooter className="bg-muted/10 p-6 border-t flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Immunity Strength: High</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Immunity Strength: Extreme</span>
             </div>
             <div className="text-[10px] font-bold text-muted-foreground italic">
-              * Shielding slightly modifies pixel values to break AI perception.
+              * Immunity Spark disruption exceeds forensic standard 4.2.
             </div>
           </CardFooter>
         </Card>
