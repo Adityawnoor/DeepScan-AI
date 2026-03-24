@@ -274,10 +274,10 @@ export default function DeepScanHome() {
                   NEURAL SINGULARITY ENGINE
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
-                  STOP THE <span className="text-primary italic">AI GHOST.</span>
+                  AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
+                  Analyze media for synthetic manipulation with the world&apos;s most powerful AI engine. DeepScan elite mode identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -325,7 +325,7 @@ export default function DeepScanHome() {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 thin-pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   HISTORY
@@ -445,7 +445,7 @@ export default function DeepScanHome() {
               </TabsContent>
             </Tabs>
 
-            {/* Restored Neural Network Traceability Section */}
+            {/* Neural Network Traceability Section */}
             <div className="py-12 border-t mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
                <div className="flex flex-col items-center text-center gap-8">
                   <div className="space-y-2">
