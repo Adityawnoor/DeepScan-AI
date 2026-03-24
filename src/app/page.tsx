@@ -92,14 +92,13 @@ export default function DeepScanHome() {
         return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
       }
     } catch (error: any) {
-      // HANDLE QUOTA ERROR (429)
       const isQuotaError = error.message?.includes('429') || 
                            error.message?.includes('RESOURCE_EXHAUSTED') ||
                            error.message?.includes('quota');
       
       if (isQuotaError) {
         if (retryCount < 5) {
-          const waitTime = 15000; // 15 seconds backoff
+          const waitTime = 15000;
           toast({ 
             title: "Neural Engine Cooling Down", 
             description: `AI Quota reached. Retrying automatically in 15s (Attempt ${retryCount + 1}/5)...` 
@@ -190,9 +189,9 @@ export default function DeepScanHome() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Network className="w-3.5 h-3.5 text-primary" />
+                <Network className={cn("w-3.5 h-3.5", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                  PRIVATE VAULT: <span className="text-foreground">{localFolderHandle ? localFolderHandle.name.toUpperCase() : "NO DATABASE"}</span>
+                  PRIVATE VAULT: <span className={cn("text-foreground", !localFolderHandle && "text-destructive/70")}>{localFolderHandle ? localFolderHandle.name.toUpperCase() : "NO DATABASE"}</span>
                 </span>
               </div>
             </div>
@@ -347,6 +346,7 @@ export default function DeepScanHome() {
               <TabsContent value="datasets" className="mt-0 spatial-lift">
                 <DatasetManager 
                   knowledgeCount={knowledgeCount} 
+                  vaultHandle={localFolderHandle}
                   onRefresh={(name, handle) => {
                     if (handle) setLocalFolderHandle(handle);
                     refreshLocalData();

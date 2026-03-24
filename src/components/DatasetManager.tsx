@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -22,9 +23,10 @@ import { cn } from "@/lib/utils"
 interface DatasetManagerProps {
   knowledgeCount: number
   onRefresh: (folderName?: string, handle?: FileSystemDirectoryHandle) => void
+  vaultHandle?: FileSystemDirectoryHandle | null
 }
 
-export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProps) {
+export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: DatasetManagerProps) {
   const { toast } = useToast()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
@@ -88,6 +90,20 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     return summary || "No forensic facts learned yet."
   }, [datasets, scans])
 
+  async function verifyPermission(fileHandle: FileSystemHandle, readWrite: boolean) {
+    const options: any = {}
+    if (readWrite) {
+      options.mode = 'readwrite'
+    }
+    if ((await fileHandle.queryPermission(options)) === 'granted') {
+      return true
+    }
+    if ((await fileHandle.requestPermission(options)) === 'granted') {
+      return true
+    }
+    return false
+  }
+
   const handleConnectLocalPC = async () => {
     try {
       const handle = await (window as any).showDirectoryPicker()
@@ -98,9 +114,28 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     }
   }
 
-  const handleTrainingFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTrainingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && datasetNotes.trim()) {
+    if (!file) return
+
+    if (!datasetNotes.trim()) {
+      toast({ variant: "destructive", title: "Missing Notes", description: "Please describe the forensic artifacts first." })
+      return
+    }
+
+    try {
+      // If vault is linked, try to save the file there
+      if (vaultHandle) {
+        const hasPermission = await verifyPermission(vaultHandle, true)
+        if (hasPermission) {
+          const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
+          const writable = await fileHandle.createWritable()
+          await writable.write(file)
+          await writable.close()
+          toast({ title: "File Saved to PC", description: `"${file.name}" archived in local vault.` })
+        }
+      }
+
       const newDataset = {
         id: crypto.randomUUID(),
         fileName: file.name,
@@ -111,14 +146,15 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
         notes: datasetNotes.trim(),
         status: "processed"
       }
+
       const updated = [newDataset, ...datasets]
       setDatasets(updated)
       localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
       setDatasetNotes("")
       onRefresh()
-      toast({ title: "Neural Sample Ingested", description: `"${file.name}" added as Ground Truth: ${trainingLabel.toUpperCase()}` })
-    } else if (!datasetNotes.trim()) {
-      toast({ variant: "destructive", title: "Missing Notes", description: "Please describe the artifacts before uploading." })
+      toast({ title: "Neural Sample Ingested", description: `Knowledge updated with ${trainingLabel.toUpperCase()} ground truth.` })
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Upload Failed", description: err.message })
     }
   }
 
@@ -151,10 +187,16 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </div>
         </Card>
 
-        <Card className="bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer hover:bg-muted/80 transition-all" onClick={handleConnectLocalPC}>
+        <Card className={cn(
+          "bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer transition-all",
+          vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80"
+        )} onClick={handleConnectLocalPC}>
           <div className="space-y-1">
-             <FolderOpen className="w-8 h-8 text-muted-foreground mx-auto" />
-             <p className="text-sm font-black text-muted-foreground uppercase tracking-tighter">Link PC Vault</p>
+             <FolderOpen className={cn("w-8 h-8 mx-auto", vaultHandle ? "text-primary" : "text-muted-foreground")} />
+             <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
+               {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
+             </p>
+             {vaultHandle && <p className="text-[8px] font-bold uppercase text-primary/60">Local Sync Active</p>}
           </div>
         </Card>
       </div>
@@ -285,7 +327,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                   <Upload className="w-4 h-4 mr-2" /> Upload & Teach
                 </Button>
                 <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-2">
-                  Samples are stored in your private local vault.
+                  Samples will be saved to your private local PC folder.
                 </p>
               </div>
             </div>

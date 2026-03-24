@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -112,15 +113,41 @@ FORENSIC EVIDENCE:
 Content violates safety policies regarding synthetic identity manipulation.
 `
 
+  async function verifyPermission(fileHandle: FileSystemHandle, readWrite: boolean) {
+    const options: any = {}
+    if (readWrite) {
+      options.mode = 'readwrite'
+    }
+    if ((await fileHandle.queryPermission(options)) === 'granted') {
+      return true
+    }
+    if ((await fileHandle.requestPermission(options)) === 'granted') {
+      return true
+    }
+    return false
+  }
+
   const exportEvidence = async () => {
     if (!vaultHandle) {
-      toast({ variant: "destructive", title: "Vault Unlinked", description: "Link a PC folder in the Database tab to export." })
+      toast({ 
+        variant: "destructive", 
+        title: "Vault Unlinked", 
+        description: "Please link a PC folder in the Database tab first." 
+      })
       return
     }
+
     try {
+      const hasPermission = await verifyPermission(vaultHandle, true)
+      if (!hasPermission) {
+        toast({ variant: "destructive", title: "Permission Denied", description: "Access to the local folder was not granted." })
+        return
+      }
+
       const fileName = `Forensic_Report_${scanId.substring(0, 8)}.json`
       const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
       const writable = await fileHandle.createWritable()
+      
       const evidence = {
         scanId,
         timestamp: new Date().toISOString(),
@@ -132,11 +159,14 @@ Content violates safety policies regarding synthetic identity manipulation.
         humanVerification: feedbackSubmitted,
         userComment
       }
+
       await writable.write(JSON.stringify(evidence, null, 2))
       await writable.close()
+      
       toast({ title: "Evidence Exported", description: `Saved as ${fileName} to your PC vault.` })
-    } catch (e) {
-      toast({ variant: "destructive", title: "Export Failed" })
+    } catch (e: any) {
+      console.error(e)
+      toast({ variant: "destructive", title: "Export Failed", description: e.message })
     }
   }
 
