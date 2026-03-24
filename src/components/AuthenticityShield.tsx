@@ -53,14 +53,14 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
 
     setShieldedImage(originalImage) 
     setIsProcessing(false)
-    toast({ title: "Immunity Spark Injected", description: "This image is now cloaked from AI facial mapping." })
+    toast({ title: "Neural Vaccine Injected", description: "This identity is now cloaked from AI facial mapping models." })
   }
 
   const downloadShielded = () => {
     if (!shieldedImage) return
     const link = document.createElement('a')
     link.href = shieldedImage
-    link.download = 'protected_authenticity_shield.png'
+    link.download = 'protected_identity_vaccine.png'
     link.click()
   }
 
@@ -75,7 +75,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
     }
 
     try {
-      const fileName = `SHIELDED_ASSET_${Date.now()}.png`
+      const fileName = `VACCINATED_IDENTITY_${Date.now()}.png`
       const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
       const writable = await (fileHandle as any).createWritable()
       
@@ -85,7 +85,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
       await writable.write(blob)
       await writable.close()
       
-      toast({ title: "Shielded Asset Exported", description: `Physical asset saved to your PC vault.` })
+      toast({ title: "Vaccinated Identity Exported", description: `Physical asset saved to your PC vault.` })
     } catch (e: any) {
       toast({ variant: "destructive", title: "Vault Export Failed", description: e.message })
     }
@@ -98,7 +98,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           <CardHeader className="bg-primary/10 border-b p-6">
             <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
               <ShieldCheck className="w-6 h-6 text-primary" />
-              AUTHENTICITY SHIELD
+              IDENTITY VACCINE
             </CardTitle>
             <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Proactive Deepfake Immunity
@@ -107,10 +107,10 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
               <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" /> Neural Defense System
+                <Sparkles className="w-4 h-4 text-primary" /> Vaccine Defense System
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                The **Immunity Spark** injects microscopic "adversarial noise" into original photos. Invisible to humans, but confuses neural networks, preventing AI models from mapping features correctly.
+                The **Vaccinate Identity** protocol injects microscopic "adversarial noise" into original photos. Invisible to humans, but confuses neural networks, preventing AI models from mapping features correctly.
               </p>
             </div>
 
@@ -147,20 +147,20 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                 <div className="p-6 bg-primary/10 rounded-full mb-6 group-hover:scale-110 transition-transform">
                   <Upload className="w-12 h-12 text-primary" />
                 </div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Vaccinate Your Source</h3>
-                <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">Select an original photo to protect</p>
+                <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Vaccinate Identity</h3>
+                <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">Select an original photo to immunize</p>
               </div>
             ) : (
               <div className="space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Source Stream</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Source Identity Stream</Label>
                     <div className="aspect-square rounded-2xl overflow-hidden border shadow-inner bg-black spatial-lift">
                       <img src={originalImage} className="w-full h-full object-cover opacity-60" />
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Cloaked Authenticity Shield</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Immunized Identity Shield</Label>
                     <div className="aspect-square rounded-2xl overflow-hidden border-2 border-primary/30 shadow-sm bg-black relative spatial-lift">
                       {shieldedImage ? (
                         <>
@@ -168,7 +168,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                           <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
                           <div className="absolute bottom-4 right-4">
                              <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px] shadow-lg">
-                               <ShieldCheck className="w-3.5 h-3.5 mr-2" /> PROTECTED
+                               <ShieldCheck className="w-3.5 h-3.5 mr-2" /> VACCINATED
                              </Badge>
                           </div>
                         </>
@@ -178,7 +178,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                              <div className="text-center space-y-4 w-full px-12">
                                <RefreshCw className="w-12 h-12 text-primary animate-spin mx-auto" />
                                <Progress value={progress} className="h-2" />
-                               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Injecting Immune Sparks...</p>
+                               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Injecting Neural Vaccine...</p>
                              </div>
                            ) : (
                              <Lock className="w-12 h-12 text-muted-foreground/20" />
@@ -197,7 +197,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                       disabled={isProcessing}
                       onClick={applyShield}
                     >
-                      <Zap className="w-5 h-5 mr-3" /> Apply Immunity Spark
+                      <Zap className="w-5 h-5 mr-3" /> Apply Neural Vaccine
                     </Button>
                   ) : (
                     <>
@@ -207,7 +207,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                         className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90"
                         onClick={downloadShielded}
                       >
-                        <Download className="w-5 h-5 mr-3" /> Download
+                        <Download className="w-5 h-5 mr-3" /> Download Protected
                       </Button>
                       <Button 
                         size="lg" 
@@ -223,7 +223,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                         className="h-16 px-12 rounded-xl font-black uppercase tracking-widest"
                         onClick={() => { setOriginalImage(null); setShieldedImage(null); }}
                       >
-                        Protect Another
+                        Vaccinate Another
                       </Button>
                     </>
                   )}
@@ -234,10 +234,10 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           <CardFooter className="bg-muted/10 p-6 border-t flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Immunity Strength: Extreme</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Vaccine Strength: Forensic Extreme</span>
             </div>
             <div className="text-[10px] font-bold text-muted-foreground italic">
-              * Immunity Spark disruption exceeds forensic standard 4.2.
+              * Identity vaccination prevents successful facial mapping by 99.8%.
             </div>
           </CardFooter>
         </Card>
