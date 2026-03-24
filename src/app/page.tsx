@@ -274,10 +274,10 @@ export default function DeepScanHome() {
                   NEURAL SINGULARITY ENGINE
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
-                  SELF-LEARNING <span className="text-primary italic">FORENSICS.</span>
+                  STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan uses Dual-Database Sync to ensure training performed in the Studio persists to Localhost. Proactive protection and investigative audits are synced in real-time.
+                  DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -384,7 +384,7 @@ export default function DeepScanHome() {
                                 explanation: scan.explanation,
                                 neuralAncestry: scan.neuralAncestry,
                                 biometricVitals: scan.biometricVitals,
-                                noiseArtifacts: scan.noiseArtifacts
+                                scale: scan.noiseArtifacts
                               },
                               mediaUrl: scan.mediaUrl || "", 
                               mediaType: scan.mediaType
