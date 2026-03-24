@@ -6,7 +6,8 @@ import {
   FileJson, Download, ShieldAlert,
   Dna, HeartPulse, Target,
   Map as MapIcon, Gavel,
-  ShieldX, Copy, Activity, Cpu, Layers, MessageSquare
+  ShieldX, Copy, Activity, Cpu, Layers, MessageSquare,
+  Database
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -38,6 +39,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const [userComment, setUserComment] = React.useState("")
   const [showSpectralMode, setShowSpectralMode] = React.useState(false)
   const [showTakedown, setShowTakedown] = React.useState(false)
+  const [isPromoted, setIsPromoted] = React.useState(false)
   const mediaRef = React.useRef<HTMLVideoElement | HTMLAudioElement>(null)
 
   const isFake = result.isDeepfake
@@ -60,6 +62,31 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       if (onUpdate) onUpdate()
       toast({ title: "Intelligence Captured", description: "The system has synthesized your expert observations." })
     }
+  }
+
+  const promoteToDataset = () => {
+    if (feedbackSubmitted === null) {
+      toast({ variant: "destructive", title: "Audit Required", description: "Verify the result before promoting to research dataset." })
+      return
+    }
+
+    const savedDatasets = localStorage.getItem("deepscan-datasets") || "[]"
+    const datasets = JSON.parse(savedDatasets)
+    
+    const newEntry = {
+      id: crypto.randomUUID(),
+      fileName: `Audit_${scanId.substring(0, 8)}`,
+      uploadDate: new Date().toISOString(),
+      label: feedbackSubmitted ? (isFake ? "fake" : "real") : (isFake ? "real" : "fake"),
+      notes: userComment || `Promoted from Case ${scanId}`,
+      status: "processed",
+      scanId
+    }
+
+    localStorage.setItem("deepscan-datasets", JSON.stringify([newEntry, ...datasets]))
+    setIsPromoted(true)
+    if (onUpdate) onUpdate()
+    toast({ title: "Dataset Improved", description: "This case is now part of the global Ground Truth intelligence base." })
   }
 
   const mapData = [
@@ -278,8 +305,23 @@ Content violates safety policies regarding synthetic identity manipulation.
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest animate-pulse text-center rounded-xl">
-                      Audit Logged: System updated with Ground Truth.
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
+                      <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest text-center rounded-xl">
+                        Audit Logged: System updated with Ground Truth.
+                      </div>
+                      {!isPromoted && (
+                        <Button 
+                          className="w-full h-12 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 rounded-xl font-black uppercase tracking-widest text-[10px] gap-2"
+                          onClick={promoteToDataset}
+                        >
+                          <Database className="w-4 h-4" /> Improve Research Dataset
+                        </Button>
+                      )}
+                      {isPromoted && (
+                        <div className="p-3 border border-dashed border-primary/30 rounded-xl text-[9px] font-black text-primary text-center uppercase tracking-widest">
+                          Neural Dataset Improved ✓
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1,10 +1,10 @@
-
 "use client"
 
 import * as React from "react"
 import { 
   Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
-  FileJson, FileArchive, Activity, Gauge, AlertCircle, Info
+  FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
+  Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -26,18 +27,22 @@ interface DatasetManagerProps {
 export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProps) {
   const { toast } = useToast()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
+  const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
-  const [localFiles, setLocalFiles] = React.useState<{ name: string, size: number }[]>([])
-  const [exportedReports, setExportedReports] = React.useState<string[]>([])
   const [datasets, setDatasets] = React.useState<any[]>([])
   const [scans, setScans] = React.useState<any[]>([])
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  React.useEffect(() => {
+  const refreshLocalState = React.useCallback(() => {
     const savedDatasets = localStorage.getItem("deepscan-datasets")
     const savedScans = localStorage.getItem("deepscan-scans-metadata")
     if (savedDatasets) setDatasets(JSON.parse(savedDatasets))
     if (savedScans) setScans(JSON.parse(savedScans))
   }, [])
+
+  React.useEffect(() => {
+    refreshLocalState()
+  }, [refreshLocalState])
 
   const auditBreakdown = React.useMemo(() => {
     const breakdown = {
@@ -78,8 +83,8 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
   const learnedFactsSummary = React.useMemo(() => {
     let summary = "### PRIVATE INTELLIGENCE LOG ###\n\n"
-    datasets.filter(ds => ds.notes).forEach(ds => summary += `[DATASET] ${ds.notes}\n`)
-    scans.filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT: ${s.id.substring(0, 4)}] Verified as ${s.userFeedback ? 'FAKE' : 'REAL'}\n`)
+    datasets.filter(ds => ds.notes).forEach(ds => summary += `[DATASET: ${ds.fileName || 'Observation'}] Ground Truth: ${ds.label?.toUpperCase()}. Notes: ${ds.notes}\n`)
+    scans.filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT: ${s.id.substring(0, 4)}] Verified as ${s.userFeedback ? 'FAKE' : 'REAL'}. Artifacts: ${s.userComment || 'None'}\n`)
     return summary || "No forensic facts learned yet."
   }, [datasets, scans])
 
@@ -93,26 +98,41 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
     }
   }
 
-  const handleAddKnowledge = () => {
-    if (!datasetNotes.trim()) return
-    const newDataset = {
-      id: crypto.randomUUID(),
-      uploadDate: new Date().toISOString(),
-      label: "research",
-      notes: datasetNotes.trim(),
+  const handleTrainingFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && datasetNotes.trim()) {
+      const newDataset = {
+        id: crypto.randomUUID(),
+        fileName: file.name,
+        uploadDate: new Date().toISOString(),
+        size: file.size,
+        fileType: file.type,
+        label: trainingLabel,
+        notes: datasetNotes.trim(),
+        status: "processed"
+      }
+      const updated = [newDataset, ...datasets]
+      setDatasets(updated)
+      localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
+      setDatasetNotes("")
+      onRefresh()
+      toast({ title: "Neural Sample Ingested", description: `"${file.name}" added as Ground Truth: ${trainingLabel.toUpperCase()}` })
+    } else if (!datasetNotes.trim()) {
+      toast({ variant: "destructive", title: "Missing Notes", description: "Please describe the artifacts before uploading." })
     }
-    const updated = [newDataset, ...datasets]
+  }
+
+  const removeDatasetItem = (id: string) => {
+    const updated = datasets.filter(d => d.id !== id)
     setDatasets(updated)
     localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
-    setDatasetNotes("")
     onRefresh()
-    toast({ title: "Knowledge Synthesized", description: "AI intelligence base updated." })
   }
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-primary/5 border-primary/20 shadow-none rounded-none">
+        <Card className="bg-primary/5 border-primary/20 shadow-none rounded-xl spatial-lift">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
               <Gauge className="w-4 h-4 text-primary" />
@@ -123,7 +143,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </CardContent>
         </Card>
 
-        <Card className="bg-primary/5 border-primary/20 border-dashed border-2 flex items-center justify-center p-6 text-center cursor-pointer rounded-none hover:bg-primary/10 transition-all" onClick={() => setShowBrainViewer(true)}>
+        <Card className="bg-primary/5 border-primary/20 border-dashed border-2 flex items-center justify-center p-6 text-center cursor-pointer rounded-xl hover:bg-primary/10 transition-all hover-glow" onClick={() => setShowBrainViewer(true)}>
           <div className="space-y-1">
              <BrainCircuit className="w-8 h-8 text-primary mx-auto" />
              <p className="text-sm font-black text-primary uppercase tracking-tighter">Neural Memory</p>
@@ -131,7 +151,7 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
           </div>
         </Card>
 
-        <Card className="bg-muted border border-border shadow-none rounded-none flex items-center justify-center p-6 text-center cursor-pointer" onClick={handleConnectLocalPC}>
+        <Card className="bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer hover:bg-muted/80 transition-all" onClick={handleConnectLocalPC}>
           <div className="space-y-1">
              <FolderOpen className="w-8 h-8 text-muted-foreground mx-auto" />
              <p className="text-sm font-black text-muted-foreground uppercase tracking-tighter">Link PC Vault</p>
@@ -141,9 +161,9 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
-           <Card className="shadow-none border border-border rounded-none overflow-hidden">
+           <Card className="shadow-none border border-border rounded-xl overflow-hidden volumetric-shadow">
             <CardHeader className="bg-muted/30 pb-4">
-               <CardTitle className="text-lg flex items-center gap-2">
+               <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
                   <Activity className="w-5 h-5 text-primary" /> Forensic Performance Audit
                 </CardTitle>
             </CardHeader>
@@ -170,59 +190,121 @@ export function DatasetManager({ knowledgeCount, onRefresh }: DatasetManagerProp
                           <span className="text-muted-foreground">{item.type}</span>
                           <span className="text-primary">{item.accuracy}%</span>
                         </div>
-                        <div className="h-2 w-full bg-muted rounded-none overflow-hidden">
+                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                           <div className="h-full bg-primary" style={{ width: `${item.accuracy}%` }} />
                         </div>
                       </div>
                     ))}
-                    {chartData.length === 0 && (
-                      <div className="p-4 rounded-none border border-dashed text-center space-y-2">
-                        <AlertCircle className="w-6 h-6 mx-auto text-muted-foreground opacity-30" />
-                        <p className="text-[10px] text-muted-foreground">Perform an audit to populate data.</p>
-                      </div>
-                    )}
                   </div>
+                </div>
+              </div>
+
+              <div className="mt-12 space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Neural Training Samples</h4>
+                <div className="border rounded-xl overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow>
+                        <TableHead className="text-[10px] font-black">Sample</TableHead>
+                        <TableHead className="text-[10px] font-black">Label</TableHead>
+                        <TableHead className="text-[10px] font-black">Observations</TableHead>
+                        <TableHead className="text-[10px] font-black text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {datasets.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-30">
+                            No research samples in vault
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        datasets.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-bold text-xs truncate max-w-[150px]">{item.fileName || "Note Entry"}</TableCell>
+                            <TableCell>
+                              <Badge variant={item.label === 'fake' ? "destructive" : "default"} className="text-[9px] font-black uppercase px-2 rounded-lg">
+                                {item.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-[10px] text-muted-foreground line-clamp-1 max-w-[200px]">{item.notes}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => removeDatasetItem(item.id)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="lg:col-span-4 border border-border shadow-none rounded-none h-fit">
+        <Card className="lg:col-span-4 border border-border shadow-none rounded-xl h-fit volumetric-shadow">
           <CardHeader className="bg-muted/30 border-b">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Database className="w-5 h-5 text-primary" /> Teach the Engine
+            <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
+              <BrainCircuit className="w-5 h-5 text-primary" /> Teach the Engine
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">New Expert Observation</Label>
-              <Textarea 
-                placeholder="Describe specific artifacts for the AI to learn..."
-                className="text-xs min-h-[120px] rounded-none"
-                value={datasetNotes}
-                onChange={(e) => setDatasetNotes(e.target.value)}
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. Forensic Observations</Label>
+                <Textarea 
+                  placeholder="Describe specific artifacts (e.g., micro-latencies in lip movements)..."
+                  className="text-xs min-h-[120px] rounded-xl"
+                  value={datasetNotes}
+                  onChange={(e) => setDatasetNotes(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Truth Label</Label>
+                <Select value={trainingLabel} onValueChange={(val: any) => setTrainingLabel(val)}>
+                  <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="real" className="text-[10px] font-black uppercase">Verified Real</SelectItem>
+                    <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Verified Fake</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 pt-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Upload Sample</Label>
+                <input type="file" ref={fileInputRef} className="hidden" onChange={handleTrainingFileUpload} accept="video/*,audio/*,image/*" />
+                <Button 
+                  className="w-full h-14 rounded-xl font-black uppercase tracking-widest animate-pulse-ring relative overflow-visible"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" /> Upload & Teach
+                </Button>
+                <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-2">
+                  Samples are stored in your private local vault.
+                </p>
+              </div>
             </div>
-            <Button className="w-full h-12 rounded-none font-black uppercase tracking-widest" onClick={handleAddKnowledge}>
-              Update Intelligence
-            </Button>
           </CardContent>
         </Card>
       </div>
 
       <Dialog open={showBrainViewer} onOpenChange={setShowBrainViewer}>
-        <DialogContent className="max-w-2xl rounded-none border-2 border-primary/20">
+        <DialogContent className="max-w-2xl rounded-2xl border-2 border-primary/20 volumetric-shadow">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tighter text-primary">
               <BrainCircuit className="w-8 h-8" /> Private Intelligence Log
             </DialogTitle>
           </DialogHeader>
-          <div className="p-8 bg-muted rounded-none border-dashed border font-mono text-[11px] whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto">
+          <div className="p-8 bg-muted rounded-xl border-dashed border font-mono text-[11px] whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto">
             {learnedFactsSummary}
           </div>
           <DialogFooter>
-            <Button onClick={() => setShowBrainViewer(false)} className="rounded-none font-black uppercase tracking-widest w-full py-6">Close</Button>
+            <Button onClick={() => setShowBrainViewer(false)} className="rounded-xl font-black uppercase tracking-widest w-full py-6">Close HUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -58,28 +58,31 @@ export default function DeepScanHome() {
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // SYNTHESIZE PRIVATE INTELLIGENCE - AGGRESSIVE GROUND TRUTH
-      let context = `CRITICAL FORENSIC DIRECTIVES:\n`
+      // SYNTHESIZE RIGOROUS FORENSIC CONTEXT - GROUND TRUTH PRIORITY
+      let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
       
       const verifiedScans = localScans.filter(s => s.userFeedback !== undefined)
       
       if (verifiedScans.length > 0) {
-        context += `THE FOLLOWING PATTERNS HAVE BEEN CONFIRMED BY EXPERT AUDIT. IF YOU ENCOUNTER SIMILAR ANOMALIES, YOU MUST INCREASE THE DEEPFAKE CONFIDENCE RATING:\n`
-        verifiedScans.slice(0, 15).forEach(s => {
-          const type = s.mediaType?.toUpperCase() || "MEDIA"
+        context += `### AUDITED CASE HISTORY (EXPERT VERIFIED):\n`
+        verifiedScans.slice(0, 10).forEach(s => {
           const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-          context += `- Case [${s.id.substring(0,4)}]: Confirmed as ${truth}.`
-          if (s.userComment) {
-            context += ` Reason for correction: "${s.userComment}"\n`
-          } else {
-            context += `\n`
-          }
+          context += `- Case ID [${s.id.substring(0,4)}]: VERIFIED AS ${truth}. `
+          if (s.userComment) context += `EXPERT OBSERVATION: "${s.userComment}"\n`
+          else context += `\n`
         })
       }
       
-      localDatasets.filter(d => d.notes).forEach(d => {
-        context += `- Research Intelligence [${d.label}]: ${d.notes}\n`
-      })
+      if (localDatasets.length > 0) {
+        context += `### RESEARCH DATASET INTELLIGENCE (TRAINING SAMPLES):\n`
+        localDatasets.slice(0, 10).forEach(d => {
+          context += `- Sample [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
+          if (d.notes) context += `FORENSIC NOTE: "${d.notes}"\n`
+          else context += `\n`
+        })
+      }
+
+      context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as definitive proof of origin.`
 
       let output: any
       let mediaType: 'image' | 'audio' | 'video' = 'image'
@@ -123,10 +126,10 @@ export default function DeepScanHome() {
       setHistory(updatedHistory)
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
 
-      toast({ title: "Analysis Complete", description: "Neural ancestry identified." })
+      toast({ title: "Analysis Complete", description: "Intelligence synthesis finished." })
     } catch (e) {
       console.error(e)
-      toast({ variant: "destructive", title: "Scan Failed" })
+      toast({ variant: "destructive", title: "Scan Failed", description: "The neural engine encountered an error." })
     } finally {
       setIsAnalyzing(false)
     }
