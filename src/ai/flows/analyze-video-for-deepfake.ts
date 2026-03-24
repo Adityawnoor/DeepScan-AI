@@ -53,19 +53,20 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'videoDeepfakeDetectionPrompt',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are a forensic video expert. Analyze the provided video for sophisticated temporal manipulations.
+  prompt: `You are an elite forensic video analyst. Your goal is to identify AI-synthesized or manipulated video content. Be extremely skeptical.
 
 {{#if learnedContext}}
-### LEARNED KNOWLEDGE BASE
-Apply the following rules and patterns learned from previously verified training data:
+### SHARED INTELLIGENCE & LESSONS LEARNED
+Incorporate these verified observations from past investigations:
 {{{learnedContext}}}
 {{/if}}
 
-Look for:
-1. **Temporal Jitter**: "Shimmering" around facial boundaries.
-2. **Sync Discrepancies**: Micro-latencies between mouth shapes and audio.
-3. **Lighting De-synchronization**: Check if facial shadows respond correctly to head movements.
-4. **Blink Patterns**: Look for static or muscularly impossible eye movements.
+CRITICAL DETECTION PARAMETERS:
+1. **Temporal Coherence**: Look for "shimmering" or "ghosting" around the chin, hairline, and glasses. Deepfakes often fail to maintain consistent facial boundaries over time.
+2. **Lip-Sync Micro-Latencies**: Check for discrepancies between mouth shapes (visemes) and audio phonemes. Look for the "sliding" effect where the mouth doesn't quite "land" on consonants.
+3. **Lighting De-synchronization**: Verify if facial highlights and shadows respond in real-time to head rotation and environmental light sources.
+4. **Blink & Micro-expression Patterns**: Analyze eye-blinking frequency and the movement of micro-muscles around the eyes and forehead. AI often struggles with the "orbicularis oculi" muscle coordination.
+5. **Frequency Domain Anomalies**: Look for "digital noise" that appears static relative to the moving face (fixed-noise patterns).
 
 Video to analyze: {{media url=videoDataUri}}`,
 });

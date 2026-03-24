@@ -54,10 +54,18 @@ export default function DeepScanHome() {
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      let context = `### PRIVATE INTELLIGENCE REPORT ###\n`
-      localScans.filter(s => s.userFeedback !== undefined).slice(0, 15).forEach(s => {
-        context += `- Record ${s.id.substring(0,8)} verified as ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`
+      // SYNTHESIZE PRIVATE INTELLIGENCE
+      let context = `### PRIVATE INTELLIGENCE REPORT & GROUND TRUTH ###\n`
+      
+      // Include verified feedback with expert comments for better context
+      localScans.filter(s => s.userFeedback !== undefined).slice(0, 10).forEach(s => {
+        const type = s.mediaType?.toUpperCase() || "MEDIA"
+        context += `- VERIFIED ${type} Record [${s.id.substring(0,8)}]: Verified as ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`
+        if (s.userComment) {
+          context += `  EXPERT FORENSIC NOTE: "${s.userComment}"\n`
+        }
       })
+      
       localDatasets.filter(d => d.notes).forEach(d => {
         context += `- Labeled Dataset [${d.label}]: ${d.notes}\n`
       })
@@ -141,7 +149,7 @@ export default function DeepScanHome() {
           <div className="flex items-center gap-8">
             <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
                   NEURAL ENGINE: <span className="text-foreground">ONLINE</span>
                 </span>
@@ -164,7 +172,7 @@ export default function DeepScanHome() {
           <section className="preserve-3d">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 rounded-3xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6 preserve-3d">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full animate-float">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
                   <Brain className="w-3.5 h-3.5" />
                   ADVANCED NEURAL FORENSICS
                 </div>
@@ -177,7 +185,7 @@ export default function DeepScanHome() {
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Zap className="w-3 h-3" />
-                    {knowledgeCount} LESSONS LEARNED
+                    {knowledgeCount} FORENSIC FACTS LEARNED
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Activity className="w-3 h-3" />
