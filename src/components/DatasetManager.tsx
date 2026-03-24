@@ -106,11 +106,25 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
 
   const handleConnectLocalPC = async () => {
     try {
+      if (!('showDirectoryPicker' in window)) {
+        toast({ 
+          variant: "destructive", 
+          title: "Browser Unsupported", 
+          description: "Your browser does not support the File System Access API. Please use Chrome or Edge." 
+        })
+        return
+      }
       const handle = await (window as any).showDirectoryPicker()
       onRefresh(handle.name, handle)
       toast({ title: "Vault Connected", description: `Linked to ${handle.name}` })
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Access Denied" })
+      if (err.name === 'AbortError') return; // User cancelled the picker
+      console.error(err)
+      toast({ 
+        variant: "destructive", 
+        title: "Access Denied", 
+        description: err.message || "Failed to link PC folder." 
+      })
     }
   }
 
@@ -124,7 +138,6 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
     }
 
     try {
-      // If vault is linked, try to save the file there
       if (vaultHandle) {
         const hasPermission = await verifyPermission(vaultHandle, true)
         if (hasPermission) {
