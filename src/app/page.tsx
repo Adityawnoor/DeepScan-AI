@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -19,7 +20,7 @@ import {
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
-  Network
+  Network, Loader2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -55,48 +56,66 @@ export default function DeepScanHome() {
     return datasetCount + verifiedScanCount
   }, [localDatasets, localScans])
 
+  const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
+    // SYNTHESIZE RIGOROUS FORENSIC CONTEXT - GROUND TRUTH PRIORITY
+    let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
+    
+    const verifiedScans = localScans.filter(s => s.userFeedback !== undefined)
+    
+    if (verifiedScans.length > 0) {
+      context += `### AUDITED CASE HISTORY (EXPERT VERIFIED):\n`
+      verifiedScans.slice(0, 10).forEach(s => {
+        const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
+        context += `- Case ID [${s.id.substring(0,4)}]: VERIFIED AS ${truth}. `
+        if (s.userComment) context += `EXPERT OBSERVATION: "${s.userComment}"\n`
+        else context += `\n`
+      })
+    }
+    
+    if (localDatasets.length > 0) {
+      context += `### RESEARCH DATASET INTELLIGENCE (TRAINING SAMPLES):\n`
+      localDatasets.slice(0, 10).forEach(d => {
+        context += `- Sample [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
+        if (d.notes) context += `FORENSIC NOTE: "${d.notes}"\n`
+        else context += `\n`
+      })
+    }
+
+    context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as definitive proof of origin.`
+
+    try {
+      if (dataUri.startsWith('data:image/')) {
+        return await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
+      } else if (dataUri.startsWith('data:audio/')) {
+        return await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
+      } else if (dataUri.startsWith('data:video/')) {
+        return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
+      }
+    } catch (error: any) {
+      // HANDLE QUOTA ERROR (429)
+      if (error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED')) {
+        if (retryCount < 3) {
+          toast({ 
+            title: "Neural Engine Busy", 
+            description: `Quota reached. Retrying automatically in 5s (Attempt ${retryCount + 1}/3)...` 
+          })
+          await new Promise(resolve => setTimeout(resolve, 5000))
+          return runAnalysisWithRetry(dataUri, retryCount + 1)
+        }
+        throw new Error("Neural Engine Quota Exhausted. Please retry in a minute.")
+      }
+      throw error
+    }
+  }
+
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // SYNTHESIZE RIGOROUS FORENSIC CONTEXT - GROUND TRUTH PRIORITY
-      let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
+      const output = await runAnalysisWithRetry(dataUri)
       
-      const verifiedScans = localScans.filter(s => s.userFeedback !== undefined)
-      
-      if (verifiedScans.length > 0) {
-        context += `### AUDITED CASE HISTORY (EXPERT VERIFIED):\n`
-        verifiedScans.slice(0, 10).forEach(s => {
-          const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-          context += `- Case ID [${s.id.substring(0,4)}]: VERIFIED AS ${truth}. `
-          if (s.userComment) context += `EXPERT OBSERVATION: "${s.userComment}"\n`
-          else context += `\n`
-        })
-      }
-      
-      if (localDatasets.length > 0) {
-        context += `### RESEARCH DATASET INTELLIGENCE (TRAINING SAMPLES):\n`
-        localDatasets.slice(0, 10).forEach(d => {
-          context += `- Sample [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
-          if (d.notes) context += `FORENSIC NOTE: "${d.notes}"\n`
-          else context += `\n`
-        })
-      }
-
-      context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as definitive proof of origin.`
-
-      let output: any
       let mediaType: 'image' | 'audio' | 'video' = 'image'
-
-      if (dataUri.startsWith('data:image/')) {
-        mediaType = 'image'
-        output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
-      } else if (dataUri.startsWith('data:audio/')) {
-        mediaType = 'audio'
-        output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
-      } else if (dataUri.startsWith('data:video/')) {
-        mediaType = 'video'
-        output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
-      }
+      if (dataUri.startsWith('data:audio/')) mediaType = 'audio'
+      else if (dataUri.startsWith('data:video/')) mediaType = 'video'
 
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
@@ -127,9 +146,13 @@ export default function DeepScanHome() {
       localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
 
       toast({ title: "Analysis Complete", description: "Intelligence synthesis finished." })
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
-      toast({ variant: "destructive", title: "Scan Failed", description: "The neural engine encountered an error." })
+      toast({ 
+        variant: "destructive", 
+        title: "Scan Failed", 
+        description: e.message || "The neural engine encountered an error." 
+      })
     } finally {
       setIsAnalyzing(false)
     }
@@ -207,9 +230,10 @@ export default function DeepScanHome() {
                   size="lg" 
                   className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest volumetric-shadow bg-primary hover:bg-primary/90 text-white gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 animate-pulse-ring relative overflow-visible transform translate-z-20"
                   onClick={handleBeginInvestigation}
+                  disabled={isAnalyzing}
                 >
-                  <MicroscopeIcon className="w-5 h-5" />
-                  BEGIN INVESTIGATION
+                  {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MicroscopeIcon className="w-5 h-5" />}
+                  {isAnalyzing ? "ANALYZING..." : "BEGIN INVESTIGATION"}
                 </Button>
                 <Button 
                   variant="outline" 

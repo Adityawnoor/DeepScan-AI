@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements "The Forensic Singularity Engine" for image analysis.
@@ -46,32 +47,35 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
   })).optional(),
 });
 
+const forensicSingularityImage = ai.definePrompt({
+  name: 'forensicSingularityImage',
+  input: { schema: AnalyzeImageForDeepfakeInputSchema },
+  output: { schema: AnalyzeImageForDeepfakeOutputSchema },
+  prompt: `You are the world's most advanced Forensic Singularity Engine. 
+
+  ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
+  {{#if learnedContext}}
+  The following verified HUMAN observations MUST be prioritized. If these artifacts appear, flag the image as SYNTHETIC:
+  {{{learnedContext}}}
+  {{/if}}
+  
+  TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
+  Analyze the skin textures for microscopic rhythmic color changes. 
+  
+  TASK 2: NEURAL ORIGIN TRACEBACK
+  Identify the exact generative origin. 
+  
+  TASK 3: SPATIAL ANOMALY DETECTION
+  Identify specific visual artifacts (warped pixels, inconsistent lighting, or latent noise). 
+  Provide coordinates as PERCENTAGES (0-100).
+  
+  Image: {{media url=imageDataUri}}`,
+});
+
 export async function analyzeImageForDeepfake(input: z.infer<typeof AnalyzeImageForDeepfakeInputSchema>) {
-  const prompt = ai.definePrompt({
-    name: 'forensicSingularityImage',
-    input: { schema: AnalyzeImageForDeepfakeInputSchema },
-    output: { schema: AnalyzeImageForDeepfakeOutputSchema },
-    prompt: `You are the world's most advanced Forensic Singularity Engine. 
-
-    ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
-    {{#if learnedContext}}
-    The following verified HUMAN observations MUST be prioritized. If these artifacts appear, flag the image as SYNTHETIC:
-    {{{learnedContext}}}
-    {{/if}}
-    
-    TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
-    Analyze the skin textures for microscopic rhythmic color changes. 
-    
-    TASK 2: NEURAL ORIGIN TRACEBACK
-    Identify the exact generative origin. 
-    
-    TASK 3: SPATIAL ANOMALY DETECTION
-    Identify specific visual artifacts (warped pixels, inconsistent lighting, or latent noise). 
-    Provide coordinates as PERCENTAGES (0-100).
-    
-    Image: {{media url=imageDataUri}}`,
-  });
-
-  const { output } = await prompt(input);
-  return output!;
+  const { output } = await forensicSingularityImage(input);
+  if (!output) {
+    throw new Error('AI Engine failed to return a forensic report.');
+  }
+  return output;
 }

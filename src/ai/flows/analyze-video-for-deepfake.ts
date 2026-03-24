@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for analyzing video to detect deepfakes.
@@ -43,12 +44,6 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
 });
 export type AnalyzeVideoForDeepfakeOutput = z.infer<typeof AnalyzeVideoForDeepfakeOutputSchema>;
 
-export async function analyzeVideoForDeepfake(
-  input: AnalyzeVideoForDeepfakeInput
-): Promise<AnalyzeVideoForDeepfakeOutput> {
-  return analyzeVideoForDeepfakeFlow(input);
-}
-
 const videoDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'videoDeepfakeDetectionPrompt',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
@@ -73,17 +68,12 @@ If any of the "MANDATORY GROUND TRUTH" patterns match the artifacts in this vide
 Video to analyze: {{media url=videoDataUri}}`,
 });
 
-const analyzeVideoForDeepfakeFlow = ai.defineFlow(
-  {
-    name: 'analyzeVideoForDeepfakeFlow',
-    inputSchema: AnalyzeVideoForDeepfakeInputSchema,
-    outputSchema: AnalyzeVideoForDeepfakeOutputSchema,
-  },
-  async (input) => {
-    const { output } = await videoDeepfakeDetectionPrompt(input);
-    if (!output) {
-      throw new Error('AI did not return an output for video deepfake detection.');
-    }
-    return output;
+export async function analyzeVideoForDeepfake(
+  input: AnalyzeVideoForDeepfakeInput
+): Promise<AnalyzeVideoForDeepfakeOutput> {
+  const { output } = await videoDeepfakeDetectionPrompt(input);
+  if (!output) {
+    throw new Error('AI did not return an output for video deepfake detection.');
   }
-);
+  return output;
+}

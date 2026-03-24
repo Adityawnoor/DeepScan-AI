@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for analyzing audio to detect deepfakes.
@@ -44,12 +45,6 @@ const AnalyzeAudioForDeepfakeOutputSchema = z.object({
 });
 export type AnalyzeAudioForDeepfakeOutput = z.infer<typeof AnalyzeAudioForDeepfakeOutputSchema>;
 
-export async function analyzeAudioForDeepfake(
-  input: AnalyzeAudioForDeepfakeInput
-): Promise<AnalyzeAudioForDeepfakeOutput> {
-  return analyzeAudioForDeepfakeFlow(input);
-}
-
 const audioDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'audioDeepfakeDetectionPrompt',
   input: { schema: AnalyzeAudioForDeepfakeInputSchema },
@@ -71,17 +66,12 @@ Search for:
 Audio to analyze: {{media url=audioDataUri}}`,
 });
 
-const analyzeAudioForDeepfakeFlow = ai.defineFlow(
-  {
-    name: 'analyzeAudioForDeepfakeFlow',
-    inputSchema: AnalyzeAudioForDeepfakeInputSchema,
-    outputSchema: AnalyzeAudioForDeepfakeOutputSchema,
-  },
-  async (input) => {
-    const { output } = await audioDeepfakeDetectionPrompt(input);
-    if (!output) {
-      throw new Error('AI did not return an output for audio deepfake detection.');
-    }
-    return output;
+export async function analyzeAudioForDeepfake(
+  input: AnalyzeAudioForDeepfakeInput
+): Promise<AnalyzeAudioForDeepfakeOutput> {
+  const { output } = await audioDeepfakeDetectionPrompt(input);
+  if (!output) {
+    throw new Error('AI did not return an output for audio deepfake detection.');
   }
-);
+  return output;
+}
