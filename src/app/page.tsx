@@ -21,7 +21,7 @@ import {
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
-  Cpu, Fingerprint, Layers
+  Cpu, Fingerprint, Layers, CheckCircle2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -36,11 +36,9 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Local PC Vault State with IndexedDB Persistence
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
 
-  // Cloud Intelligence: Pulling verified audits and datasets from Firestore
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -49,7 +47,6 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // NEURAL PERSISTENCE: Restore Vault handle from IndexedDB
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
@@ -73,7 +70,7 @@ export default function DeepScanHome() {
         }
       }
     } catch (e) {
-      console.warn("Neural memory (Vault Handle) could not be retrieved.", e)
+      console.warn("Vault handle could not be retrieved from IndexedDB.", e)
     }
   }, [])
 
@@ -266,27 +263,28 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
         <div className="flex flex-col gap-12">
           
+          {/* HERO SECTION - Updated to STOP THE AI GHOST layout */}
           <section className="preserve-3d">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6 preserve-3d">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
-                  <Brain className="w-3.5 h-3.5" />
-                  NEURAL SINGULARITY ENGINE
+                  <Activity className="w-3.5 h-3.5" />
+                  ADVANCED NEURAL FORENSICS
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
-                  AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
+                  STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  Analyze media for synthetic manipulation with the world&apos;s most powerful AI engine. DeepScan elite mode identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
+                  DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Zap className="w-3 h-3" />
-                    {knowledgeCount} FORENSIC FACTS LEARNED
+                    {knowledgeCount} LESSONS LEARNED
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Activity className="w-3 h-3" />
-                    DUAL-SYNC ACTIVE
+                    LATENT SPACE AUDIT ACTIVE
                   </div>
                 </div>
               </div>
@@ -301,6 +299,15 @@ export default function DeepScanHome() {
                 >
                   {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MicroscopeIcon className="w-5 h-5" />}
                   {isAnalyzing ? "ANALYZING..." : "BEGIN INVESTIGATION"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 transform translate-z-15"
+                  onClick={() => setActiveTab("protect")}
+                >
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  VACCINATE IDENTITY
                 </Button>
               </div>
             </div>
@@ -321,7 +328,7 @@ export default function DeepScanHome() {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <ShieldIcon className="w-3.5 h-3.5" />
-                  VACCINATE IDENTITY
+                  PROTECT
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
@@ -335,7 +342,7 @@ export default function DeepScanHome() {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Database className="w-3.5 h-3.5" />
-                  DATABASE & TRAINING
+                  DATASETS
                 </TabsTrigger>
               </TabsList>
 
@@ -362,6 +369,32 @@ export default function DeepScanHome() {
                         />
                       </div>
                     )}
+                  </div>
+
+                  {/* FORENSIC CAPABILITIES SECTION - Restored from Img 2 */}
+                  <div className="py-12 border rounded-2xl bg-primary/5 p-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                    <div className="flex flex-col gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Cpu className="w-5 h-5 text-primary" />
+                        </div>
+                        <h3 className="text-lg font-black uppercase tracking-tighter">Forensic Capabilities</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                          "GENERATIVE MODEL FINGERPRINTING",
+                          "HIGH-FREQUENCY NOISE FLOOR ANALYSIS",
+                          "TEMPORAL CONSISTENCY CHECKS",
+                          "METADATA CHAIN-OF-CUSTODY"
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-3 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-border shadow-sm">
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-foreground/80">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {!currentResult && historyItems.length > 0 && (
@@ -444,36 +477,6 @@ export default function DeepScanHome() {
                 />
               </TabsContent>
             </Tabs>
-
-            {/* Forensic Capabilities Section */}
-            <div className="py-12 border-t mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-               <div className="flex flex-col items-center text-center gap-8">
-                  <div className="space-y-2">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center justify-center gap-2">
-                      <Cpu className="w-3.5 h-3.5" /> Forensic Capabilities
-                    </h3>
-                    <p className="text-2xl font-black uppercase tracking-tighter text-foreground/80">
-                      TRAINED ON <span className="text-primary italic">GLOBAL</span> GEN-AI SIGNATURES
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 opacity-40 hover:opacity-100 transition-opacity duration-500">
-                    {[
-                      { name: "Stable Diffusion", type: "Diffusion" },
-                      { name: "Midjourney", type: "V6 Neural" },
-                      { name: "DALL-E 3", type: "Autoregressive" },
-                      { name: "ElevenLabs", type: "Vocal Forensic" },
-                      { name: "Pika / Sora", type: "Temporal Flow" },
-                      { name: "GAN Labs", type: "Checkerboard" }
-                    ].map((model, i) => (
-                      <div key={i} className="flex flex-col items-center gap-1 group">
-                         <span className="text-sm font-black uppercase tracking-widest group-hover:text-primary transition-colors">{model.name}</span>
-                         <span className="text-[8px] font-bold uppercase text-muted-foreground tracking-tighter">{model.type} Fingerprint</span>
-                      </div>
-                    ))}
-                  </div>
-               </div>
-            </div>
           </div>
         </div>
       </main>
@@ -482,12 +485,12 @@ export default function DeepScanHome() {
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
-            <a href="#" className="hover:text-primary transition-colors">Neural Sync</a>
-            <a href="#" className="hover:text-primary transition-colors">Localhost Protocol</a>
+            <a href="#" className="hover:text-primary transition-colors uppercase">Forensic Standards</a>
+            <a href="#" className="hover:text-primary transition-colors uppercase">Privacy</a>
+            <a href="#" className="hover:text-primary transition-colors uppercase">Immune Protocol</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">
-            V4.2.1 NEURAL SINGULARITY
+            V3.1.0 FORENSIC ENGINE
           </div>
         </div>
       </footer>
