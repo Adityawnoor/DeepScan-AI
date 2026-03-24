@@ -5,7 +5,8 @@ import * as React from "react"
 import { 
   Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
   FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
-  Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage
+  Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage,
+  Download
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -67,10 +68,12 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
   }, [scans])
 
   const chartData = React.useMemo(() => {
-    if (scans.length === 0) return []
+    const evaluatedScans = scans.filter(s => s.userFeedback !== undefined)
+    if (evaluatedScans.length === 0) return []
+    
     let correctCount = 0
     let evaluatedCount = 0
-    return scans.filter(s => s.userFeedback !== undefined).map((scan: any) => {
+    return evaluatedScans.map((scan: any) => {
       evaluatedCount++
       if (scan.aiVerdict === scan.userFeedback) correctCount++
       const accuracy = (correctCount / evaluatedCount) * 100
@@ -95,11 +98,15 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
     if (readWrite) {
       options.mode = 'readwrite'
     }
-    if ((await fileHandle.queryPermission(options)) === 'granted') {
-      return true
-    }
-    if ((await fileHandle.requestPermission(options)) === 'granted') {
-      return true
+    try {
+      if ((await (fileHandle as any).queryPermission(options)) === 'granted') {
+        return true
+      }
+      if ((await (fileHandle as any).requestPermission(options)) === 'granted') {
+        return true
+      }
+    } catch (e) {
+      console.warn("Permission check failed", e)
     }
     return false
   }
@@ -110,22 +117,47 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
         toast({ 
           variant: "destructive", 
           title: "Browser Unsupported", 
-          description: "Your browser does not support the File System Access API. Please use Chrome or Edge." 
+          description: "Your browser does not support the File System Access API. Please use Chrome, Edge, or Opera." 
         })
         return
       }
+      
       const handle = await (window as any).showDirectoryPicker()
       onRefresh(handle.name, handle)
       toast({ title: "Vault Connected", description: `Linked to ${handle.name}` })
     } catch (err: any) {
-      if (err.name === 'AbortError') return; // User cancelled the picker
-      console.error(err)
+      if (err.name === 'AbortError') return;
+      
+      console.error("Vault Connection Error:", err)
+      
+      let errorMessage = err.message || "Failed to link PC folder."
+      if (err.name === 'SecurityError' || errorMessage.includes('Cross origin')) {
+        errorMessage = "Browser Security: This feature is blocked because the app is running in a preview window. Please open the app in a full browser tab to use the Local PC Vault."
+      }
+
       toast({ 
         variant: "destructive", 
-        title: "Access Denied", 
-        description: err.message || "Failed to link PC folder." 
+        title: "Vault Access Blocked", 
+        description: errorMessage 
       })
     }
+  }
+
+  const exportFullDatabase = () => {
+    const fullDb = {
+      timestamp: new Date().toISOString(),
+      datasets,
+      scansMetadata: scans,
+      learnedFacts: learnedFactsSummary
+    }
+    const blob = new Blob([JSON.stringify(fullDb, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `DeepScan_Forensic_Database_${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast({ title: "Database Exported", description: "All forensic metadata downloaded to your PC." })
   }
 
   const handleTrainingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,11 +173,15 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
       if (vaultHandle) {
         const hasPermission = await verifyPermission(vaultHandle, true)
         if (hasPermission) {
-          const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
-          const writable = await fileHandle.createWritable()
-          await writable.write(file)
-          await writable.close()
-          toast({ title: "File Saved to PC", description: `"${file.name}" archived in local vault.` })
+          try {
+            const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
+            const writable = await (fileHandle as any).createWritable()
+            await writable.write(file)
+            await writable.close()
+            toast({ title: "File Saved to PC", description: `"${file.name}" archived in local vault.` })
+          } catch (writeErr: any) {
+            console.warn("Could not write file to disk", writeErr)
+          }
         }
       }
 
@@ -209,7 +245,11 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
              <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
                {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
              </p>
-             {vaultHandle && <p className="text-[8px] font-bold uppercase text-primary/60">Local Sync Active</p>}
+             {vaultHandle ? (
+               <p className="text-[8px] font-bold uppercase text-primary/60">Local Sync Active</p>
+             ) : (
+               <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Chrome/Edge Required</p>
+             )}
           </div>
         </Card>
       </div>
@@ -217,10 +257,13 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
            <Card className="shadow-none border border-border rounded-xl overflow-hidden volumetric-shadow">
-            <CardHeader className="bg-muted/30 pb-4">
+            <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
                <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
                   <Activity className="w-5 h-5 text-primary" /> Forensic Performance Audit
                 </CardTitle>
+                <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg gap-2" onClick={exportFullDatabase}>
+                  <Download className="w-3.5 h-3.5" /> Manual Export
+                </Button>
             </CardHeader>
             <CardContent className="pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -340,7 +383,7 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
                   <Upload className="w-4 h-4 mr-2" /> Upload & Teach
                 </Button>
                 <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-2">
-                  Samples will be saved to your private local PC folder.
+                  Samples will be saved to your private local PC folder if linked.
                 </p>
               </div>
             </div>
