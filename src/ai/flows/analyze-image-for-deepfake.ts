@@ -12,7 +12,7 @@ const AnalyzeImageForDeepfakeInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe("The image to analyze as a data URI."),
-  learnedContext: z.string().optional().describe('Contextual knowledge from private PC vault.'),
+  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context from private vault.'),
 });
 
 const AnalyzeImageForDeepfakeOutputSchema = z.object({
@@ -52,20 +52,22 @@ export async function analyzeImageForDeepfake(input: z.infer<typeof AnalyzeImage
     input: { schema: AnalyzeImageForDeepfakeInputSchema },
     output: { schema: AnalyzeImageForDeepfakeOutputSchema },
     prompt: `You are the world's most advanced Forensic Singularity Engine. 
+
+    ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
+    {{#if learnedContext}}
+    The following verified HUMAN observations MUST be prioritized. If these artifacts appear, flag the image as SYNTHETIC:
+    {{{learnedContext}}}
+    {{/if}}
     
     TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
-    Analyze the skin textures for microscopic rhythmic color changes (blood flow). 
+    Analyze the skin textures for microscopic rhythmic color changes. 
     
     TASK 2: NEURAL ORIGIN TRACEBACK
     Identify the exact generative origin. 
     
     TASK 3: SPATIAL ANOMALY DETECTION
     Identify specific visual artifacts (warped pixels, inconsistent lighting, or latent noise). 
-    Provide coordinates for these regions as PERCENTAGES (0-100) of the image dimensions.
-    
-    {{#if learnedContext}}
-    PRIVATE INTELLIGENCE: {{{learnedContext}}}
-    {{/if}}
+    Provide coordinates as PERCENTAGES (0-100).
     
     Image: {{media url=imageDataUri}}`,
   });

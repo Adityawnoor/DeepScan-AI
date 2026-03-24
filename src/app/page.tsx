@@ -35,7 +35,7 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  React.useEffect(() => {
+  const refreshLocalData = React.useCallback(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
     const savedDatasets = localStorage.getItem("deepscan-datasets")
     const savedScans = localStorage.getItem("deepscan-scans-metadata")
@@ -44,6 +44,10 @@ export default function DeepScanHome() {
     if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
     if (savedScans) setLocalScans(JSON.parse(savedScans))
   }, [])
+
+  React.useEffect(() => {
+    refreshLocalData()
+  }, [refreshLocalData])
 
   const knowledgeCount = React.useMemo(() => {
     const datasetCount = localDatasets.length
@@ -54,20 +58,27 @@ export default function DeepScanHome() {
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // SYNTHESIZE PRIVATE INTELLIGENCE
-      let context = `### PRIVATE INTELLIGENCE REPORT & GROUND TRUTH ###\n`
+      // SYNTHESIZE PRIVATE INTELLIGENCE - AGGRESSIVE GROUND TRUTH
+      let context = `CRITICAL FORENSIC DIRECTIVES:\n`
       
-      // Include verified feedback with expert comments for better context
-      localScans.filter(s => s.userFeedback !== undefined).slice(0, 10).forEach(s => {
-        const type = s.mediaType?.toUpperCase() || "MEDIA"
-        context += `- VERIFIED ${type} Record [${s.id.substring(0,8)}]: Verified as ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`
-        if (s.userComment) {
-          context += `  EXPERT FORENSIC NOTE: "${s.userComment}"\n`
-        }
-      })
+      const verifiedScans = localScans.filter(s => s.userFeedback !== undefined)
+      
+      if (verifiedScans.length > 0) {
+        context += `THE FOLLOWING PATTERNS HAVE BEEN CONFIRMED BY EXPERT AUDIT. IF YOU ENCOUNTER SIMILAR ANOMALIES, YOU MUST INCREASE THE DEEPFAKE CONFIDENCE RATING:\n`
+        verifiedScans.slice(0, 15).forEach(s => {
+          const type = s.mediaType?.toUpperCase() || "MEDIA"
+          const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
+          context += `- Case [${s.id.substring(0,4)}]: Confirmed as ${truth}.`
+          if (s.userComment) {
+            context += ` Reason for correction: "${s.userComment}"\n`
+          } else {
+            context += `\n`
+          }
+        })
+      }
       
       localDatasets.filter(d => d.notes).forEach(d => {
-        context += `- Labeled Dataset [${d.label}]: ${d.notes}\n`
+        context += `- Research Intelligence [${d.label}]: ${d.notes}\n`
       })
 
       let output: any
@@ -131,13 +142,6 @@ export default function DeepScanHome() {
     workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
-  const refreshLocalData = () => {
-    const savedScans = localStorage.getItem("deepscan-scans-metadata")
-    if (savedScans) setLocalScans(JSON.parse(savedScans))
-    const savedDatasets = localStorage.getItem("deepscan-datasets")
-    if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
-  }
-
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-1000">
       <div className="perspective-grid" />
@@ -170,7 +174,7 @@ export default function DeepScanHome() {
         <div className="flex flex-col gap-12">
           
           <section className="preserve-3d">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 rounded-3xl spatial-lift preserve-3d">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6 preserve-3d">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
                   <Brain className="w-3.5 h-3.5" />

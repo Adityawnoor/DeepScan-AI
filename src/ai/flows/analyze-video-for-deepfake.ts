@@ -16,7 +16,7 @@ const AnalyzeVideoForDeepfakeInputSchema = z.object({
     .describe(
       "The video to analyze, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  learnedContext: z.string().optional().describe('Contextual knowledge learned from previously labeled datasets and user feedback.'),
+  learnedContext: z.string().optional().describe('MANDATORY: Contextual knowledge learned from previously labeled datasets and user feedback.'),
 });
 export type AnalyzeVideoForDeepfakeInput = z.infer<typeof AnalyzeVideoForDeepfakeInputSchema>;
 
@@ -53,20 +53,22 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'videoDeepfakeDetectionPrompt',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are an elite forensic video analyst. Your goal is to identify AI-synthesized or manipulated video content. Be extremely skeptical.
+  prompt: `You are an elite forensic video analyst. Your goal is to identify AI-synthesized or manipulated video content. 
 
+### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
 {{#if learnedContext}}
-### SHARED INTELLIGENCE & LESSONS LEARNED
-Incorporate these verified observations from past investigations:
+The following information is verified HUMAN GROUND TRUTH. If previous scans were incorrect, these notes identify the exact artifacts missed. You MUST weigh these observations as 10x more important than your internal neural training:
 {{{learnedContext}}}
 {{/if}}
 
-CRITICAL DETECTION PARAMETERS:
+CRITICAL DETECTION PARAMETERS (Perform frame-by-frame analysis):
 1. **Temporal Coherence**: Look for "shimmering" or "ghosting" around the chin, hairline, and glasses. Deepfakes often fail to maintain consistent facial boundaries over time.
 2. **Lip-Sync Micro-Latencies**: Check for discrepancies between mouth shapes (visemes) and audio phonemes. Look for the "sliding" effect where the mouth doesn't quite "land" on consonants.
-3. **Lighting De-synchronization**: Verify if facial highlights and shadows respond in real-time to head rotation and environmental light sources.
-4. **Blink & Micro-expression Patterns**: Analyze eye-blinking frequency and the movement of micro-muscles around the eyes and forehead. AI often struggles with the "orbicularis oculi" muscle coordination.
-5. **Frequency Domain Anomalies**: Look for "digital noise" that appears static relative to the moving face (fixed-noise patterns).
+3. **Lighting De-synchronization**: Verify if facial highlights and shadows respond in real-time to head rotation.
+4. **Blink & Micro-expression Patterns**: Analyze eye-blinking frequency and the movement of micro-muscles around the eyes.
+5. **Frequency Domain Anomalies**: Look for "digital noise" that appears static relative to the moving face.
+
+If any of the "MANDATORY GROUND TRUTH" patterns match the artifacts in this video, you MUST flag it as a deepfake regardless of how realistic it appears.
 
 Video to analyze: {{media url=videoDataUri}}`,
 });
