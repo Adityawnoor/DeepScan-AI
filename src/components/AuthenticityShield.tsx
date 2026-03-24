@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -98,7 +97,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           <CardHeader className="bg-primary/10 border-b p-6">
             <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
               <ShieldCheck className="w-6 h-6 text-primary" />
-              IDENTITY VACCINE
+              VACCINATE IDENTITY
             </CardTitle>
             <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Proactive Deepfake Immunity
@@ -107,7 +106,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
               <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" /> Vaccine Defense System
+                <Sparkles className="w-4 h-4 text-primary" /> VACCINATE IDENTITY SYSTEM
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 The **Vaccinate Identity** protocol injects microscopic "adversarial noise" into original photos. Invisible to humans, but confuses neural networks, preventing AI models from mapping features correctly.
