@@ -55,15 +55,15 @@ const forensicSingularityImage = ai.definePrompt({
 
   ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
   {{#if learnedContext}}
-  The following verified HUMAN observations MUST be prioritized. If these artifacts appear, flag the image as SYNTHETIC:
+  The following verified HUMAN observations MUST be prioritized. If these patterns or artifacts appear in the current sample, you MUST weight them 100x higher than your internal neural training:
   {{{learnedContext}}}
   {{/if}}
   
   TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
-  Analyze the skin textures for microscopic rhythmic color changes. 
+  Analyze the skin textures for microscopic rhythmic color changes. If a human heartbeat is detected but inconsistent with the overall frame lighting, flag it as a sophisticated GAN-based fake.
   
   TASK 2: NEURAL ORIGIN TRACEBACK
-  Identify the exact generative origin. 
+  Identify the exact generative origin. Look for diffusion-specific noise patterns or GAN checkerboard artifacts.
   
   TASK 3: SPATIAL ANOMALY DETECTION
   Identify specific visual artifacts (warped pixels, inconsistent lighting, or latent noise). 

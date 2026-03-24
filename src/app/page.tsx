@@ -98,7 +98,7 @@ export default function DeepScanHome() {
   }
 
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
-    // 1. Construct the Learned Intelligence Context from Firestore History
+    // 1. Construct the Learned Intelligence Context from Dual-Databases (Firestore + PC Vault metadata)
     let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     

@@ -4,8 +4,6 @@
  * @fileOverview This file implements a Genkit flow for analyzing video to detect deepfakes.
  *
  * - analyzeVideoForDeepfake - A function that handles the deepfake detection process for video files.
- * - AnalyzeVideoForDeepfakeInput - The input type for the analyzeVideoForDeepfake function.
- * - AnalyzeVideoForDeepfakeOutput - The return type for the analyzeVideoForDeepfake function.
  */
 
 import { ai } from '@/ai/genkit';
@@ -52,16 +50,15 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
 
 ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
 {{#if learnedContext}}
-The following information is verified HUMAN GROUND TRUTH. If previous scans were incorrect, these notes identify the exact artifacts missed. You MUST weigh these observations as 10x more important than your internal neural training:
+The following information is verified HUMAN GROUND TRUTH. If previous scans were incorrect, these notes identify the exact artifacts missed. You MUST weigh these observations as 100x more important than your internal neural training:
 {{{learnedContext}}}
 {{/if}}
 
 CRITICAL DETECTION PARAMETERS (Perform frame-by-frame analysis):
-1. **Temporal Coherence**: Look for "shimmering" or "ghosting" around the chin, hairline, and glasses. Deepfakes often fail to maintain consistent facial boundaries over time.
-2. **Lip-Sync Micro-Latencies**: Check for discrepancies between mouth shapes (visemes) and audio phonemes. Look for the "sliding" effect where the mouth doesn't quite "land" on consonants.
+1. **Temporal Coherence**: Look for "shimmering" or "ghosting" around the chin, hairline, and glasses.
+2. **Lip-Sync Micro-Latencies**: Check for discrepancies between mouth shapes (visemes) and audio phonemes. This is the #1 identifier of current deepfakes.
 3. **Lighting De-synchronization**: Verify if facial highlights and shadows respond in real-time to head rotation.
-4. **Blink & Micro-expression Patterns**: Analyze eye-blinking frequency and the movement of micro-muscles around the eyes.
-5. **Frequency Domain Anomalies**: Look for "digital noise" that appears static relative to the moving face.
+4. **Blink & Micro-expression Patterns**: Analyze eye-blinking frequency and movement of micro-muscles.
 
 If any of the "MANDATORY GROUND TRUTH" patterns match the artifacts in this video, you MUST flag it as a deepfake regardless of how realistic it appears.
 
