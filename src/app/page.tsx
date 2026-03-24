@@ -320,7 +320,7 @@ export default function DeepScanHome() {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <ShieldIcon className="w-3.5 h-3.5" />
-                  PROTECT
+                  VACCINATE IDENTITY
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
