@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -444,12 +445,12 @@ export default function DeepScanHome() {
               </TabsContent>
             </Tabs>
 
-            {/* Neural Network Traceability Section */}
+            {/* Forensic Capabilities Section */}
             <div className="py-12 border-t mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
                <div className="flex flex-col items-center text-center gap-8">
                   <div className="space-y-2">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center justify-center gap-2">
-                      <Cpu className="w-3.5 h-3.5" /> Neural Network Traceability
+                      <Cpu className="w-3.5 h-3.5" /> Forensic Capabilities
                     </h3>
                     <p className="text-2xl font-black uppercase tracking-tighter text-foreground/80">
                       TRAINED ON <span className="text-primary italic">GLOBAL</span> GEN-AI SIGNATURES
