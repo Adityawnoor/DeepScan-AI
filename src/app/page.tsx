@@ -98,6 +98,7 @@ export default function DeepScanHome() {
   }
 
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
+    // 1. Construct the Learned Intelligence Context from Firestore History
     let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     
@@ -120,7 +121,7 @@ export default function DeepScanHome() {
       })
     }
 
-    context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as 100x more important than your internal neural training.`
+    context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as 100x more important than your internal neural training. Learn from past mistakes where fakes were identified as real.`
 
     try {
       if (dataUri.startsWith('data:image/')) {
@@ -164,6 +165,7 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
+      // DUAL-DATABASE SYNC: Save to Cloud Intelligence (Firestore)
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
         timestamp: new Date().toISOString(),
@@ -186,7 +188,7 @@ export default function DeepScanHome() {
         errorEmitter.emit('permission-error', permissionError)
       })
 
-      toast({ title: "Analysis Complete", description: "Intelligence synthesis finished." })
+      toast({ title: "Analysis Complete", description: "Intelligence synthesis finished. Results synced to Neural Cloud." })
     } catch (e: any) {
       console.error(e)
       toast({ 
@@ -278,7 +280,7 @@ export default function DeepScanHome() {
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan elite mode detects microscopic <span className="font-bold text-foreground">Spectral Noise Artifacts</span> and identifies the exact <span className="font-bold text-foreground">Neural DNA</span> of the generative model used.
+                  DeepScan dual-database mode detects microscopic artifacts and improves its accuracy by learning from every manual audit you perform.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
@@ -287,7 +289,7 @@ export default function DeepScanHome() {
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Activity className="w-3 h-3" />
-                    LATENT SPACE AUDIT ACTIVE
+                    DUAL-DB SYNC ACTIVE
                   </div>
                 </div>
               </div>
@@ -369,10 +371,10 @@ export default function DeepScanHome() {
                         </div>
                         <ul className="space-y-4">
                           {[
-                            "GENERATIVE MODEL FINGERPRINTING",
-                            "HIGH-FREQUENCY NOISE FLOOR ANALYSIS",
-                            "TEMPORAL CONSISTENCY CHECKS",
-                            "METADATA CHAIN-OF-CUSTODY"
+                            "NEURAL DNA TRACEBACK",
+                            "SPECTRUM NOISE ANALYSIS",
+                            "TEMPORAL JITTER DETECTION",
+                            "DUAL-DB AUDIT LOGGING"
                           ].map(item => (
                             <li key={item} className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-foreground transition-colors duration-300">
                               <ShieldCheck className="w-4 h-4 text-primary" />
@@ -447,7 +449,7 @@ export default function DeepScanHome() {
             <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">
-            V3.1.0 FORENSIC ENGINE
+            V3.5.0 DUAL-DB ENGINE
           </div>
         </div>
       </footer>

@@ -53,6 +53,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     if (!db) return
     setFeedbackSubmitted(isCorrect)
     
+    // DUAL-DATABASE SYNC: Update Cloud Intelligence (Firestore)
     const scanRef = doc(db, "scans", scanId)
     const updateData = {
       userFeedback: isCorrect ? isFake : !isFake,
@@ -69,7 +70,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       errorEmitter.emit('permission-error', permissionError)
     })
     
-    toast({ title: "Intelligence Captured", description: "Audit logged to Neural Cloud." })
+    toast({ title: "Intelligence Captured", description: "Audit logged to Neural Cloud. AI will improve based on this feedback." })
   }
 
   const promoteToDataset = () => {

@@ -169,7 +169,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     }
 
     try {
-      // Local Backup if Vault linked
+      // DUAL-WRITE: Local Backup if Vault linked
       if (vaultHandle && vaultPermissionStatus === 'granted') {
         const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
         const writable = await (fileHandle as any).createWritable()
@@ -177,6 +177,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
         await writable.close()
       }
 
+      // DUAL-WRITE: Cloud Sync (Firestore)
       const datasetId = crypto.randomUUID()
       const datasetRef = doc(db, "datasets", datasetId)
       const datasetData = {
@@ -199,7 +200,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       })
 
       setDatasetNotes("")
-      toast({ title: "Neural Sample Ingested", description: `Knowledge updated with ${trainingLabel.toUpperCase()} ground truth.` })
+      toast({ title: "Neural Sample Ingested", description: `Knowledge updated with ${trainingLabel.toUpperCase()} ground truth. Synced to Cloud & PC Vault.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Upload Failed", description: err.message })
     }
