@@ -6,7 +6,7 @@ import {
   Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
   FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
   Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage,
-  Download
+  Download, ExternalLink
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,15 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
   const [datasets, setDatasets] = React.useState<any[]>([])
   const [scans, setScans] = React.useState<any[]>([])
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const isIframe = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      return true;
+    }
+  }, []);
 
   const refreshLocalState = React.useCallback(() => {
     const savedDatasets = localStorage.getItem("deepscan-datasets")
@@ -112,6 +121,15 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
   }
 
   const handleConnectLocalPC = async () => {
+    if (isIframe) {
+      toast({ 
+        variant: "destructive", 
+        title: "Security Restriction", 
+        description: "Browser Security blocks folder access inside preview frames. Please open the app in a new full browser window to link your local PC vault." 
+      })
+      return
+    }
+
     try {
       if (!('showDirectoryPicker' in window)) {
         toast({ 
@@ -238,17 +256,28 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
 
         <Card className={cn(
           "bg-muted border border-border shadow-none rounded-xl flex items-center justify-center p-6 text-center cursor-pointer transition-all",
-          vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80"
+          vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80",
+          isIframe && !vaultHandle && "opacity-80 grayscale-[0.5] border-destructive/20"
         )} onClick={handleConnectLocalPC}>
           <div className="space-y-1">
-             <FolderOpen className={cn("w-8 h-8 mx-auto", vaultHandle ? "text-primary" : "text-muted-foreground")} />
-             <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
-               {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
-             </p>
-             {vaultHandle ? (
-               <p className="text-[8px] font-bold uppercase text-primary/60">Local Sync Active</p>
+             {isIframe && !vaultHandle ? (
+               <>
+                 <AlertCircle className="w-8 h-8 mx-auto text-destructive/50" />
+                 <p className="text-sm font-black uppercase tracking-tighter text-destructive/70">Vault Locked</p>
+                 <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Open in New Tab to Link</p>
+               </>
              ) : (
-               <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Chrome/Edge Required</p>
+               <>
+                 <FolderOpen className={cn("w-8 h-8 mx-auto", vaultHandle ? "text-primary" : "text-muted-foreground")} />
+                 <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
+                   {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
+                 </p>
+                 {vaultHandle ? (
+                   <p className="text-[8px] font-bold uppercase text-primary/60">Local Sync Active</p>
+                 ) : (
+                   <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Chrome/Edge Required</p>
+                 )}
+               </>
              )}
           </div>
         </Card>
@@ -261,9 +290,11 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
                <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
                   <Activity className="w-5 h-5 text-primary" /> Forensic Performance Audit
                 </CardTitle>
-                <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg gap-2" onClick={exportFullDatabase}>
-                  <Download className="w-3.5 h-3.5" /> Manual Export
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg gap-2" onClick={exportFullDatabase}>
+                    <Download className="w-3.5 h-3.5" /> Full DB Export
+                  </Button>
+                </div>
             </CardHeader>
             <CardContent className="pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -383,7 +414,7 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
                   <Upload className="w-4 h-4 mr-2" /> Upload & Teach
                 </Button>
                 <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-2">
-                  Samples will be saved to your private local PC folder if linked.
+                  {vaultHandle ? "Saving directly to linked PC folder." : "Saved to browser (link PC folder for file archive)."}
                 </p>
               </div>
             </div>
