@@ -24,6 +24,10 @@ import {
   ResponsiveContainer, Cell,
   ReferenceLine
 } from "recharts"
+import { useFirestore } from "@/firebase"
+import { doc, updateDoc, setDoc } from "firebase/firestore"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 interface AnalysisResultProps {
   scanId: string
@@ -31,51 +35,53 @@ interface AnalysisResultProps {
   mediaUrl: string
   mediaType: 'image' | 'audio' | 'video'
   vaultHandle?: FileSystemDirectoryHandle | null
-  onUpdate?: () => void
 }
 
-export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandle, onUpdate }: AnalysisResultProps) {
+export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandle }: AnalysisResultProps) {
   const { toast } = useToast()
+  const db = useFirestore()
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
   const [userComment, setUserComment] = React.useState("")
   const [showSpectralMode, setShowSpectralMode] = React.useState(false)
   const [showTakedown, setShowTakedown] = React.useState(false)
   const [isPromoted, setIsPromoted] = React.useState(false)
-  const mediaRef = React.useRef<HTMLVideoElement | HTMLAudioElement>(null)
 
   const isFake = result.isDeepfake
   const confidence = result.confidence
 
   const handleFeedback = (isCorrect: boolean) => {
+    if (!db) return
     setFeedbackSubmitted(isCorrect)
-    const savedScans = localStorage.getItem("deepscan-scans-metadata")
-    if (savedScans) {
-      const scans = JSON.parse(savedScans)
-      const updatedScans = scans.map((s: any) => 
-        s.id === scanId ? { 
-          ...s, 
-          userFeedback: isCorrect ? s.aiVerdict : !s.aiVerdict, 
-          isCorrect,
-          userComment: userComment.trim()
-        } : s
-      )
-      localStorage.setItem("deepscan-scans-metadata", JSON.stringify(updatedScans))
-      if (onUpdate) onUpdate()
-      toast({ title: "Intelligence Captured", description: "The system has synthesized your expert observations." })
+    
+    const scanRef = doc(db, "scans", scanId)
+    const updateData = {
+      userFeedback: isCorrect ? isFake : !isFake,
+      isCorrect,
+      userComment: userComment.trim()
     }
+
+    updateDoc(scanRef, updateData).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: scanRef.path,
+        operation: 'update',
+        requestResourceData: updateData
+      })
+      errorEmitter.emit('permission-error', permissionError)
+    })
+    
+    toast({ title: "Intelligence Captured", description: "Audit logged to Neural Cloud." })
   }
 
   const promoteToDataset = () => {
+    if (!db) return
     if (feedbackSubmitted === null) {
-      toast({ variant: "destructive", title: "Audit Required", description: "Verify the result before promoting to research dataset." })
+      toast({ variant: "destructive", title: "Audit Required", description: "Verify the result before promoting." })
       return
     }
 
-    const savedDatasets = localStorage.getItem("deepscan-datasets") || "[]"
-    const datasets = JSON.parse(savedDatasets)
-    
-    const newEntry = {
-      id: crypto.randomUUID(),
+    const datasetId = crypto.randomUUID()
+    const datasetRef = doc(db, "datasets", datasetId)
+    const datasetData = {
       fileName: `Audit_${scanId.substring(0, 8)}`,
       uploadDate: new Date().toISOString(),
       label: feedbackSubmitted ? (isFake ? "fake" : "real") : (isFake ? "real" : "fake"),
@@ -84,10 +90,17 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       scanId
     }
 
-    localStorage.setItem("deepscan-datasets", JSON.stringify([newEntry, ...datasets]))
+    setDoc(datasetRef, datasetData).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: datasetRef.path,
+        operation: 'create',
+        requestResourceData: datasetData
+      })
+      errorEmitter.emit('permission-error', permissionError)
+    })
+
     setIsPromoted(true)
-    if (onUpdate) onUpdate()
-    toast({ title: "Dataset Improved", description: "This case is now part of the global Ground Truth intelligence base." })
+    toast({ title: "Dataset Improved", description: "Case synced to Research Intelligence Base." })
   }
 
   const mapData = [
@@ -113,40 +126,20 @@ FORENSIC EVIDENCE:
 Content violates safety policies regarding synthetic identity manipulation.
 `
 
-  async function verifyPermission(fileHandle: FileSystemHandle, readWrite: boolean) {
-    const options: any = {}
-    if (readWrite) {
-      options.mode = 'readwrite'
-    }
-    if ((await fileHandle.queryPermission(options)) === 'granted') {
-      return true
-    }
-    if ((await fileHandle.requestPermission(options)) === 'granted') {
-      return true
-    }
-    return false
-  }
-
   const exportEvidence = async () => {
     if (!vaultHandle) {
       toast({ 
         variant: "destructive", 
         title: "Vault Unlinked", 
-        description: "Please link a PC folder in the Database tab first." 
+        description: "Select a PC folder in the Database tab for physical evidence storage." 
       })
       return
     }
 
     try {
-      const hasPermission = await verifyPermission(vaultHandle, true)
-      if (!hasPermission) {
-        toast({ variant: "destructive", title: "Permission Denied", description: "Access to the local folder was not granted." })
-        return
-      }
-
       const fileName = `Forensic_Report_${scanId.substring(0, 8)}.json`
       const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
-      const writable = await fileHandle.createWritable()
+      const writable = await (fileHandle as any).createWritable()
       
       const evidence = {
         scanId,
@@ -165,7 +158,6 @@ Content violates safety policies regarding synthetic identity manipulation.
       
       toast({ title: "Evidence Exported", description: `Saved as ${fileName} to your PC vault.` })
     } catch (e: any) {
-      console.error(e)
       toast({ variant: "destructive", title: "Export Failed", description: e.message })
     }
   }
@@ -300,18 +292,18 @@ Content violates safety policies regarding synthetic identity manipulation.
               <TabsContent value="feedback" className="pt-6 space-y-4 animate-in fade-in zoom-in-95">
                 <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-6">
                   <div className="space-y-2 text-center">
-                    <h4 className="text-xs font-black uppercase tracking-widest">Human Verification Audit</h4>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Teach the AI what it missed</p>
+                    <h4 className="text-xs font-black uppercase tracking-widest">Neural Cloud Training</h4>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Audit this case to improve accuracy</p>
                   </div>
                   
                   {feedbackSubmitted === null ? (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5" /> Forensic Notes (Ground Truth)
+                          <MessageSquare className="w-3.5 h-3.5" /> Forensic Notes
                         </Label>
                         <Textarea 
-                          placeholder="e.g., Lighting on the nose is inconsistent with head tilt..."
+                          placeholder="e.g., Micro-latencies in the lip movement found..."
                           className="text-xs bg-background/50 rounded-xl min-h-[80px]"
                           value={userComment}
                           onChange={(e) => setUserComment(e.target.value)}
@@ -337,19 +329,19 @@ Content violates safety policies regarding synthetic identity manipulation.
                   ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
                       <div className="p-4 bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest text-center rounded-xl">
-                        Audit Logged: System updated with Ground Truth.
+                        Audit Logged: Synced to Neural Base.
                       </div>
                       {!isPromoted && (
                         <Button 
                           className="w-full h-12 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 rounded-xl font-black uppercase tracking-widest text-[10px] gap-2"
                           onClick={promoteToDataset}
                         >
-                          <Database className="w-4 h-4" /> Improve Research Dataset
+                          <Database className="w-4 h-4" /> Promote to Cloud Research Base
                         </Button>
                       )}
                       {isPromoted && (
                         <div className="p-3 border border-dashed border-primary/30 rounded-xl text-[9px] font-black text-primary text-center uppercase tracking-widest">
-                          Neural Dataset Improved ✓
+                          Research Intelligence Improved ✓
                         </div>
                       )}
                     </div>
@@ -391,7 +383,7 @@ Content violates safety policies regarding synthetic identity manipulation.
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
             <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-xl hover-glow transition-all" onClick={exportEvidence}>
-              <FileJson className="w-4 h-4 mr-2" /> Export to Vault
+              <FileJson className="w-4 h-4 mr-2" /> Export to PC Vault
             </Button>
             <Button variant="outline" className="h-12 w-12 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => window.print()}>
               <Download className="w-5 h-5" />
@@ -411,18 +403,6 @@ Content violates safety policies regarding synthetic identity manipulation.
                   src={mediaUrl} 
                   className={cn("max-w-full h-auto object-contain transition-all duration-700 rounded-xl", showSpectralMode && "grayscale invert contrast-150")} 
                 />
-                {result.highlightedRegions?.map((region: any, i: number) => (
-                  <div 
-                    key={i}
-                    className="absolute border-2 border-destructive animate-pulse"
-                    style={{
-                      left: `${region.x}%`,
-                      top: `${region.y}%`,
-                      width: `${region.width}%`,
-                      height: `${region.height}%`,
-                    }}
-                  />
-                ))}
               </div>
             )}
             {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto shadow-2xl rounded-xl" />}

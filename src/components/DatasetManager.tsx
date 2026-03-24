@@ -20,23 +20,32 @@ import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { cn } from "@/lib/utils"
+import { useFirestore, useCollection } from "@/firebase"
+import { collection, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 interface DatasetManagerProps {
   knowledgeCount: number
   onVaultChange: (folderName?: string, handle?: FileSystemDirectoryHandle) => void
-  onRefresh: () => void
   vaultHandle?: FileSystemDirectoryHandle | null
   vaultPermissionStatus?: 'granted' | 'denied' | 'prompt'
 }
 
-export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vaultHandle, vaultPermissionStatus }: DatasetManagerProps) {
+export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vaultPermissionStatus }: DatasetManagerProps) {
   const { toast } = useToast()
+  const db = useFirestore()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
-  const [datasets, setDatasets] = React.useState<any[]>([])
-  const [scans, setScans] = React.useState<any[]>([])
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Firebase Data Hooks
+  const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
+  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc")) : null, [db])
+  
+  const { data: datasets } = useCollection(datasetsQuery)
+  const { data: scans } = useCollection(scansQuery)
 
   const isIframe = React.useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -46,17 +55,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
       return true;
     }
   }, []);
-
-  const refreshLocalState = React.useCallback(() => {
-    const savedDatasets = localStorage.getItem("deepscan-datasets")
-    const savedScans = localStorage.getItem("deepscan-scans-metadata")
-    if (savedDatasets) setDatasets(JSON.parse(savedDatasets))
-    if (savedScans) setScans(JSON.parse(savedScans))
-  }, [])
-
-  React.useEffect(() => {
-    refreshLocalState()
-  }, [refreshLocalState])
 
   const auditBreakdown = React.useMemo(() => {
     const breakdown = {
@@ -79,7 +77,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
   }, [scans])
 
   const chartData = React.useMemo(() => {
-    const evaluatedScans = scans.filter(s => s.userFeedback !== undefined)
+    const evaluatedScans = [...scans].reverse().filter(s => s.userFeedback !== undefined)
     if (evaluatedScans.length === 0) return []
     
     let correctCount = 0
@@ -98,54 +96,18 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
 
   const learnedFactsSummary = React.useMemo(() => {
-    let summary = "### PRIVATE INTELLIGENCE LOG ###\n\n"
-    datasets.filter(ds => ds.notes).forEach(ds => summary += `[DATASET: ${ds.fileName || 'Observation'}] Ground Truth: ${ds.label?.toUpperCase()}. Notes: ${ds.notes}\n`)
+    let summary = "### NEURAL INTELLIGENCE LOG ###\n\n"
+    datasets.filter(ds => ds.notes).forEach(ds => summary += `[DATASET: ${ds.fileName || 'Observation'}] Verified as: ${ds.label?.toUpperCase()}. Notes: ${ds.notes}\n`)
     scans.filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT: ${s.id.substring(0, 4)}] Verified as ${s.userFeedback ? 'FAKE' : 'REAL'}. Artifacts: ${s.userComment || 'None'}\n`)
     return summary || "No forensic facts learned yet."
   }, [datasets, scans])
-
-  async function verifyPermission(fileHandle: FileSystemHandle, readWrite: boolean) {
-    const options: any = {}
-    if (readWrite) {
-      options.mode = 'readwrite'
-    }
-    try {
-      if ((await (fileHandle as any).queryPermission(options)) === 'granted') {
-        return true
-      }
-      if ((await (fileHandle as any).requestPermission(options)) === 'granted') {
-        return true
-      }
-    } catch (e) {
-      console.warn("Permission check failed", e)
-    }
-    return false
-  }
-
-  // PERSISTENCE LOGIC: Save Vault Handle to IndexedDB
-  const saveVaultToMemory = async (handle: FileSystemDirectoryHandle) => {
-    try {
-      const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-      dbRequest.onupgradeneeded = () => {
-        dbRequest.result.createObjectStore("vaultStore")
-      }
-      dbRequest.onsuccess = () => {
-        const db = dbRequest.result
-        const transaction = db.transaction("vaultStore", "readwrite")
-        const store = transaction.objectStore("vaultStore")
-        store.put(handle, "localFolderHandle")
-      }
-    } catch (e) {
-      console.warn("Failed to save vault handle to IndexedDB", e)
-    }
-  }
 
   const handleConnectLocalPC = async () => {
     if (isIframe) {
       toast({ 
         variant: "destructive", 
         title: "Browser Security Restriction", 
-        description: "Chrome and Edge block folder access when apps run inside a preview window. Please open the app in a new browser tab to link your PC vault." 
+        description: "Folder access is restricted in the preview. Open the app in a new tab to link your PC vault." 
       })
       return
     }
@@ -155,18 +117,26 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
         toast({ 
           variant: "destructive", 
           title: "Browser Unsupported", 
-          description: "Your browser does not support the File System Access API. Please use Chrome, Edge, or Opera." 
+          description: "Your browser does not support local folder access." 
         })
         return
       }
       
       const handle = await (window as any).showDirectoryPicker()
-      await saveVaultToMemory(handle)
+      
+      // Save to IDB for persistence
+      const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
+      dbRequest.onsuccess = () => {
+        const idb = dbRequest.result
+        const transaction = idb.transaction("vaultStore", "readwrite")
+        const store = transaction.objectStore("vaultStore")
+        store.put(handle, "localFolderHandle")
+      }
+
       onVaultChange(handle.name, handle)
       toast({ title: "Vault Connected", description: `Linked to ${handle.name}` })
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.error("Vault Connection Error:", err)
       toast({ variant: "destructive", title: "Vault Access Blocked", description: err.message })
     }
   }
@@ -182,32 +152,34 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `DeepScan_Forensic_Database_${new Date().toISOString().split('T')[0]}.json`
+    link.download = `DeepScan_Database_${new Date().toISOString().split('T')[0]}.json`
     link.click()
     URL.revokeObjectURL(url)
-    toast({ title: "Database Exported", description: "All forensic metadata downloaded to your PC." })
+    toast({ title: "Database Exported", description: "Metadata downloaded to your PC." })
   }
 
   const handleTrainingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!db) return
     const file = e.target.files?.[0]
     if (!file) return
 
     if (!datasetNotes.trim()) {
-      toast({ variant: "destructive", title: "Missing Notes", description: "Please describe the forensic artifacts first." })
+      toast({ variant: "destructive", title: "Missing Notes", description: "Please describe the artifacts for the AI." })
       return
     }
 
     try {
+      // Local Backup if Vault linked
       if (vaultHandle && vaultPermissionStatus === 'granted') {
         const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
         const writable = await (fileHandle as any).createWritable()
         await writable.write(file)
         await writable.close()
-        toast({ title: "File Saved to PC", description: `"${file.name}" archived in local vault.` })
       }
 
-      const newDataset = {
-        id: crypto.randomUUID(),
+      const datasetId = crypto.randomUUID()
+      const datasetRef = doc(db, "datasets", datasetId)
+      const datasetData = {
         fileName: file.name,
         uploadDate: new Date().toISOString(),
         size: file.size,
@@ -217,11 +189,16 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
         status: "processed"
       }
 
-      const updated = [newDataset, ...datasets]
-      setDatasets(updated)
-      localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
+      setDoc(datasetRef, datasetData).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: datasetRef.path,
+          operation: 'create',
+          requestResourceData: datasetData
+        })
+        errorEmitter.emit('permission-error', permissionError)
+      })
+
       setDatasetNotes("")
-      onRefresh()
       toast({ title: "Neural Sample Ingested", description: `Knowledge updated with ${trainingLabel.toUpperCase()} ground truth.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Upload Failed", description: err.message })
@@ -229,23 +206,28 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
   }
 
   const removeDatasetItem = (id: string) => {
-    const updated = datasets.filter(d => d.id !== id)
-    setDatasets(updated)
-    localStorage.setItem("deepscan-datasets", JSON.stringify(updated))
-    onRefresh()
+    if (!db) return
+    const datasetRef = doc(db, "datasets", id)
+    deleteDoc(datasetRef).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: datasetRef.path,
+        operation: 'delete'
+      })
+      errorEmitter.emit('permission-error', permissionError)
+    })
   }
 
   const disconnectVault = async (e: React.MouseEvent) => {
     e.stopPropagation()
     const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
     dbRequest.onsuccess = () => {
-      const db = dbRequest.result
-      const transaction = db.transaction("vaultStore", "readwrite")
+      const idb = dbRequest.result
+      const transaction = idb.transaction("vaultStore", "readwrite")
       const store = transaction.objectStore("vaultStore")
       store.delete("localFolderHandle")
       transaction.oncomplete = () => {
         onVaultChange(undefined, undefined)
-        toast({ title: "Vault Disconnected", description: "Local database unlinked." })
+        toast({ title: "Vault Disconnected", description: "Local folder unlinked." })
       }
     }
   }
@@ -310,9 +292,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
                </>
              )}
           </div>
-          {isIframe && !vaultHandle && (
-            <div className="absolute inset-0 bg-destructive/5 pointer-events-none" />
-          )}
         </Card>
       </div>
 
@@ -377,7 +356,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
                       {datasets.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-30">
-                            No research samples in vault
+                            No research samples in cloud
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -409,7 +388,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
         <Card className="lg:col-span-4 border border-border shadow-none rounded-xl h-fit volumetric-shadow">
           <CardHeader className="bg-muted/30 border-b">
             <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
-              <BrainCircuit className="w-5 h-5 text-primary" /> Teach the Engine
+              <BrainCircuit className="w-5 h-5 text-primary" /> Cloud-AI Training
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
@@ -438,16 +417,16 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
               </div>
 
               <div className="space-y-2 pt-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Upload Sample</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Upload & Sync</Label>
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleTrainingFileUpload} accept="video/*,audio/*,image/*" />
                 <Button 
                   className="w-full h-14 rounded-xl font-black uppercase tracking-widest animate-pulse-ring relative overflow-visible"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="w-4 h-4 mr-2" /> Upload & Teach
+                  <Upload className="w-4 h-4 mr-2" /> Sync to Neural Cloud
                 </Button>
                 <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-2">
-                  {vaultHandle ? "Saving directly to linked PC folder." : "Saved to browser (link PC folder for file archive)."}
+                  Cloud training + Optional PC Vault Backup.
                 </p>
               </div>
             </div>
@@ -459,7 +438,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vault
         <DialogContent className="max-w-2xl rounded-2xl border-2 border-primary/20 volumetric-shadow">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl font-black uppercase tracking-tighter text-primary">
-              <BrainCircuit className="w-8 h-8" /> Private Intelligence Log
+              <BrainCircuit className="w-8 h-8" /> Neural Intelligence Log
             </DialogTitle>
           </DialogHeader>
           <div className="p-8 bg-muted rounded-xl border-dashed border font-mono text-[11px] whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto">

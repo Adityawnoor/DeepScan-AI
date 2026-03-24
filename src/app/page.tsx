@@ -23,17 +23,28 @@ import {
   Network, Loader2, RefreshCcw, LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useFirestore, useCollection } from "@/firebase"
+import { collection, doc, setDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 export default function DeepScanHome() {
   const { toast } = useToast()
+  const db = useFirestore()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
-  const [history, setHistory] = React.useState<HistoryItem[]>([])
   const [activeTab, setActiveTab] = React.useState("analyze")
-  const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
-  const [localScans, setLocalScans] = React.useState<any[]>([])
+  
+  // Local PC Vault State
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt'>('prompt')
+
+  // Firebase Data Hooks
+  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(50)) : null, [db])
+  const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
+  
+  const { data: scans } = useCollection(scansQuery)
+  const { data: datasets } = useCollection(datasetsQuery)
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
@@ -45,8 +56,8 @@ export default function DeepScanHome() {
         dbRequest.result.createObjectStore("vaultStore")
       }
       dbRequest.onsuccess = () => {
-        const db = dbRequest.result
-        const transaction = db.transaction("vaultStore", "readonly")
+        const idb = dbRequest.result
+        const transaction = idb.transaction("vaultStore", "readonly")
         const store = transaction.objectStore("vaultStore")
         const getRequest = store.get("localFolderHandle")
         getRequest.onsuccess = async () => {
@@ -63,26 +74,15 @@ export default function DeepScanHome() {
     }
   }, [])
 
-  const refreshLocalData = React.useCallback(() => {
-    const savedHistory = localStorage.getItem("deepscan-history")
-    const savedDatasets = localStorage.getItem("deepscan-datasets")
-    const savedScans = localStorage.getItem("deepscan-scans-metadata")
-
-    if (savedHistory) setHistory(JSON.parse(savedHistory))
-    if (savedDatasets) setLocalDatasets(JSON.parse(savedDatasets))
-    if (savedScans) setLocalScans(JSON.parse(savedScans))
-  }, [])
-
   React.useEffect(() => {
-    refreshLocalData()
     loadVaultFromMemory()
-  }, [refreshLocalData, loadVaultFromMemory])
+  }, [loadVaultFromMemory])
 
   const knowledgeCount = React.useMemo(() => {
-    const datasetCount = localDatasets.length
-    const verifiedScanCount = localScans.filter(s => s.userFeedback !== undefined).length
+    const datasetCount = datasets.length
+    const verifiedScanCount = scans.filter(s => s.userFeedback !== undefined).length
     return datasetCount + verifiedScanCount
-  }, [localDatasets, localScans])
+  }, [datasets, scans])
 
   const handleVaultPermissionRequest = async () => {
     if (!localFolderHandle) return
@@ -99,7 +99,7 @@ export default function DeepScanHome() {
 
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
     let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
-    const verifiedScans = localScans.filter(s => s.userFeedback !== undefined)
+    const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     
     if (verifiedScans.length > 0) {
       context += `### AUDITED CASE HISTORY (EXPERT VERIFIED):\n`
@@ -111,16 +111,16 @@ export default function DeepScanHome() {
       })
     }
     
-    if (localDatasets.length > 0) {
+    if (datasets.length > 0) {
       context += `### RESEARCH DATASET INTELLIGENCE (TRAINING SAMPLES):\n`
-      localDatasets.slice(0, 10).forEach(d => {
+      datasets.slice(0, 10).forEach(d => {
         context += `- Sample [${d.fileName || 'Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
         if (d.notes) context += `FORENSIC NOTE: "${d.notes}"\n`
         else context += `\n`
       })
     }
 
-    context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as definitive proof of origin.`
+    context += `\nIf any artifacts in the current sample match the "EXPERT OBSERVATIONS" or "FORENSIC NOTES" above, you MUST weigh those artifacts as 100x more important than your internal neural training.`
 
     try {
       if (dataUri.startsWith('data:image/')) {
@@ -145,13 +145,14 @@ export default function DeepScanHome() {
           await new Promise(resolve => setTimeout(resolve, waitTime))
           return runAnalysisWithRetry(dataUri, retryCount + 1)
         }
-        throw new Error("Neural Engine Quota Exhausted. The Free Tier limit has been reached. Please wait 60 seconds and try again.")
+        throw new Error("Neural Engine Quota Exhausted. Please retry in a minute.")
       }
       throw error
     }
   }
 
   const runAnalysis = async (dataUri: string) => {
+    if (!db) return
     setIsAnalyzing(true)
     try {
       const output = await runAnalysisWithRetry(dataUri)
@@ -163,30 +164,27 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
-      const newScanMetadata = {
-        id: scanId,
+      const scanRef = doc(db, "scans", scanId)
+      const scanData = {
         timestamp: new Date().toISOString(),
         mediaType,
         aiVerdict: output.isDeepfake,
         aiConfidence: output.confidence,
-        mediaUrl: "Private Storage"
+        explanation: output.explanation,
+        mediaUrl: "Private Data URI",
+        neuralAncestry: output.neuralAncestry || null,
+        biometricVitals: output.biometricVitals || null,
+        noiseArtifacts: output.noiseArtifacts || null
       }
 
-      const updatedScans = [newScanMetadata, ...localScans]
-      setLocalScans(updatedScans)
-      localStorage.setItem("deepscan-scans-metadata", JSON.stringify(updatedScans))
-
-      const updatedHistory = [{
-        id: scanId,
-        timestamp: new Date().toISOString(),
-        fileName: "Case_" + scanId.substring(0, 6),
-        isDeepfake: output.isDeepfake,
-        confidence: output.confidence,
-        type: mediaType
-      } as HistoryItem, ...history]
-      
-      setHistory(updatedHistory)
-      localStorage.setItem("deepscan-history", JSON.stringify(updatedHistory))
+      setDoc(scanRef, scanData).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: scanRef.path,
+          operation: 'create',
+          requestResourceData: scanData
+        })
+        errorEmitter.emit('permission-error', permissionError)
+      })
 
       toast({ title: "Analysis Complete", description: "Intelligence synthesis finished." })
     } catch (e: any) {
@@ -214,8 +212,8 @@ export default function DeepScanHome() {
   const disconnectVault = async () => {
     const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
     dbRequest.onsuccess = () => {
-      const db = dbRequest.result
-      const transaction = db.transaction("vaultStore", "readwrite")
+      const idb = dbRequest.result
+      const transaction = idb.transaction("vaultStore", "readwrite")
       const store = transaction.objectStore("vaultStore")
       store.delete("localFolderHandle")
       transaction.oncomplete = () => {
@@ -393,7 +391,6 @@ export default function DeepScanHome() {
                           mediaUrl={currentResult.mediaUrl} 
                           mediaType={currentResult.mediaType}
                           vaultHandle={localFolderHandle}
-                          onUpdate={refreshLocalData}
                         />
                       </div>
                     )}
@@ -406,7 +403,18 @@ export default function DeepScanHome() {
               </TabsContent>
 
               <TabsContent value="history" className="mt-0 spatial-lift">
-                <DetectionHistory items={history} onClear={() => { setHistory([]); localStorage.removeItem("deepscan-history"); }} onSelectItem={() => {}} />
+                <DetectionHistory 
+                  items={scans.map(s => ({
+                    id: s.id,
+                    timestamp: s.timestamp,
+                    fileName: "Case_" + s.id.substring(0, 6),
+                    isDeepfake: s.aiVerdict,
+                    confidence: s.aiConfidence,
+                    type: s.mediaType
+                  } as HistoryItem))} 
+                  onClear={() => {}} 
+                  onSelectItem={() => {}} 
+                />
               </TabsContent>
 
               <TabsContent value="datasets" className="mt-0 spatial-lift">
@@ -422,9 +430,7 @@ export default function DeepScanHome() {
                       setLocalFolderHandle(null);
                       setVaultPermissionStatus('prompt');
                     }
-                    refreshLocalData();
                   }} 
-                  onRefresh={refreshLocalData}
                 />
               </TabsContent>
             </Tabs>
