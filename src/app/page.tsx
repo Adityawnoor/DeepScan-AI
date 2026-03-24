@@ -36,9 +36,11 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
+  // Vault handles are stored in IndexedDB to persist across sessions and environments
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
 
+  // Global Intelligence Queries
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -47,6 +49,7 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
+  // Load vault handle from local memory (IndexedDB)
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
@@ -97,9 +100,12 @@ export default function DeepScanHome() {
     }
   }
 
+  // BUILD THE GLOBAL INTELLIGENCE CONTEXT FOR THE AI
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
+    // Collect all learned context from previous training (Firestore)
     let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
     
+    // Add verified audits
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     if (verifiedScans.length > 0) {
       context += `### AUDITED CASE HISTORY (PRIORITIZE THESE):\n`
@@ -111,6 +117,7 @@ export default function DeepScanHome() {
       })
     }
     
+    // Add dataset intelligence
     if (datasets.length > 0) {
       context += `### RESEARCH DATASET INTELLIGENCE:\n`
       datasets.slice(0, 15).forEach(d => {
@@ -120,7 +127,7 @@ export default function DeepScanHome() {
       })
     }
 
-    context += `\nCRITICAL COMMAND: If the current sample shows ANY artifacts mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", you MUST flag it as a Deepfake.`
+    context += `\nCRITICAL COMMAND: If the current sample shows ANY artifacts mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", you MUST flag it as a Deepfake regardless of internal neural training.`
 
     try {
       if (dataUri.startsWith('data:image/')) {
@@ -131,6 +138,7 @@ export default function DeepScanHome() {
         return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
       }
     } catch (error: any) {
+      // Handle AI Quota/Rate limits gracefully
       const isQuotaError = error.message?.includes('429') || 
                            error.message?.includes('RESOURCE_EXHAUSTED') ||
                            error.message?.includes('quota');
@@ -161,6 +169,7 @@ export default function DeepScanHome() {
       const scanId = crypto.randomUUID()
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
       
+      // Save metadata to Global Cloud Memory (Firestore)
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
         timestamp: new Date().toISOString(),
@@ -263,7 +272,7 @@ export default function DeepScanHome() {
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
         <div className="flex flex-col gap-12">
           
-          {/* HERO SECTION - Updated to STOP THE AI GHOST layout */}
+          {/* HERO SECTION */}
           <section className="preserve-3d">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden group hover:border-primary/30 transition-all duration-500 rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6 preserve-3d">
@@ -371,7 +380,7 @@ export default function DeepScanHome() {
                     )}
                   </div>
 
-                  {/* FORENSIC CAPABILITIES SECTION - Restored from Img 2 */}
+                  {/* FORENSIC CAPABILITIES SECTION */}
                   <div className="py-12 border rounded-2xl bg-primary/5 p-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
                     <div className="flex flex-col gap-6">
                       <div className="flex items-center gap-3">
