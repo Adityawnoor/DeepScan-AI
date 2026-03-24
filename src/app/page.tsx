@@ -213,6 +213,15 @@ export default function DeepScanHome() {
     }
   }
 
+  const historyItems = React.useMemo(() => scans.map(s => ({
+    id: s.id,
+    timestamp: s.timestamp,
+    fileName: "Case_" + s.id.substring(0, 6),
+    isDeepfake: s.aiVerdict,
+    confidence: s.aiConfidence,
+    type: s.mediaType
+  } as HistoryItem)), [scans])
+
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-1000">
       <div className="perspective-grid" />
@@ -315,7 +324,7 @@ export default function DeepScanHome() {
                 </TabsTrigger>
                 <TabsTrigger 
                   value="history" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 thin-pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   HISTORY
@@ -330,7 +339,7 @@ export default function DeepScanHome() {
               </TabsList>
 
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0 preserve-3d">
-                <div className="space-y-8 preserve-3d">
+                <div className="space-y-12 preserve-3d">
                   <div className={cn(
                     "grid grid-cols-1 gap-8",
                     currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
@@ -353,6 +362,37 @@ export default function DeepScanHome() {
                       </div>
                     )}
                   </div>
+
+                  {!currentResult && historyItems.length > 0 && (
+                    <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 preserve-3d">
+                      <div className="flex items-center gap-3 mb-6">
+                        <History className="w-5 h-5 text-primary" />
+                        <h2 className="text-xl font-black uppercase tracking-tighter">Recent Investigative History</h2>
+                      </div>
+                      <DetectionHistory 
+                        items={historyItems.slice(0, 5)} 
+                        onClear={() => {}} 
+                        onSelectItem={(id) => {
+                          const scan = scans.find(s => s.id === id)
+                          if (scan) {
+                            setCurrentResult({
+                              id: scan.id,
+                              output: {
+                                isDeepfake: scan.aiVerdict,
+                                confidence: scan.aiConfidence,
+                                explanation: scan.explanation,
+                                neuralAncestry: scan.neuralAncestry,
+                                biometricVitals: scan.biometricVitals,
+                                noiseArtifacts: scan.noiseArtifacts
+                              },
+                              mediaUrl: scan.mediaUrl || "", // In a real app, this would be retrieved from Storage
+                              mediaType: scan.mediaType
+                            })
+                          }
+                        }} 
+                      />
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -362,16 +402,27 @@ export default function DeepScanHome() {
 
               <TabsContent value="history" className="mt-0 spatial-lift">
                 <DetectionHistory 
-                  items={scans.map(s => ({
-                    id: s.id,
-                    timestamp: s.timestamp,
-                    fileName: "Case_" + s.id.substring(0, 6),
-                    isDeepfake: s.aiVerdict,
-                    confidence: s.aiConfidence,
-                    type: s.mediaType
-                  } as HistoryItem))} 
+                  items={historyItems} 
                   onClear={() => {}} 
-                  onSelectItem={() => {}} 
+                  onSelectItem={(id) => {
+                    const scan = scans.find(s => s.id === id)
+                    if (scan) {
+                      setActiveTab("analyze")
+                      setCurrentResult({
+                        id: scan.id,
+                        output: {
+                          isDeepfake: scan.aiVerdict,
+                          confidence: scan.aiConfidence,
+                          explanation: scan.explanation,
+                          neuralAncestry: scan.neuralAncestry,
+                          biometricVitals: scan.biometricVitals,
+                          noiseArtifacts: scan.noiseArtifacts
+                        },
+                        mediaUrl: scan.mediaUrl || "",
+                        mediaType: scan.mediaType
+                      })
+                    }
+                  }} 
                 />
               </TabsContent>
 
