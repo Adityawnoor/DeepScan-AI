@@ -20,7 +20,7 @@ import {
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
-  Network, Loader2
+  Network, Loader2, RefreshCcw, LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -33,8 +33,35 @@ export default function DeepScanHome() {
   const [localDatasets, setLocalDatasets] = React.useState<any[]>([])
   const [localScans, setLocalScans] = React.useState<any[]>([])
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
+  const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt'>('prompt')
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
+
+  // PERSISTENCE LOGIC: Load Vault from IndexedDB
+  const loadVaultFromMemory = React.useCallback(async () => {
+    try {
+      const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
+      dbRequest.onupgradeneeded = () => {
+        dbRequest.result.createObjectStore("vaultStore")
+      }
+      dbRequest.onsuccess = () => {
+        const db = dbRequest.result
+        const transaction = db.transaction("vaultStore", "readonly")
+        const store = transaction.objectStore("vaultStore")
+        const getRequest = store.get("localFolderHandle")
+        getRequest.onsuccess = async () => {
+          if (getRequest.result) {
+            const handle = getRequest.result as FileSystemDirectoryHandle
+            setLocalFolderHandle(handle)
+            const permission = await handle.queryPermission({ mode: 'readwrite' })
+            setVaultPermissionStatus(permission)
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load vault handle from IndexedDB", e)
+    }
+  }, [])
 
   const refreshLocalData = React.useCallback(() => {
     const savedHistory = localStorage.getItem("deepscan-history")
@@ -48,7 +75,8 @@ export default function DeepScanHome() {
 
   React.useEffect(() => {
     refreshLocalData()
-  }, [refreshLocalData])
+    loadVaultFromMemory()
+  }, [refreshLocalData, loadVaultFromMemory])
 
   const knowledgeCount = React.useMemo(() => {
     const datasetCount = localDatasets.length
@@ -56,10 +84,21 @@ export default function DeepScanHome() {
     return datasetCount + verifiedScanCount
   }, [localDatasets, localScans])
 
+  const handleVaultPermissionRequest = async () => {
+    if (!localFolderHandle) return
+    try {
+      const status = await localFolderHandle.requestPermission({ mode: 'readwrite' })
+      setVaultPermissionStatus(status)
+      if (status === 'granted') {
+        toast({ title: "Vault Re-verified", description: "PC Database is now active and writable." })
+      }
+    } catch (e) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "Could not activate vault." })
+    }
+  }
+
   const runAnalysisWithRetry = async (dataUri: string, retryCount = 0): Promise<any> => {
-    // SYNTHESIZE RIGOROUS FORENSIC CONTEXT - GROUND TRUTH PRIORITY
     let context = `CRITICAL FORENSIC DIRECTIVES (MANDATORY GROUND TRUTH):\n`
-    
     const verifiedScans = localScans.filter(s => s.userFeedback !== undefined)
     
     if (verifiedScans.length > 0) {
@@ -172,6 +211,21 @@ export default function DeepScanHome() {
     workstationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const disconnectVault = async () => {
+    const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
+    dbRequest.onsuccess = () => {
+      const db = dbRequest.result
+      const transaction = db.transaction("vaultStore", "readwrite")
+      const store = transaction.objectStore("vaultStore")
+      store.delete("localFolderHandle")
+      transaction.oncomplete = () => {
+        setLocalFolderHandle(null)
+        setVaultPermissionStatus('prompt')
+        toast({ title: "Vault Disconnected", description: "Local PC database unlinked." })
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-1000">
       <div className="perspective-grid" />
@@ -188,11 +242,23 @@ export default function DeepScanHome() {
                   NEURAL ENGINE: <span className="text-foreground">ONLINE</span>
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Network className={cn("w-3.5 h-3.5", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                  PRIVATE VAULT: <span className={cn("text-foreground", !localFolderHandle && "text-destructive/70")}>{localFolderHandle ? localFolderHandle.name.toUpperCase() : "NO DATABASE"}</span>
-                </span>
+              <div className="flex items-center gap-2 group">
+                <Network className={cn("w-3.5 h-3.5 transition-colors", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
+                    PRIVATE VAULT: <span className={cn("text-foreground", !localFolderHandle && "text-destructive/70")}>{localFolderHandle ? localFolderHandle.name.toUpperCase() : "NO DATABASE"}</span>
+                  </span>
+                  {localFolderHandle && vaultPermissionStatus !== 'granted' && (
+                    <button onClick={handleVaultPermissionRequest} className="text-[8px] font-bold text-primary uppercase text-left animate-pulse hover:underline">
+                      Re-verify Permissions Required
+                    </button>
+                  )}
+                </div>
+                {localFolderHandle && (
+                  <button onClick={disconnectVault} className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-destructive hover:scale-110" title="Disconnect Vault">
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
             <ThemeToggle />
@@ -347,10 +413,18 @@ export default function DeepScanHome() {
                 <DatasetManager 
                   knowledgeCount={knowledgeCount} 
                   vaultHandle={localFolderHandle}
-                  onRefresh={(name, handle) => {
-                    if (handle) setLocalFolderHandle(handle);
+                  vaultPermissionStatus={vaultPermissionStatus}
+                  onVaultChange={(name, handle) => {
+                    if (handle) {
+                      setLocalFolderHandle(handle);
+                      setVaultPermissionStatus('granted');
+                    } else {
+                      setLocalFolderHandle(null);
+                      setVaultPermissionStatus('prompt');
+                    }
                     refreshLocalData();
                   }} 
+                  onRefresh={refreshLocalData}
                 />
               </TabsContent>
             </Tabs>

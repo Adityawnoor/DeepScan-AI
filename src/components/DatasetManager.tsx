@@ -6,7 +6,7 @@ import {
   Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
   FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
   Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage,
-  Download, ExternalLink, ShieldAlert
+  Download, ExternalLink, ShieldAlert, Settings2, LogOut
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,11 +23,13 @@ import { cn } from "@/lib/utils"
 
 interface DatasetManagerProps {
   knowledgeCount: number
-  onRefresh: (folderName?: string, handle?: FileSystemDirectoryHandle) => void
+  onVaultChange: (folderName?: string, handle?: FileSystemDirectoryHandle) => void
+  onRefresh: () => void
   vaultHandle?: FileSystemDirectoryHandle | null
+  vaultPermissionStatus?: 'granted' | 'denied' | 'prompt'
 }
 
-export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: DatasetManagerProps) {
+export function DatasetManager({ knowledgeCount, onVaultChange, onRefresh, vaultHandle, vaultPermissionStatus }: DatasetManagerProps) {
   const { toast } = useToast()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
@@ -120,6 +122,24 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
     return false
   }
 
+  // PERSISTENCE LOGIC: Save Vault Handle to IndexedDB
+  const saveVaultToMemory = async (handle: FileSystemDirectoryHandle) => {
+    try {
+      const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
+      dbRequest.onupgradeneeded = () => {
+        dbRequest.result.createObjectStore("vaultStore")
+      }
+      dbRequest.onsuccess = () => {
+        const db = dbRequest.result
+        const transaction = db.transaction("vaultStore", "readwrite")
+        const store = transaction.objectStore("vaultStore")
+        store.put(handle, "localFolderHandle")
+      }
+    } catch (e) {
+      console.warn("Failed to save vault handle to IndexedDB", e)
+    }
+  }
+
   const handleConnectLocalPC = async () => {
     if (isIframe) {
       toast({ 
@@ -141,23 +161,13 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
       }
       
       const handle = await (window as any).showDirectoryPicker()
-      onRefresh(handle.name, handle)
+      await saveVaultToMemory(handle)
+      onVaultChange(handle.name, handle)
       toast({ title: "Vault Connected", description: `Linked to ${handle.name}` })
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      
       console.error("Vault Connection Error:", err)
-      
-      let errorMessage = err.message || "Failed to link PC folder."
-      if (err.name === 'SecurityError' || errorMessage.includes('Cross origin')) {
-        errorMessage = "Security Lock: Browser is blocking file access from this preview window. Open the app in a full browser tab to use the Local PC Vault."
-      }
-
-      toast({ 
-        variant: "destructive", 
-        title: "Vault Access Blocked", 
-        description: errorMessage 
-      })
+      toast({ variant: "destructive", title: "Vault Access Blocked", description: err.message })
     }
   }
 
@@ -188,19 +198,12 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
     }
 
     try {
-      if (vaultHandle) {
-        const hasPermission = await verifyPermission(vaultHandle, true)
-        if (hasPermission) {
-          try {
-            const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
-            const writable = await (fileHandle as any).createWritable()
-            await writable.write(file)
-            await writable.close()
-            toast({ title: "File Saved to PC", description: `"${file.name}" archived in local vault.` })
-          } catch (writeErr: any) {
-            console.warn("Could not write file to disk", writeErr)
-          }
-        }
+      if (vaultHandle && vaultPermissionStatus === 'granted') {
+        const fileHandle = await vaultHandle.getFileHandle(file.name, { create: true })
+        const writable = await (fileHandle as any).createWritable()
+        await writable.write(file)
+        await writable.close()
+        toast({ title: "File Saved to PC", description: `"${file.name}" archived in local vault.` })
       }
 
       const newDataset = {
@@ -232,6 +235,21 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
     onRefresh()
   }
 
+  const disconnectVault = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
+    dbRequest.onsuccess = () => {
+      const db = dbRequest.result
+      const transaction = db.transaction("vaultStore", "readwrite")
+      const store = transaction.objectStore("vaultStore")
+      store.delete("localFolderHandle")
+      transaction.oncomplete = () => {
+        onVaultChange(undefined, undefined)
+        toast({ title: "Vault Disconnected", description: "Local database unlinked." })
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -259,7 +277,7 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
           vaultHandle ? "border-primary/50 bg-primary/5" : "hover:bg-muted/80",
           isIframe && !vaultHandle && "opacity-80 grayscale-[0.5] border-destructive/20"
         )} onClick={handleConnectLocalPC}>
-          <div className="space-y-1 z-10">
+          <div className="space-y-1 z-10 w-full px-4">
              {isIframe && !vaultHandle ? (
                <>
                  <ShieldAlert className="w-8 h-8 mx-auto text-destructive/70" />
@@ -270,14 +288,24 @@ export function DatasetManager({ knowledgeCount, onRefresh, vaultHandle }: Datas
                </>
              ) : (
                <>
-                 <FolderOpen className={cn("w-8 h-8 mx-auto", vaultHandle ? "text-primary" : "text-muted-foreground")} />
+                 <FolderOpen className={cn("w-8 h-8 mx-auto mb-2", vaultHandle ? "text-primary" : "text-muted-foreground")} />
                  <p className={cn("text-sm font-black uppercase tracking-tighter", vaultHandle ? "text-primary" : "text-muted-foreground")}>
                    {vaultHandle ? vaultHandle.name.toUpperCase() : "Link PC Vault"}
                  </p>
                  {vaultHandle ? (
-                   <p className="text-[8px] font-bold uppercase text-primary/60">Local Sync Active</p>
+                   <div className="flex flex-col gap-2 mt-2">
+                     <p className="text-[8px] font-bold uppercase text-primary/60">Persistent Vault Active</p>
+                     <div className="flex gap-2 justify-center">
+                        <Button variant="outline" size="sm" className="h-6 text-[7px] px-2 font-black uppercase rounded-md border-primary/20 hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); handleConnectLocalPC(); }}>
+                          <Settings2 className="w-2.5 h-2.5 mr-1" /> Change
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-6 text-[7px] px-2 font-black uppercase rounded-md border-destructive/20 text-destructive hover:bg-destructive/10" onClick={disconnectVault}>
+                          <LogOut className="w-2.5 h-2.5 mr-1" /> Unlink
+                        </Button>
+                     </div>
+                   </div>
                  ) : (
-                   <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Chrome/Edge Required</p>
+                   <p className="text-[8px] font-bold uppercase text-muted-foreground/60">Safe Local PC Database</p>
                  )}
                </>
              )}
