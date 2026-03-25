@@ -6,7 +6,7 @@ import {
   Trash2, Upload, Gauge, Activity, Sparkles, Save, Info,
   AlertTriangle, Fingerprint, Zap, Brain, Download, Loader2,
   ShieldCheck, Globe, CheckCircle2, ChevronRight, FlaskConical,
-  History, ShieldAlert, Search
+  History, ShieldAlert, Search, FileVideo, FileAudio, FileImage, X
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -47,7 +47,9 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const [isSyncing, setIsSyncing] = React.useState(false)
   const [isSeeding, setIsSeeding] = React.useState(false)
+  const [isIngesting, setIsIngesting] = React.useState(false)
   const [syncStep, setSyncStep] = React.useState<string>("")
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
@@ -246,22 +248,30 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
     }
   }
 
-  const handleManualIngestion = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!db || !user) return
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !datasetNotes.trim()) {
+    if (file) {
+      setSelectedFile(file)
+    }
+  }
+
+  const handleManualIngestion = async () => {
+    if (!db || !user) return
+    if (!selectedFile || !datasetNotes.trim()) {
       toast({ variant: "destructive", title: "Missing Data", description: "Forensic notes and pattern sample required." })
       return
     }
+
+    setIsIngesting(true)
     try {
       const datasetId = crypto.randomUUID()
       const datasetRef = doc(db, "datasets", datasetId)
       const datasetData = { 
         id: datasetId,
-        fileName: file.name, 
+        fileName: selectedFile.name, 
         uploadDate: new Date().toISOString(), 
-        size: file.size, 
-        fileType: file.type, 
+        size: selectedFile.size, 
+        fileType: selectedFile.type, 
         label: trainingLabel, 
         modelSignature: modelSignature || "Generic Tool",
         notes: datasetNotes.trim(), 
@@ -269,12 +279,24 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
         isPattern: true
       }
       await setDoc(datasetRef, datasetData)
+      
       setDatasetNotes("")
       setModelSignature("")
+      setSelectedFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      
       toast({ title: "Pattern Ingested", description: "Malicious signature learned and persisted." })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Ingestion Failed", description: err.message })
+    } finally {
+      setIsIngesting(false)
     }
+  }
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('video/')) return <FileVideo className="w-8 h-8 text-primary" />
+    if (file.type.startsWith('audio/')) return <FileAudio className="w-8 h-8 text-primary" />
+    return <FileImage className="w-8 h-8 text-primary" />
   }
 
   return (
@@ -444,16 +466,43 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                  <p className="text-[9px] font-bold leading-relaxed text-destructive uppercase">Note: Only ingest verified samples to maintain Neural Hub integrity.</p>
               </div>
+
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. Model Signature</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. Select Pattern Sample</Label>
+                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} accept="video/*,audio/*,image/*" />
+                
+                {selectedFile ? (
+                  <div className="p-4 rounded-xl border-2 border-primary/30 bg-primary/5 flex items-center justify-between group">
+                    <div className="flex items-center gap-3">
+                      {getFileIcon(selectedFile)}
+                      <div className="overflow-hidden">
+                        <p className="text-xs font-black uppercase truncate max-w-[180px]">{selectedFile.name}</p>
+                        <p className="text-[8px] font-bold text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setSelectedFile(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="outline" className="w-full h-12 border-dashed border-2 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="w-4 h-4" /> Select Video/Audio/Image
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Model Signature</Label>
                 <Input placeholder="e.g., StyleGAN3, Sora, RVC..." className="text-xs h-12 rounded-xl bg-background/50 font-bold uppercase" value={modelSignature} onChange={(e) => setModelSignature(e.target.value)} />
               </div>
+
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Forensic Notes</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Forensic Notes</Label>
                 <Textarea placeholder="Describe artifact patterns observed..." className="text-xs min-h-[120px] rounded-xl bg-background/50" value={datasetNotes} onChange={(e) => setDatasetNotes(e.target.value)} />
               </div>
+
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Classification</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">4. Classification</Label>
                 <Select value={trainingLabel} onValueChange={(val: any) => setTrainingLabel(val)}>
                   <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-12 border-primary/20 bg-background/50 focus:ring-primary/40"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-primary/20">
@@ -462,10 +511,15 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2 pt-4">
-                <input type="file" ref={fileInputRef} className="hidden" onChange={handleManualIngestion} accept="video/*,audio/*,image/*" />
-                <Button className="w-full h-16 rounded-xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90" onClick={() => fileInputRef.current?.click()}>
-                  <Zap className="w-5 h-5 mr-3" /> Commit Pattern to Cloud
+                <Button 
+                  className="w-full h-16 rounded-xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 disabled:opacity-50" 
+                  onClick={handleManualIngestion}
+                  disabled={isIngesting || !selectedFile || !datasetNotes.trim() || !modelSignature.trim()}
+                >
+                  {isIngesting ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : <Zap className="w-5 h-5 mr-3" />}
+                  Commit Pattern to Cloud
                 </Button>
               </div>
             </div>
