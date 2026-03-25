@@ -8,7 +8,7 @@ import {
   Dna, HeartPulse, Target,
   Map as MapIcon, Gavel,
   ShieldX, Copy, Activity, Cpu, Layers, MessageSquare,
-  Database
+  Database, AlertCircle, Scan
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -45,6 +45,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const [showSpectralMode, setShowSpectralMode] = React.useState(false)
   const [showTakedown, setShowTakedown] = React.useState(false)
   const [isPromoted, setIsPromoted] = React.useState(false)
+  const [activeHighlight, setActiveHighlight] = React.useState<number | null>(null)
 
   const isFake = result.isDeepfake
   const confidence = result.confidence
@@ -133,7 +134,11 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         neuralDNA: result.neuralAncestry,
         biometrics: result.biometricVitals,
         humanVerification: feedbackSubmitted,
-        userComment
+        userComment,
+        explainability: {
+          highlightedRegions: result.highlightedRegions,
+          suspiciousTimestamps: result.suspiciousTimestamps
+        }
       }
 
       await writable.write(JSON.stringify(evidence, null, 2))
@@ -180,16 +185,16 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
               <Progress value={confidence} className={cn("h-4 rounded-xl bg-muted", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
             </div>
 
-            <Tabs defaultValue="biometrics" className="w-full">
+            <Tabs defaultValue="why" className="w-full">
               <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-xl h-11 border">
+                <TabsTrigger value="why" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <Info className="w-3.5 h-3.5" /> Why?
+                </TabsTrigger>
                 <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <HeartPulse className="w-3.5 h-3.5" /> Vital
                 </TabsTrigger>
                 <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <Dna className="w-3.5 h-3.5" /> DNA
-                </TabsTrigger>
-                <TabsTrigger value="origin" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <MapIcon className="w-3.5 h-3.5" /> Origin
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <ShieldCheck className="w-3.5 h-3.5" /> Audit
@@ -198,6 +203,61 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   <Gavel className="w-3.5 h-3.5" /> Action
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="why" className="pt-6 space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Scan className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-black uppercase tracking-tighter">EXPLAINABLE AI BREAKDOWN</h3>
+                  </div>
+                  
+                  {isFake ? (
+                    <div className="space-y-3">
+                      {result.highlightedRegions?.map((region: any, i: number) => (
+                        <div 
+                          key={i} 
+                          className={cn(
+                            "p-3 border rounded-xl bg-destructive/5 cursor-pointer transition-all hover:bg-destructive/10",
+                            activeHighlight === i ? "border-destructive ring-1 ring-destructive" : "border-destructive/20"
+                          )}
+                          onMouseEnter={() => setActiveHighlight(i)}
+                          onMouseLeave={() => setActiveHighlight(null)}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                            <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Anomaly #{i+1}</span>
+                          </div>
+                          <p className="text-xs font-bold text-foreground/90">{region.reason}</p>
+                        </div>
+                      ))}
+                      
+                      {result.suspiciousTimestamps?.map((ts: any, i: number) => (
+                        <div key={i} className="p-3 border border-destructive/20 rounded-xl bg-destructive/5">
+                           <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                            <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Time: {ts.timestamp}s</span>
+                          </div>
+                          <p className="text-xs font-bold text-foreground/90">{ts.description}</p>
+                        </div>
+                      ))}
+
+                      {(!result.highlightedRegions?.length && !result.suspiciousTimestamps?.length) && (
+                        <p className="text-xs font-medium leading-relaxed text-foreground/80 p-4 border rounded-xl bg-muted/10">
+                          {result.explanation}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 border border-green-500/20 rounded-xl bg-green-500/5 space-y-2">
+                       <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-green-500" />
+                        <span className="text-[10px] font-black uppercase text-green-600 tracking-widest">Passed Authenticity Scan</span>
+                      </div>
+                      <p className="text-xs font-medium text-foreground/80">{result.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
 
               <TabsContent value="biometrics" className="pt-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -232,30 +292,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                     <p className="text-sm font-black text-primary">{result.neuralAncestry?.likelyModel || "Unknown"}</p>
                   </div>
                 </div>
-                <p className="text-xs font-medium leading-relaxed text-foreground/80 p-4 border rounded-xl bg-muted/10">
-                  {result.explanation}
-                </p>
-              </TabsContent>
-
-              <TabsContent value="origin" className="pt-6 space-y-4">
-                 <div className="h-[200px] w-full bg-muted/20 rounded-xl border relative overflow-hidden">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                          <XAxis type="number" dataKey="x" hide domain={[-100, 100]} />
-                          <YAxis type="number" dataKey="y" hide domain={[-100, 100]} />
-                          <ReferenceLine x={0} stroke="rgba(0,0,0,0.1)" strokeDasharray="3 3" />
-                          <ReferenceLine y={0} stroke="rgba(0,0,0,0.1)" strokeDasharray="3 3" />
-                          <Scatter name="DNA" data={mapData}>
-                             {mapData.map((entry, index) => (
-                               <Cell 
-                                 key={`cell-${index}`} 
-                                 fill={entry.type === 'subject' ? 'hsl(var(--primary))' : entry.type === 'real' ? '#22c55e' : 'rgba(0,0,0,0.2)'} 
-                               />
-                             ))}
-                          </Scatter>
-                       </ScatterChart>
-                    </ResponsiveContainer>
-                 </div>
               </TabsContent>
 
               <TabsContent value="audit" className="pt-6 space-y-4">
@@ -316,13 +352,43 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
           </CardFooter>
         </Card>
 
-        <Card className="relative overflow-hidden border border-border shadow-none bg-black flex flex-col items-center justify-center p-0 rounded-2xl min-h-[500px] volumetric-shadow">
+        <Card className="relative overflow-hidden border border-border shadow-none bg-black flex flex-col items-center justify-center p-0 rounded-2xl min-h-[500px] volumetric-shadow group">
           {showSpectralMode && (
             <div className="absolute inset-0 z-20 pointer-events-none bg-primary/20 mix-blend-difference animate-pulse" />
           )}
 
           <div className="relative flex items-center justify-center p-4 w-full h-full">
-            {mediaType === 'image' && <img src={mediaUrl} className={cn("max-w-full h-auto object-contain rounded-xl", showSpectralMode && "grayscale invert contrast-150")} />}
+            {mediaType === 'image' && (
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img src={mediaUrl} className={cn("max-w-full h-auto object-contain rounded-xl", showSpectralMode && "grayscale invert contrast-150")} />
+                
+                {/* Explainable AI Highlight Overlays */}
+                {result.highlightedRegions?.map((region: any, i: number) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "absolute border-2 border-destructive transition-all duration-300 rounded-sm z-30",
+                      activeHighlight === i ? "bg-destructive/30 border-white shadow-[0_0_15px_rgba(255,255,255,0.8)] scale-105" : "bg-destructive/10"
+                    )}
+                    style={{
+                      left: `${region.x}%`,
+                      top: `${region.y}%`,
+                      width: `${region.width}%`,
+                      height: `${region.height}%`
+                    }}
+                    onMouseEnter={() => setActiveHighlight(i)}
+                    onMouseLeave={() => setActiveHighlight(null)}
+                  >
+                    <div className={cn(
+                      "absolute -top-6 left-0 px-2 py-0.5 bg-destructive text-white text-[8px] font-black uppercase tracking-widest whitespace-nowrap rounded",
+                      activeHighlight === i ? "opacity-100" : "opacity-0"
+                    )}>
+                      {region.reason}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto rounded-xl" />}
             {mediaType === 'audio' && (
               <div className="flex flex-col items-center gap-8 p-12">

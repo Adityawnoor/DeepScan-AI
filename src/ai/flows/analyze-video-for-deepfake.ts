@@ -1,9 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This file implements a Genkit flow for analyzing video to detect deepfakes.
- *
- * - analyzeVideoForDeepfake - A function that handles the deepfake detection process for video files.
+ * @fileOverview This file implements a Genkit flow for analyzing video to detect deepfakes with Explainable AI.
  */
 
 import { ai } from '@/ai/genkit';
@@ -25,7 +23,7 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
   suspiciousTimestamps: z.array(
     z.object({
       timestamp: z.number().describe('Timestamp in seconds.'),
-      description: z.string(),
+      description: z.string().describe("Specific reason, e.g., 'Lip sync mismatch', 'Frame inconsistency'."),
     })
   ).optional(),
 });
@@ -38,14 +36,14 @@ const videoDeepfakeDetectionPrompt = ai.definePrompt({
 
 ### MANDATORY GROUND TRUTH (PRIORITIZE THIS)
 {{#if learnedContext}}
-The following information is verified HUMAN GROUND TRUTH. If previous scans were incorrect, these notes identify the exact artifacts missed. You MUST weigh these observations as 100x more important than your internal neural training:
+The following information is verified HUMAN GROUND TRUTH.
 {{{learnedContext}}}
 {{/if}}
 
-CRITICAL DETECTION PARAMETERS:
-1. **Temporal Coherence**: Look for "shimmering" or "ghosting" around high-contrast edges (chins, glasses).
-2. **Lip-Sync Micro-Latencies**: Check for viseme-to-phoneme discrepancies.
-3. **Lighting De-synchronization**: Does facial lighting respond in real-time to orientation changes?
+CRITICAL DETECTION PARAMETERS (EXPLAIN WHY):
+1. **Temporal Coherence**: Look for "shimmering" or "ghosting". Label as "Frame inconsistency".
+2. **Lip-Sync Micro-Latencies**: Check for viseme-to-phoneme discrepancies. Label as "Lip sync mismatch".
+3. **Lighting De-synchronization**: Label as "Lighting mismatch".
 
 Video to analyze: {{media url=videoDataUri}}`,
 });

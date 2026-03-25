@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This file implements "The Forensic Singularity Engine" for image analysis.
+ * @fileOverview This file implements "The Forensic Singularity Engine" for image analysis with Explainable AI.
  * 
  * - analyzeImageForDeepfake - Performs Biometric Vital Sign Extraction and Neural Origin Traceback.
  */
@@ -39,11 +39,11 @@ const AnalyzeImageForDeepfakeOutputSchema = z.object({
     description: z.string(),
   }),
   highlightedRegions: z.array(z.object({
-    x: z.number().describe("X coordinate of the box in percentage (0-100) relative to image width."),
-    y: z.number().describe("Y coordinate of the box in percentage (0-100) relative to image height."),
-    width: z.number().describe("Width of the box in percentage (0-100)."),
-    height: z.number().describe("Height of the box in percentage (0-100)."),
-    reason: z.string(),
+    x: z.number().describe("X coordinate of the top-left corner as a percentage (0-100)."),
+    y: z.number().describe("Y coordinate of the top-left corner as a percentage (0-100)."),
+    width: z.number().describe("Width of the region as a percentage (0-100)."),
+    height: z.number().describe("Height of the region as a percentage (0-100)."),
+    reason: z.string().describe("The specific reason this region is suspicious (e.g., 'Lighting mismatch', 'Neural artifacts in eyes')."),
   })).optional(),
 });
 
@@ -55,19 +55,20 @@ const forensicSingularityImage = ai.definePrompt({
 
   ### MANDATORY GROUND TRUTH (NEURAL MEMORY)
   {{#if learnedContext}}
-  The following verified HUMAN observations MUST be prioritized. If any patterns described here appear in the current sample, you MUST flag it as a deepfake. This knowledge persists across all development environments (Studio and Localhost):
+  The following verified HUMAN observations MUST be prioritized. If any patterns described here appear in the current sample, you MUST flag it as a deepfake.
   {{{learnedContext}}}
   {{/if}}
   
   TASK 1: BIOMETRIC PULSE EXTRACTION (rPPG)
-  Analyze the skin textures for microscopic rhythmic color changes. If a human heartbeat is detected but inconsistent with the overall frame lighting, flag it as a sophisticated GAN-based fake.
+  Analyze the skin textures for microscopic rhythmic color changes.
   
   TASK 2: NEURAL ORIGIN TRACEBACK
-  Identify the exact generative origin. Look for diffusion-specific noise patterns or GAN checkerboard artifacts.
+  Identify exact generative origin. Look for diffusion-specific noise patterns or GAN checkerboard artifacts.
   
-  TASK 3: SPATIAL ANOMALY DETECTION
+  TASK 3: EXPLAINABLE AI MAPPING
   Identify specific visual artifacts (warped pixels, inconsistent lighting, or latent noise). 
-  Provide coordinates as PERCENTAGES (0-100).
+  Provide coordinates as PERCENTAGES (0-100) relative to the image dimensions.
+  Be precise with "reason" labels like "Lip sync mismatch", "Lighting mismatch", "Neural artifact".
   
   Image: {{media url=imageDataUri}}`,
 });

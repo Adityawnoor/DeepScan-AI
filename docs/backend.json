@@ -15,7 +15,30 @@
         "userFeedback": { "type": "boolean", "description": "The actual truth provided by the user" },
         "userComment": { "type": "string", "description": "Detailed text feedback from the user" },
         "isCorrect": { "type": "boolean", "description": "Whether the AI was correct" },
-        "mediaUrl": { "type": "string" }
+        "mediaUrl": { "type": "string" },
+        "highlightedRegions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "width": { "type": "number" },
+              "height": { "type": "number" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "suspiciousTimestamps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timestamp": { "type": "number" },
+              "description": { "type": "string" }
+            }
+          }
+        }
       },
       "required": ["timestamp", "mediaType", "aiVerdict"]
     },
