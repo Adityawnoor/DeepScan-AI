@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -18,9 +19,9 @@ import {
   ShieldCheck, History, Database, Zap, 
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
-  Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
-  Cpu, Fingerprint, Layers, CheckCircle2, HardDrive, Globe,
-  ShieldAlert, Lock, Waves, Eye, Video
+  Network, Loader2, Globe,
+  ShieldCheck as ShieldIcon,
+  Fingerprint, Eye, Video, Waves
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -56,7 +57,8 @@ export default function DeepScanHome() {
           try {
             const report = JSON.parse(text)
             if (report.verdict) {
-              context += `[LOCAL PHYSICAL EVIDENCE]: Case ${entry.name} verified as ${report.verdict}. Notes: ${report.userComment || 'None'}\n`
+              const signature = report.neuralDNA ? ` (Signature: ${report.neuralDNA.likelyModel})` : ""
+              context += `[LOCAL VAULT]: Case ${entry.name} verified as ${report.verdict}${signature}. Audit Notes: ${report.userComment || 'None'}\n`
             }
           } catch (e) {}
         }
@@ -123,12 +125,25 @@ export default function DeepScanHome() {
     if (!db) return
     setIsAnalyzing(true)
     try {
-      let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
-      const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
+      let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
+      
+      const verifiedScans = scans.filter(s => s.userFeedback !== undefined && s.aiVerdict === true)
       if (verifiedScans.length > 0) {
-        context += `### CLOUD NEURAL MEMORY:\n`
-        verifiedScans.slice(0, 10).forEach(s => context += `- CASE [${s.id.substring(0,8)}]: VERIFIED AS ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`)
+        context += `### KNOWN TOOL SIGNATURES (CLOUD BRAIN):\n`
+        verifiedScans.slice(0, 10).forEach(s => {
+          if (s.neuralAncestry) {
+            context += `- TOOL [${s.neuralAncestry.likelyModel}]: Identified by artifacts: ${s.userComment || 'None'}.\n`
+          }
+        })
       }
+      
+      if (datasets.length > 0) {
+        context += `\n### TRAINING DATA SIGNATURES:\n`
+        datasets.slice(0, 10).forEach(d => {
+          if (d.modelSignature) context += `- SIGNATURE [${d.modelSignature}]: ${d.notes}\n`
+        })
+      }
+
       if (localIntelligence) context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
 
       let output
@@ -158,7 +173,7 @@ export default function DeepScanHome() {
       }
 
       setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
-      toast({ title: "Analysis Complete", description: "Intelligence synced to Global Brain." })
+      toast({ title: "Analysis Complete", description: "Intelligence synced to Neural Ledger." })
     } catch (e: any) {
       toast({ variant: "destructive", title: "Scan Failed", description: e.message })
     } finally {

@@ -3,13 +3,12 @@
 
 import * as React from "react"
 import { 
-  ShieldCheck, Info, Music, Video, ThumbsUp, ThumbsDown, 
-  FileJson, Download, ShieldAlert,
-  Dna, HeartPulse, Target,
-  Map as MapIcon, Gavel,
-  ShieldX, Copy, Activity, Cpu, Layers, MessageSquare,
-  Database, AlertCircle, Scan, Link, Globe, Shield,
-  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight
+  ShieldCheck, Music, ThumbsUp, ThumbsDown, 
+  FileJson, Download, 
+  Target,
+  Gavel,
+  ShieldX, Activity, Globe,
+  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -48,7 +47,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const isFake = result.isDeepfake
   const confidence = result.confidence
 
-  const calculateMediaHash = async (dataUri: string) => {
+  const calculateMediaHash = React.useCallback(async (dataUri: string) => {
     try {
       const response = await fetch(dataUri)
       const buffer = await response.arrayBuffer()
@@ -58,7 +57,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     } catch (e) {
       return null
     }
-  }
+  }, [])
 
   const checkLedger = React.useCallback(async () => {
     if (!db) return
@@ -69,7 +68,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     if (ledgerSnap.exists()) {
       setLedgerStatus(ledgerSnap.data().status)
     }
-  }, [db, mediaUrl])
+  }, [db, mediaUrl, calculateMediaHash])
 
   React.useEffect(() => {
     checkLedger()
@@ -142,6 +141,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       fileName: `AUDIT_${scanId.substring(0, 8)}`,
       uploadDate: new Date().toISOString(),
       label: feedbackSubmitted ? (isFake ? "fake" : "real") : (isFake ? "real" : "fake"),
+      modelSignature: result.neuralAncestry?.likelyModel || "Unknown Tool",
       notes: userComment || `Manual audit promotion from Case ${scanId}`,
       status: "processed",
       scanId
@@ -232,7 +232,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   <Activity className="w-3.5 h-3.5" /> Behavior
                 </TabsTrigger>
                 <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <Globe className="w-3.5 h-3.5" /> Ledger
+                  <Fingerprint className="w-3.5 h-3.5" /> DNA
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <ShieldCheck className="w-3.5 h-3.5" /> Audit
@@ -249,7 +249,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                       <Clock className="w-4 h-4 text-primary" />
                       <h3 className="text-[11px] font-black uppercase tracking-widest">TEMPORAL BREAKDOWN</h3>
                     </div>
-                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 border-primary/20 text-primary">Granular Mode</Badge>
                   </div>
                   
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
@@ -259,12 +258,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                           "p-4 border rounded-xl flex items-center justify-between transition-all group relative overflow-hidden",
                           segment.isSynthetic ? "bg-destructive/5 border-destructive/20" : "bg-green-500/5 border-green-500/20"
                         )}>
-                          {/* Progress bar background for visual flair */}
                           <div className={cn(
                             "absolute left-0 top-0 bottom-0 w-1 opacity-20",
                             segment.isSynthetic ? "bg-destructive" : "bg-green-600"
                           )} />
-                          
                           <div className="flex items-center gap-4">
                             <div className={cn(
                               "w-10 h-10 rounded-full flex items-center justify-center shadow-sm",
@@ -274,56 +271,22 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                             </div>
                             <div className="space-y-0.5">
                               <p className="text-[12px] font-black uppercase tracking-tighter text-foreground flex items-center gap-1.5">
-                                <span className="text-muted-foreground/50">[{segment.startTime.toFixed(2)}s</span>
-                                <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-                                <span className="text-muted-foreground/50">{segment.endTime.toFixed(2)}s]</span>
-                                <span className={cn(
-                                  "ml-2",
-                                  segment.isSynthetic ? "text-destructive" : "text-green-600"
-                                )}>
+                                <span className="text-muted-foreground/50">[{segment.startTime.toFixed(2)}s - {segment.endTime.toFixed(2)}s]</span>
+                                <span className={cn("ml-2", segment.isSynthetic ? "text-destructive" : "text-green-600")}>
                                   {segment.isSynthetic ? "FAKE" : "REAL"}
                                 </span>
                               </p>
                               <p className="text-[10px] font-bold text-muted-foreground uppercase leading-tight">{segment.description}</p>
                             </div>
                           </div>
-                          <Badge variant={segment.isSynthetic ? "destructive" : "outline"} className={cn("uppercase text-[8px] font-black tracking-widest px-2 py-0.5", !segment.isSynthetic && "text-green-600 border-green-200 bg-green-50")}>
-                            {segment.isSynthetic ? "SYNTHETIC" : "AUTHENTIC"}
-                          </Badge>
                         </div>
                       ))
                     ) : (
                       <div className="p-8 border rounded-xl bg-muted/10 border-dashed text-center space-y-3">
-                         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                           <Scan className="w-6 h-6 text-primary" />
-                         </div>
-                         <div className="space-y-1">
-                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">General Investigation Summary</p>
-                           <p className="text-xs font-medium text-foreground/80 leading-relaxed px-4">{result.explanation}</p>
-                         </div>
+                         <Scan className="w-6 h-6 text-primary mx-auto" />
+                         <p className="text-xs font-medium text-foreground/80 leading-relaxed px-4">{result.explanation}</p>
                       </div>
                     )}
-
-                    {mediaType === 'image' && result.highlightedRegions?.map((region: any, i: number) => (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "p-4 border rounded-xl bg-destructive/5 cursor-pointer transition-all hover:bg-destructive/10 group",
-                          activeHighlight === i ? "border-destructive ring-1 ring-destructive" : "border-destructive/20"
-                        )}
-                        onMouseEnter={() => setActiveHighlight(i)}
-                        onMouseLeave={() => setActiveHighlight(null)}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                            <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Forensic Artifact @ Region #{i+1}</span>
-                          </div>
-                          <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest opacity-50 group-hover:opacity-100">Neural Anomaly</Badge>
-                        </div>
-                        <p className="text-xs font-bold text-foreground/90">{region.reason}</p>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </TabsContent>
@@ -347,22 +310,11 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                         <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                           <div className="flex justify-between items-center mb-2">
                             <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                              <Move className="w-3 h-3" /> Kinematic Head Movement
+                              <Move className="w-3 h-3" /> head Movement Fluidity
                             </Label>
                             <span className="text-xs font-black">{result.behavioralBiometrics.headMovementFluidity}% Natural</span>
                           </div>
                           <Progress value={result.behavioralBiometrics.headMovementFluidity} className="h-1.5" />
-                        </div>
-                      )}
-                      {result.behavioralBiometrics.speechProsody !== undefined && (
-                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                          <div className="flex justify-between items-center mb-2">
-                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                              <Waves className="w-3 h-3" /> Rhythmic Speech Prosody
-                            </Label>
-                            <span className="text-xs font-black">{result.behavioralBiometrics.speechProsody}% Natural</span>
-                          </div>
-                          <Progress value={result.behavioralBiometrics.speechProsody} className="h-1.5" />
                         </div>
                       )}
                       <div className="p-4 bg-muted/30 rounded-xl border border-dashed">
@@ -379,9 +331,34 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 </div>
               </TabsContent>
 
-              {/* ancestry, audit, and actions tabs remain strictly preserved */}
               <TabsContent value="ancestry" className="pt-6 space-y-4">
                 <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-6">
+                  {result.neuralAncestry && (
+                    <div className="space-y-4 p-4 bg-background border rounded-xl shadow-inner">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Cpu className="w-4 h-4 text-primary" />
+                        <h4 className="text-[11px] font-black uppercase tracking-widest">NEURAL SIGNATURE IDENTIFIED</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-bold text-muted-foreground uppercase">Model Family</p>
+                          <p className="text-[10px] font-black text-foreground uppercase">{result.neuralAncestry.modelFamily}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-bold text-muted-foreground uppercase">likely Tool</p>
+                          <p className="text-[10px] font-black text-primary uppercase">{result.neuralAncestry.likelyModel}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 pt-2">
+                        <div className="flex justify-between text-[8px] font-black uppercase">
+                          <span>Signature Match</span>
+                          <span>{result.neuralAncestry.fingerprintConfidence}%</span>
+                        </div>
+                        <Progress value={result.neuralAncestry.fingerprintConfidence} className="h-1 bg-muted [&>div]:bg-primary" />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Blockchain Notarization</Label>
@@ -402,21 +379,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                         {isNotarizing ? "SYNCING TO LEDGER..." : "NOTARIZE ON NEURAL CHAIN"}
                       </Button>
                     )}
-                    {ledgerStatus && (
-                      <div className="space-y-4 p-4 bg-background border rounded-xl shadow-inner">
-                        <div className="space-y-1">
-                          <p className="text-[8px] font-bold text-muted-foreground uppercase">Public Ledger TX ID</p>
-                          <p className="text-[10px] font-mono font-bold text-primary truncate">TX_{crypto.randomUUID().substring(0,24).toUpperCase()}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[8px] font-bold text-muted-foreground uppercase">Content SHA-256 Fingerprint</p>
-                          <p className="text-[10px] font-mono font-bold text-foreground break-all">IMMUTABLE_AUTH_{crypto.randomUUID().substring(0,8)}</p>
-                        </div>
-                        <p className="text-[8px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1">
-                          <Globe className="w-3 h-3" /> IMMUTABLE RECORD DETECTED
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -425,11 +387,9 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-6">
                   {feedbackSubmitted === null ? (
                     <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                        <MessageSquare className="w-3.5 h-3.5" /> Human Observation Audit
-                      </Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Human Observation Audit</Label>
                       <Textarea 
-                        placeholder="Explain the artifacts the AI missed or confirmed..."
+                        placeholder="Explain model-specific artifacts found..."
                         className="text-xs bg-background/50 rounded-xl min-h-[100px]"
                         value={userComment}
                         onChange={(e) => setUserComment(e.target.value)}
@@ -445,9 +405,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                     </div>
                   ) : (
                     <div className="space-y-4 text-center py-4">
-                      <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-2">
-                        <CheckCircle2 className="w-6 h-6 text-green-600" />
-                      </div>
+                      <CheckCircle2 className="w-12 h-12 rounded-full bg-green-500/10 p-3 text-green-600 mx-auto" />
                       <p className="text-[11px] font-black text-foreground uppercase tracking-widest">Audit synced to Global Brain ✓</p>
                       {!isPromoted && (
                         <Button className="w-full h-12 bg-primary/20 text-primary border-primary/20 rounded-xl font-black uppercase text-[10px]" onClick={promoteToDataset}>
@@ -461,7 +419,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
               <TabsContent value="actions" className="pt-6 space-y-4">
                 <Button variant="outline" className="w-full h-12 font-black uppercase tracking-widest rounded-xl" onClick={() => setShowSpectralMode(!showSpectralMode)}>
-                  <Layers className="w-4 h-4 mr-2" /> {showSpectralMode ? "Disable" : "Enable"} Spectral DNA View
+                  <Scan className="w-4 h-4 mr-2" /> {showSpectralMode ? "Disable" : "Enable"} Spectral DNA View
                 </Button>
                 {isFake && (
                   <Button className="w-full h-12 bg-destructive hover:bg-destructive/90 font-black uppercase tracking-widest rounded-xl text-white" onClick={() => setShowTakedown(!showTakedown)}>
@@ -482,12 +440,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
           </CardFooter>
         </Card>
 
-        {/* Media Preview Card strictly preserved */}
         <Card className="relative overflow-hidden border border-border shadow-none bg-black flex flex-col items-center justify-center p-0 rounded-2xl min-h-[500px] volumetric-shadow group">
           {showSpectralMode && (
             <div className="absolute inset-0 z-20 pointer-events-none bg-primary/20 mix-blend-difference animate-pulse" />
           )}
-
           <div className="relative flex items-center justify-center p-4 w-full h-full">
             {mediaType === 'image' && (
               <div className="relative w-full h-full flex items-center justify-center">
@@ -497,40 +453,20 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                     key={i}
                     className={cn(
                       "absolute border-2 border-destructive transition-all duration-300 rounded-sm z-30",
-                      activeHighlight === i ? "bg-destructive/30 border-white shadow-[0_0_15px_rgba(255,255,255,0.8)] scale-105" : "bg-destructive/10"
+                      activeHighlight === i ? "bg-destructive/30 border-white shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "bg-destructive/10"
                     )}
-                    style={{
-                      left: `${region.x}%`,
-                      top: `${region.y}%`,
-                      width: `${region.width}%`,
-                      height: `${region.height}%`
-                    }}
+                    style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }}
                     onMouseEnter={() => setActiveHighlight(i)}
                     onMouseLeave={() => setActiveHighlight(null)}
-                  >
-                    <div className={cn(
-                      "absolute -top-6 left-0 px-2 py-0.5 bg-destructive text-white text-[8px] font-black uppercase tracking-widest whitespace-nowrap rounded",
-                      activeHighlight === i ? "opacity-100" : "opacity-0"
-                    )}>
-                      {region.reason}
-                    </div>
-                  </div>
+                  />
                 ))}
               </div>
             )}
             {mediaType === 'video' && <video src={mediaUrl} controls className="max-w-full h-auto rounded-xl" />}
             {mediaType === 'audio' && (
               <div className="flex flex-col items-center gap-8 p-12">
-                <div className="relative">
-                   <div className="absolute -inset-4 bg-primary/20 rounded-full blur-xl animate-pulse" />
-                   <Music className="w-24 h-24 text-primary relative z-10" />
-                </div>
-                <audio src={mediaUrl} controls className="w-80 shadow-2xl relative z-10" />
-                <div className="flex gap-2">
-                   {[1,2,3,4,5].map(i => (
-                     <div key={i} className="w-1 h-8 bg-primary/30 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
-                   ))}
-                </div>
+                <Music className="w-24 h-24 text-primary animate-pulse" />
+                <audio src={mediaUrl} controls className="w-80 shadow-2xl" />
               </div>
             )}
           </div>

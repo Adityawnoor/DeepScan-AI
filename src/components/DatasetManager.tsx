@@ -3,18 +3,16 @@
 
 import * as React from "react"
 import { 
-  Database, HardDrive, FolderOpen, RefreshCcw, BrainCircuit, 
-  FileJson, FileArchive, Activity, Gauge, AlertCircle, Info,
-  Upload, CheckCircle2, XCircle, Trash2, FileVideo, FileAudio, FileImage,
-  Download, ExternalLink, ShieldAlert, Settings2, LogOut, Sparkles,
-  ShieldCheck, ShieldAlert as AlertIcon, Save
+  Database, HardDrive, BrainCircuit, 
+  Trash2, Upload, Gauge, Activity, Sparkles, Save, Info
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
@@ -38,6 +36,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
   const db = useFirestore()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
+  const [modelSignature, setModelSignature] = React.useState<string>("")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -70,8 +69,8 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
 
   const learnedFactsSummary = React.useMemo(() => {
-    let summary = "### NEURAL INTELLIGENCE LOG (SHUTDOWN INSURANCE) ###\n\n"
-    datasets.forEach(ds => summary += `[DATASET]: ${ds.fileName}. Label: ${ds.label?.toUpperCase()}. Notes: ${ds.notes}\n`)
+    let summary = "### NEURAL INTELLIGENCE LOG (SIGNATURE DATABASE) ###\n\n"
+    datasets.forEach(ds => summary += `[DATASET]: ${ds.fileName}. Signature: ${ds.modelSignature || 'Generic'}. Label: ${ds.label?.toUpperCase()}.\n`)
     scans.filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT]: Case ${s.id.substring(0, 4)} verified as ${s.userFeedback ? 'FAKE' : 'REAL'}. Artifacts: ${s.userComment || 'None'}\n`)
     return summary || "No forensic facts learned yet."
   }, [datasets, scans])
@@ -83,12 +82,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
     }
     try {
       const handle = await (window as any).showDirectoryPicker()
-      const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-      dbRequest.onsuccess = () => {
-        const idb = dbRequest.result
-        const transaction = idb.transaction("vaultStore", "readwrite")
-        transaction.objectStore("vaultStore").put(handle, "localFolderHandle")
-      }
       onVaultChange(handle.name, handle)
       toast({ title: "Vault Connected", description: `Physical mirror active with ${handle.name}` })
     } catch (err: any) {
@@ -99,7 +92,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
 
   const exportFullNeuralBackup = async () => {
     if (!vaultHandle) {
-      toast({ variant: "destructive", title: "PC Vault Required", description: "Connect a folder to export the shutdown insurance backup." })
+      toast({ variant: "destructive", title: "PC Vault Required", description: "Connect a folder to export the knowledge backup." })
       return
     }
     try {
@@ -129,18 +122,22 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
       return
     }
     try {
-      if (vaultHandle && vaultPermissionStatus === 'granted') {
-        const fileHandle = await vaultHandle.getFileHandle(`TRAINING_${file.name}`, { create: true })
-        const writable = await (fileHandle as any).createWritable()
-        await writable.write(file)
-        await writable.close()
-      }
       const datasetId = crypto.randomUUID()
       const datasetRef = doc(db, "datasets", datasetId)
-      const datasetData = { fileName: file.name, uploadDate: new Date().toISOString(), size: file.size, fileType: file.type, label: trainingLabel, notes: datasetNotes.trim(), status: "processed" }
+      const datasetData = { 
+        fileName: file.name, 
+        uploadDate: new Date().toISOString(), 
+        size: file.size, 
+        fileType: file.type, 
+        label: trainingLabel, 
+        modelSignature: modelSignature || "Generic Tool",
+        notes: datasetNotes.trim(), 
+        status: "processed" 
+      }
       setDoc(datasetRef, datasetData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: datasetRef.path, operation: 'create', requestResourceData: datasetData })))
       setDatasetNotes("")
-      toast({ title: "Ingested", description: "Neural Engine updated and mirrored to PC vault." })
+      setModelSignature("")
+      toast({ title: "Ingested", description: "Model signature learned and persisted." })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Failed", description: err.message })
     }
@@ -156,7 +153,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Neural Accuracy</p>
             </div>
             <p className="text-4xl font-black text-primary">{currentAccuracy}%</p>
-            <p className="mt-2 text-[10px] text-muted-foreground font-bold">INSURANCE PROTOCOL: ACTIVE</p>
+            <p className="mt-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Insurance Protocol: Active</p>
           </CardContent>
         </Card>
 
@@ -202,26 +199,26 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
               </div>
               
               <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Authoritative Knowledge Base (Dual-Sync)</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Authoritative Signature Database</h4>
                 <div className="border rounded-xl overflow-hidden">
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow>
-                        <TableHead className="text-[10px] font-black">Memory Sample</TableHead>
-                        <TableHead className="text-[10px] font-black">Truth Label</TableHead>
-                        <TableHead className="text-[10px] font-black">Status</TableHead>
-                        <TableHead className="text-[10px] font-black text-right">Actions</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">Sample</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">Signature</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">Label</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {datasets.length === 0 ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase opacity-30">No lessons persisted yet</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase opacity-30">No signatures ingested</TableCell></TableRow>
                       ) : (
                         datasets.map((item) => (
                           <TableRow key={item.id}>
-                            <TableCell className="font-bold text-xs truncate max-w-[150px]">{item.fileName || "Audit Entry"}</TableCell>
+                            <TableCell className="font-bold text-xs truncate max-w-[150px]">{item.fileName}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-[9px] font-black uppercase px-2 rounded-lg border-primary/20">{item.modelSignature || 'Generic'}</Badge></TableCell>
                             <TableCell><Badge variant={item.label === 'fake' ? "destructive" : "default"} className="text-[9px] font-black uppercase px-2 rounded-lg">{item.label}</Badge></TableCell>
-                            <TableCell><span className="text-[9px] font-black text-primary uppercase">CLOUD + PC SYNCED</span></TableCell>
                             <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteDoc(doc(db, "datasets", item.id))}><Trash2 className="w-4 h-4" /></Button></TableCell>
                           </TableRow>
                         ))
@@ -243,22 +240,28 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle, vau
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. Forensic Observation</Label>
-                <Textarea placeholder="Explain artifacts (e.g., neural artifacts in eyes)..." className="text-xs min-h-[140px] rounded-xl" value={datasetNotes} onChange={(e) => setDatasetNotes(e.target.value)} />
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">1. model Signature (Known Tool)</Label>
+                <Input placeholder="e.g., ElevenLabs-v2, Wav2Lip..." className="text-xs h-11 rounded-xl bg-background/50 font-bold uppercase" value={modelSignature} onChange={(e) => setModelSignature(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Ground Truth Class</Label>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">2. Forensic Observations</Label>
+                <Textarea placeholder="Describe artifacts unique to this tool..." className="text-xs min-h-[100px] rounded-xl" value={datasetNotes} onChange={(e) => setDatasetNotes(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Ground Truth Class</Label>
                 <Select value={trainingLabel} onValueChange={(val: any) => setTrainingLabel(val)}>
                   <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-12"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-xl"><SelectItem value="real" className="text-[10px] font-black uppercase">Authentic</SelectItem><SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Synthetic</SelectItem></SelectContent>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="real" className="text-[10px] font-black uppercase">Authentic</SelectItem>
+                    <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Synthetic</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2 pt-4">
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handleTrainingFileUpload} accept="video/*,audio/*,image/*" />
                 <Button className="w-full h-16 rounded-xl font-black uppercase tracking-widest shadow-lg animate-pulse-ring relative overflow-visible" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="w-5 h-5 mr-3" /> Sync to Physical Vault
+                  <Upload className="w-5 h-5 mr-3" /> Educate Global Brain
                 </Button>
-                <p className="text-[8px] text-center text-muted-foreground font-bold uppercase tracking-widest pt-3">Intelligence persists on PC even if Cloud shuts down.</p>
               </div>
             </div>
           </CardContent>

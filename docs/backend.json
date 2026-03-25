@@ -3,7 +3,7 @@
   "entities": {
     "ScanResult": {
       "title": "Scan Result",
-      "description": "Stored results of a deepfake scan including user feedback for accuracy tracking.",
+      "description": "Stored results of a deepfake scan including user feedback and neural ancestry tracking.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -18,6 +18,14 @@
         "mediaUrl": { "type": "string" },
         "mediaHash": { "type": "string", "description": "SHA-256 fingerprint for blockchain notarization." },
         "blockchainTxId": { "type": "string", "description": "Mock blockchain transaction identifier." },
+        "neuralAncestry": {
+          "type": "object",
+          "properties": {
+            "modelFamily": { "type": "string", "description": "e.g., Diffusion, GAN, FaceSwap, Vocoder" },
+            "likelyModel": { "type": "string", "description": "e.g., Stable Diffusion XL, ElevenLabs v2" },
+            "fingerprintConfidence": { "type": "number" }
+          }
+        },
         "behavioralBiometrics": {
           "type": "object",
           "properties": {
@@ -79,7 +87,8 @@
         "size": { "type": "number" },
         "fileType": { "type": "string" },
         "status": { "type": "string", "enum": ["queued", "processed", "failed"] },
-        "label": { "type": "string", "enum": ["real", "fake", "mixed", "unlabeled"], "description": "The primary truth label for the contents of the dataset." },
+        "label": { "type": "string", "enum": ["real", "fake", "mixed", "unlabeled"] },
+        "modelSignature": { "type": "string", "description": "The specific deepfake tool signature being trained (e.g., 'GAN-StyleA', 'Diffusion-XL')." },
         "notes": { "type": "string", "description": "User-provided description or notes for the dataset." }
       },
       "required": ["fileName", "uploadDate", "size", "label"]

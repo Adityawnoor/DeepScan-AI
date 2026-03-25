@@ -1,6 +1,7 @@
+
 'use server';
 /**
- * @fileOverview This file implements "Temporal Neural Synergy" for video analysis with Behavior-Based Detection.
+ * @fileOverview This file implements "Temporal Neural Synergy" for video analysis with Behavior-Based Detection and Signature Traceback.
  * 
  * - analyzeVideoForDeepfake - Performs cross-modal synchronization and behavioral coherence checks.
  */
@@ -19,6 +20,11 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean(),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
+  neuralAncestry: z.object({
+    modelFamily: z.string().describe("e.g., FaceSwap, Lipsync-only, Diffusion-Video"),
+    likelyModel: z.string().describe("e.g., DeepFaceLab, HeyGen, Wav2Lip"),
+    fingerprintConfidence: z.number(),
+  }).optional(),
   behavioralBiometrics: z.object({
     blinkConsistency: z.number().describe("Score of how natural the eye blinking pattern is (0-100)."),
     headMovementFluidity: z.number().describe("Score of how natural and jitter-free head movement is (0-100)."),
@@ -45,27 +51,27 @@ const temporalSynergyEngine = ai.definePrompt({
   name: 'temporalSynergyEngine',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are the world's leading "Temporal Neural Forensic Analyst". Your specialty is detecting deepfakes through behavioral and modal discrepancies.
+  prompt: `You are the world's leading "Temporal Neural Forensic Analyst". Your specialty is detecting deepfakes through behavioral, modal discrepancies, and model signature tracing.
 
   ### MANDATORY GROUND TRUTH (NEURAL MEMORY)
   {{#if learnedContext}}
-  The following verified HUMAN observations MUST be prioritized. If patterns described here appear, flag it immediately.
+  The following verified HUMAN observations and model signatures MUST be prioritized. If patterns described here appear, flag it immediately.
   {{{learnedContext}}}
   {{/if}}
 
-  TASK 1: BEHAVIOR-BASED DETECTION
+  TASK 1: NEURAL ANCESTRY TRACEBACK
+  Identify the generative tool. Look for model-specific "shimmering" or "bobble-head" artifacts common in tools like DeepFaceLab or Wav2Lip.
+
+  TASK 2: BEHAVIOR-BASED DETECTION
   Analyze eye blinking patterns. Are they too rare (The Stare Artifact) or perfectly periodic?
   Check head movement for micro-jitters or "bobble-head" effects during turns.
 
-  TASK 2: CROSS-MODAL SYNCHRONIZATION (THE "SYNC GHOST")
+  TASK 3: CROSS-MODAL SYNCHRONIZATION (THE "SYNC GHOST")
   Analyze the audio track against the speaker's lip movements. 
-
-  TASK 3: TEMPORAL COHERENCE
-  Identify "Neural Shimmer" - pixel-level inconsistencies during head turns.
 
   TASK 4: TIMELINE BREAKDOWN (MANDATORY)
   Break the video into logical segments. For EACH segment, determine if it is "Real" or "Synthetic".
-  Be precise with start and end times. Identify the exact moment a face-swap kicks in or an audio dub occurs.
+  Be precise with start and end times.
 
   Video: {{media url=videoDataUri}}`,
 });
