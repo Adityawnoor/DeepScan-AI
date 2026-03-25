@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "ScanResult": {
@@ -81,6 +82,20 @@
         "status": { "type": "string", "enum": ["monitoring", "verified_fake", "identity_theft"] }
       },
       "required": ["timestamp", "platform", "contentSnippet", "forensicRisk"]
+    },
+    "LedgerEntry": {
+      "title": "Ledger Entry",
+      "description": "An immutable record of media authenticity notarized on the Neural Ledger.",
+      "type": "object",
+      "properties": {
+        "hash": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["authentic", "synthetic"] },
+        "txId": { "type": "string" },
+        "notarizedBy": { "type": "string" },
+        "forensicCaseId": { "type": "string" }
+      },
+      "required": ["hash", "timestamp", "status"]
     }
   },
   "auth": {
@@ -98,6 +113,10 @@
     "/alerts/{alertId}": {
       "schema": "ViralAlert",
       "description": "Trending deepfake alerts from social monitoring."
+    },
+    "/ledger/{hash}": {
+      "schema": "LedgerEntry",
+      "description": "Global immutable registry of media hashes."
     }
   }
 }

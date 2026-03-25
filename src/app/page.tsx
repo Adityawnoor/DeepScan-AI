@@ -14,6 +14,7 @@ import { DatasetManager } from "@/components/DatasetManager"
 import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { SocialMonitor } from "@/components/SocialMonitor"
 import { ModelEvolutionTracker } from "@/components/ModelEvolutionTracker"
+import { MediaVault } from "@/components/MediaVault"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -24,7 +25,7 @@ import {
   Network, Loader2, Globe,
   ShieldCheck as ShieldIcon,
   Fingerprint, Eye, Video, Waves, Radio,
-  Frame, BarChart3, LineChart
+  Frame, BarChart3, LineChart, Target
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -177,6 +178,33 @@ export default function DeepScanHome() {
     }
   }
 
+  const handleSelectItem = (id: string) => {
+    const scan = scans.find(s => s.id === id)
+    if (scan) {
+      setActiveTab("analyze")
+      setCurrentResult({ 
+        id: scan.id, 
+        output: { 
+          isDeepfake: scan.aiVerdict, 
+          fakeCategory: scan.fakeCategory, 
+          confidence: scan.aiConfidence, 
+          explanation: scan.explanation, 
+          neuralAncestry: scan.neuralAncestry, 
+          biometricVitals: scan.biometricVitals, 
+          crossModalSync: scan.crossModalSync, 
+          highlightedRegions: scan.highlightedRegions, 
+          suspiciousSegments: scan.suspiciousSegments, 
+          behavioralBiometrics: scan.behavioralBiometrics, 
+          sourceOrigin: scan.sourceOrigin, 
+          originalContext: scan.originalContext 
+        }, 
+        mediaUrl: scan.mediaUrl || "", 
+        mediaType: scan.mediaType 
+      })
+      workstationRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+  }
+
   const historyItems = React.useMemo(() => scans.map(s => ({
     id: s.id,
     timestamp: s.timestamp,
@@ -247,8 +275,8 @@ export default function DeepScanHome() {
                   BEGIN INVESTIGATION
                 </Button>
                 <div className="flex gap-4">
-                   <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("protect")}>
-                     <ShieldIcon className="w-5 h-5 text-primary" /> PROTECT
+                   <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("vault")}>
+                     <ShieldIcon className="w-5 h-5 text-primary" /> VAULT
                    </Button>
                    <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("evolution")}>
                      <BarChart3 className="w-5 h-5 text-primary" /> EVOLUTION
@@ -263,6 +291,9 @@ export default function DeepScanHome() {
               <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
                 <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Sparkles className="w-3.5 h-3.5" /> ANALYZE
+                </TabsTrigger>
+                <TabsTrigger value="vault" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
+                  <Target className="w-3.5 h-3.5" /> VAULT
                 </TabsTrigger>
                 <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <LineChart className="w-3.5 h-3.5" /> EVOLUTION
@@ -300,6 +331,12 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="vault" className="mt-0">
+                <div className="animate-in fade-in duration-500">
+                   <MediaVault onReverify={handleSelectItem} />
+                </div>
+              </TabsContent>
+
               <TabsContent value="evolution" className="mt-0">
                 <div className="animate-in fade-in duration-500">
                    <ModelEvolutionTracker />
@@ -319,13 +356,7 @@ export default function DeepScanHome() {
               </TabsContent>
 
               <TabsContent value="history" className="mt-0">
-                <DetectionHistory items={historyItems} onClear={() => {}} onSelectItem={(id) => {
-                  const scan = scans.find(s => s.id === id)
-                  if (scan) {
-                    setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, fakeCategory: scan.fakeCategory, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousSegments: scan.suspiciousSegments, behavioralBiometrics: scan.behavioralBiometrics, sourceOrigin: scan.sourceOrigin, originalContext: scan.originalContext }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
-                  }
-                }} />
+                <DetectionHistory items={historyItems} onClear={() => {}} onSelectItem={handleSelectItem} />
               </TabsContent>
 
               <TabsContent value="datasets" className="mt-0">
