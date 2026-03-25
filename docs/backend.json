@@ -16,6 +16,8 @@
         "userComment": { "type": "string", "description": "Detailed text feedback from the user" },
         "isCorrect": { "type": "boolean", "description": "Whether the AI was correct" },
         "mediaUrl": { "type": "string" },
+        "mediaHash": { "type": "string", "description": "SHA-256 fingerprint for blockchain notarization." },
+        "blockchainTxId": { "type": "string", "description": "Mock blockchain transaction identifier." },
         "highlightedRegions": {
           "type": "array",
           "items": {
@@ -42,6 +44,19 @@
       },
       "required": ["timestamp", "mediaType", "aiVerdict"]
     },
+    "LedgerEntry": {
+      "title": "Ledger Entry",
+      "description": "Immutable record of media authenticity on the Neural Ledger.",
+      "type": "object",
+      "properties": {
+        "hash": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["authentic", "synthetic", "unverified"] },
+        "notarizedBy": { "type": "string" },
+        "forensicCaseId": { "type": "string" }
+      },
+      "required": ["hash", "timestamp", "status"]
+    },
     "DatasetFile": {
       "title": "Dataset File",
       "description": "Information about uploaded training datasets.",
@@ -66,6 +81,10 @@
     "/scans/{scanId}": {
       "schema": "ScanResult",
       "description": "Collection of analyzed media and user feedback."
+    },
+    "/ledger/{hash}": {
+      "schema": "LedgerEntry",
+      "description": "The 'Blockchain' ledger mapping content hashes to authenticity proofs."
     },
     "/datasets/{datasetId}": {
       "schema": "DatasetFile",

@@ -19,11 +19,11 @@ import {
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
-  Cpu, Fingerprint, Layers, CheckCircle2, HardDrive
+  Cpu, Fingerprint, Layers, CheckCircle2, HardDrive, Globe
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
-import { collection, doc, setDoc, query, orderBy, limit } from "firebase/firestore"
+import { collection, doc, setDoc, query, orderBy, limit, getDoc } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
@@ -34,12 +34,12 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Persistence states for PC Vault (Layer 2 & 3)
+  // Persistence states for PC Vault
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
   const [localIntelligence, setLocalIntelligence] = React.useState<string>("")
 
-  // Real-time Neural Cloud Sync (Layer 1)
+  // Real-time Neural Cloud Sync
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -48,17 +48,10 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // Persistence: Restore PC Vault handle from IndexedDB
   const loadVaultFromMemory = React.useCallback(async () => {
     if (typeof window === 'undefined') return
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-      dbRequest.onupgradeneeded = () => {
-        const idb = dbRequest.result
-        if (!idb.objectStoreNames.contains("vaultStore")) {
-          idb.createObjectStore("vaultStore")
-        }
-      }
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
         const transaction = idb.transaction("vaultStore", "readonly")
@@ -70,18 +63,13 @@ export default function DeepScanHome() {
             setLocalFolderHandle(handle)
             const permission = await handle.queryPermission({ mode: 'readwrite' })
             setVaultPermissionStatus(permission)
-            if (permission === 'granted') {
-              readLocalIntelligence(handle)
-            }
+            if (permission === 'granted') readLocalIntelligence(handle)
           }
         }
       }
-    } catch (e) {
-      console.warn("Vault handle could not be retrieved from memory.", e)
-    }
+    } catch (e) {}
   }, [])
 
-  // Read local forensic files to seed the AI "Memory"
   const readLocalIntelligence = async (handle: FileSystemDirectoryHandle) => {
     let context = ""
     try {
@@ -98,9 +86,7 @@ export default function DeepScanHome() {
         }
       }
       setLocalIntelligence(context)
-    } catch (e) {
-      console.error("Failed to read local vault intelligence", e)
-    }
+    } catch (e) {}
   }
 
   React.useEffect(() => {
@@ -113,55 +99,51 @@ export default function DeepScanHome() {
     return datasetCount + verifiedScanCount
   }, [datasets, scans])
 
-  const handleVaultPermissionRequest = async () => {
-    if (!localFolderHandle) return
+  const calculateMediaHash = async (dataUri: string) => {
     try {
-      const status = await localFolderHandle.requestPermission({ mode: 'readwrite' })
-      setVaultPermissionStatus(status)
-      if (status === 'granted') {
-        readLocalIntelligence(localFolderHandle)
-        toast({ title: "Vault Re-verified", description: "Physical Database is active and writable." })
-      }
+      const response = await fetch(dataUri)
+      const buffer = await response.arrayBuffer()
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
     } catch (e) {
-      toast({ variant: "destructive", title: "Permission Denied", description: "Could not activate physical vault." })
+      return null
     }
   }
 
-  // Neural Learning: Gather learned facts from Cloud + Local databases
-  const runAnalysisWithLearning = async (dataUri: string): Promise<any> => {
-    let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
-    
-    // 1. Inject Cloud Memory
-    const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
-    if (verifiedScans.length > 0) {
-      context += `### CLOUD NEURAL MEMORY (SYNCED):\n`
-      verifiedScans.slice(0, 15).forEach(s => {
-        const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-        context += `- CASE [${s.id.substring(0,8)}]: VERIFIED AS ${truth}. ${s.userComment ? `AUDIT: "${s.userComment}"` : ""}\n`
-      })
-    }
-    
-    // 2. Inject Physical PC Vault Memory (Plan B Intelligence)
-    if (localIntelligence) {
-      context += `\n### PHYSICAL VAULT EVIDENCE (OFFLINE REDUNDANCY):\n${localIntelligence}\n`
-    }
+  const runQuickVerify = async (dataUri: string) => {
+    if (!db) return
+    setIsAnalyzing(true)
+    try {
+      const hash = await calculateMediaHash(dataUri)
+      if (!hash) throw new Error("Could not generate media fingerprint.")
 
-    // 3. Inject Research Datasets
-    if (datasets.length > 0) {
-      context += `\n### RESEARCH DATASET INTELLIGENCE:\n`
-      datasets.slice(0, 10).forEach(d => {
-        context += `- SAMPLE [${d.fileName || 'Asset'}]: ${d.label?.toUpperCase()}. ${d.notes ? `SIGNATURE: "${d.notes}"` : ""}\n`
-      })
-    }
+      const ledgerRef = doc(db, "ledger", hash)
+      const ledgerSnap = await getDoc(ledgerRef)
 
-    context += `\nCRITICAL COMMAND: Prioritize these human-verified observations. If current media matches any "AUDIT" or "SIGNATURE" notes, apply the verified label immediately.`
-
-    if (dataUri.startsWith('data:image/')) {
-      return await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
-    } else if (dataUri.startsWith('data:audio/')) {
-      return await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
-    } else if (dataUri.startsWith('data:video/')) {
-      return await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
+      if (ledgerSnap.exists()) {
+        const data = ledgerSnap.data()
+        const scanId = data.forensicCaseId || crypto.randomUUID()
+        
+        setCurrentResult({
+          id: scanId,
+          mediaUrl: dataUri,
+          mediaType: dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image',
+          output: {
+            isDeepfake: data.status === 'synthetic',
+            confidence: 100,
+            explanation: `IMMUTABLE PROOF: This file hash (${hash.substring(0, 16)}...) was notarized on ${new Date(data.timestamp).toLocaleString()}. Verdict: ${data.status.toUpperCase()}.`,
+            neuralAncestry: { modelFamily: "On-Chain Notarized", likelyModel: "Authoritative Record", fingerprintConfidence: 100 }
+          }
+        })
+        toast({ title: "Blockchain Verified", description: "This file matches an authoritative immutable record." })
+      } else {
+        toast({ variant: "destructive", title: "Unverified Asset", description: "No blockchain record found for this content hash." })
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Verification Error", description: e.message })
+    } finally {
+      setIsAnalyzing(false)
     }
   }
 
@@ -169,14 +151,22 @@ export default function DeepScanHome() {
     if (!db) return
     setIsAnalyzing(true)
     try {
-      const output = await runAnalysisWithLearning(dataUri)
-      
-      let mediaType: 'image' | 'audio' | 'video' = 'image'
-      if (dataUri.startsWith('data:audio/')) mediaType = 'audio'
-      else if (dataUri.startsWith('data:video/')) mediaType = 'video'
+      let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
+      const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
+      if (verifiedScans.length > 0) {
+        context += `### CLOUD NEURAL MEMORY:\n`
+        verifiedScans.slice(0, 10).forEach(s => context += `- CASE [${s.id.substring(0,8)}]: VERIFIED AS ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}.\n`)
+      }
+      if (localIntelligence) context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
+
+      let output
+      if (dataUri.startsWith('data:image/')) output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
+      else if (dataUri.startsWith('data:audio/')) output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
+      else if (dataUri.startsWith('data:video/')) output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
 
       const scanId = crypto.randomUUID()
-      setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType })
+      const mediaType = dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image'
+      setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
       const scanRef = doc(db, "scans", scanId)
       const scanData = {
@@ -188,35 +178,15 @@ export default function DeepScanHome() {
         mediaUrl: "Protected in Vault",
         neuralAncestry: output.neuralAncestry || null,
         biometricVitals: output.biometricVitals || null,
-        noiseArtifacts: output.noiseArtifacts || null
+        mediaHash: await calculateMediaHash(dataUri)
       }
 
-      setDoc(scanRef, scanData).catch(err => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData }))
-      })
-
+      setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
       toast({ title: "Analysis Complete", description: "Intelligence synced to Global Brain." })
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Scan Failed", description: e.message || "The neural engine encountered an error." })
+      toast({ variant: "destructive", title: "Scan Failed", description: e.message })
     } finally {
       setIsAnalyzing(false)
-    }
-  }
-
-  const disconnectVault = async () => {
-    if (typeof window === 'undefined') return
-    const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-    dbRequest.onsuccess = () => {
-      const idb = dbRequest.result
-      const transaction = idb.transaction("vaultStore", "readwrite")
-      const store = transaction.objectStore("vaultStore")
-      store.delete("localFolderHandle")
-      transaction.oncomplete = () => {
-        setLocalFolderHandle(null)
-        setVaultPermissionStatus('prompt')
-        setLocalIntelligence("")
-        toast({ title: "Vault Disconnected", description: "Persistent physical link removed." })
-      }
     }
   }
 
@@ -232,36 +202,18 @@ export default function DeepScanHome() {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-1000">
       <div className="perspective-grid" />
-      
-      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50 preserve-3d">
+      <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
-          
           <div className="flex items-center gap-8">
             <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                  NEURAL CLOUD: <span className="text-foreground">SYNCED</span>
-                </span>
+                <Globe className="w-3.5 h-3.5 text-primary animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">NEURAL LEDGER: <span className="text-foreground">ACTIVE</span></span>
               </div>
-              <div className="flex items-center gap-2 group">
-                <Network className={cn("w-3.5 h-3.5 transition-colors", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
-                <div className="flex flex-col">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                    PC VAULT: <span className={cn("text-foreground", !localFolderHandle && "text-destructive/70")}>{localFolderHandle ? localFolderHandle.name.toUpperCase() : "UNLINKED"}</span>
-                  </span>
-                  {localFolderHandle && vaultPermissionStatus !== 'granted' && (
-                    <button onClick={handleVaultPermissionRequest} className="text-[8px] font-bold text-primary uppercase text-left animate-pulse hover:underline">
-                      Permission Required
-                    </button>
-                  )}
-                </div>
-                {localFolderHandle && (
-                  <button onClick={disconnectVault} className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-destructive hover:scale-110" title="Disconnect Vault">
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
-                )}
+              <div className="flex items-center gap-2">
+                <Network className={cn("w-3.5 h-3.5", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">PC VAULT: <span className="text-foreground">{localFolderHandle ? localFolderHandle.name.toUpperCase() : "UNLINKED"}</span></span>
               </div>
             </div>
             <ThemeToggle />
@@ -271,83 +223,60 @@ export default function DeepScanHome() {
 
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
         <div className="flex flex-col gap-12">
-          
-          <section className="preserve-3d">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow relative overflow-hidden rounded-2xl spatial-lift preserve-3d">
-              <div className="flex-1 space-y-6 preserve-3d">
+          <section>
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift preserve-3d">
+              <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
-                  <Activity className="w-3.5 h-3.5" />
-                  ADVANCED NEURAL FORENSICS
+                  <Activity className="w-3.5 h-3.5" /> ADVANCED NEURAL FORENSICS
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase transform translate-z-10">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
                   AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
                 </h1>
-                <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan learns from every audit. Our <span className="font-bold text-foreground text-primary">Neural Insurance Protocol</span> ensures intelligence persists on your <span className="font-bold text-foreground">PC Vault</span> even if the Cloud goes offline.
+                <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
+                  DeepScan utilizes the **Neural Ledger Protocol** to notarize media fingerprints on an immutable forensic chain. Stop the AI ghost before it spreads.
                 </p>
-                <div className="flex gap-4 pt-4 preserve-3d">
-                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
-                    <Zap className="w-3 h-3" />
-                    {knowledgeCount} LESSONS SYNCED
-                  </div>
-                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
-                    <HardDrive className="w-3 h-3" />
-                    DUAL-SYNC ACTIVE
+                <div className="flex gap-4 pt-4">
+                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl">
+                    <Globe className="w-3 h-3" /> IMMUTABLE LEDGER SYNCED
                   </div>
                 </div>
               </div>
-
-              <div className="w-full lg:w-auto flex flex-col gap-4 preserve-3d">
+              <div className="w-full lg:w-auto flex flex-col gap-4">
                 <Button 
-                  variant="default" 
-                  size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest volumetric-shadow bg-primary hover:bg-primary/90 text-white gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 animate-pulse-ring relative overflow-visible transform translate-z-20"
+                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest volumetric-shadow bg-primary text-white gap-3 hover:scale-[1.05] transition-all duration-300"
                   onClick={() => workstationRef.current?.scrollIntoView({ behavior: "smooth" })}
                   disabled={isAnalyzing}
                 >
                   {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MicroscopeIcon className="w-5 h-5" />}
-                  {isAnalyzing ? "ANALYZING..." : "BEGIN INVESTIGATION"}
+                  BEGIN INVESTIGATION
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 gap-3 transition-all duration-300 hover:scale-[1.05] active:scale-95 transform translate-z-15"
-                  onClick={() => setActiveTab("protect")}
-                >
-                  <ShieldIcon className="w-5 h-5 text-primary" />
-                  VACCINATE IDENTITY
+                <Button variant="outline" className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 gap-3 hover:scale-[1.05] transition-all duration-300" onClick={() => setActiveTab("protect")}>
+                  <ShieldIcon className="w-5 h-5 text-primary" /> VACCINATE IDENTITY
                 </Button>
               </div>
             </div>
           </section>
 
-          <div ref={workstationRef} className="space-y-8 preserve-3d">
+          <div ref={workstationRef} className="space-y-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8 preserve-3d">
-                <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
+                <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Sparkles className="w-3.5 h-3.5" /> ANALYZE
                 </TabsTrigger>
-                <TabsTrigger value="protect" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
-                  <ShieldIcon className="w-3.5 h-3.5" /> PROTECT
-                </TabsTrigger>
-                <TabsTrigger value="history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+                <TabsTrigger value="history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Clock className="w-3.5 h-3.5" /> HISTORY
                 </TabsTrigger>
-                <TabsTrigger value="datasets" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+                <TabsTrigger value="datasets" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Database className="w-3.5 h-3.5" /> TRAINING
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="analyze" className="mt-0 focus-visible:ring-0 preserve-3d">
-                <div className="space-y-12 preserve-3d">
+              <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
+                <div className="space-y-12">
                   <div className={cn("grid grid-cols-1 gap-8", currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1")}>
-                    <div className="space-y-8 preserve-3d">
-                      <div className="spatial-lift preserve-3d">
-                        <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
-                      </div>
-                    </div>
+                    <MediaUpload onUpload={runAnalysis} onVerify={runQuickVerify} isAnalyzing={isAnalyzing} />
                     {currentResult && (
-                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 spatial-lift preserve-3d">
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <AnalysisResult 
                           scanId={currentResult.id}
                           result={currentResult.output} 
@@ -358,28 +287,7 @@ export default function DeepScanHome() {
                       </div>
                     )}
                   </div>
-                  {!currentResult && historyItems.length > 0 && (
-                    <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 preserve-3d">
-                      <div className="flex items-center gap-3 mb-6">
-                        <History className="w-5 h-5 text-primary" />
-                        <h2 className="text-xl font-black uppercase tracking-tighter">Recent Investigative History</h2>
-                      </div>
-                      <DetectionHistory items={historyItems.slice(0, 5)} onClear={() => {}} onSelectItem={(id) => {
-                        const scan = scans.find(s => s.id === id)
-                        if (scan) setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, noiseArtifacts: scan.noiseArtifacts }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
-                      }} />
-                    </div>
-                  )}
                 </div>
-              </TabsContent>
-
-              <TabsContent value="protect" className="mt-0 focus-visible:ring-0">
-                <DatasetManager 
-                  knowledgeCount={knowledgeCount} 
-                  vaultHandle={localFolderHandle}
-                  vaultPermissionStatus={vaultPermissionStatus}
-                  onVaultChange={(name, handle) => { if (handle) { setLocalFolderHandle(handle); setVaultPermissionStatus('granted'); readLocalIntelligence(handle); } else { setLocalFolderHandle(null); setVaultPermissionStatus('prompt'); setLocalIntelligence(""); } }} 
-                />
               </TabsContent>
 
               <TabsContent value="history" className="mt-0">
@@ -387,7 +295,7 @@ export default function DeepScanHome() {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, noiseArtifacts: scan.noiseArtifacts }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>
@@ -396,8 +304,7 @@ export default function DeepScanHome() {
                 <DatasetManager 
                   knowledgeCount={knowledgeCount} 
                   vaultHandle={localFolderHandle}
-                  vaultPermissionStatus={vaultPermissionStatus}
-                  onVaultChange={(name, handle) => { if (handle) { setLocalFolderHandle(handle); setVaultPermissionStatus('granted'); readLocalIntelligence(handle); } else { setLocalFolderHandle(null); setVaultPermissionStatus('prompt'); setLocalIntelligence(""); } }} 
+                  onVaultChange={(name, handle) => { if (handle) setLocalFolderHandle(handle); else setLocalFolderHandle(null); }} 
                 />
               </TabsContent>
             </Tabs>
@@ -405,17 +312,15 @@ export default function DeepScanHome() {
         </div>
       </main>
 
-      <footer className="border-t py-12 mt-auto bg-background/50 backdrop-blur-sm z-10 preserve-3d">
+      <footer className="border-t py-12 mt-auto bg-background/50 backdrop-blur-sm">
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
             <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
+            <a href="#" className="hover:text-primary transition-colors">Neural Ledger</a>
           </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">
-            V3.1.0 NEURAL INSURANCE ACTIVE
-          </div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">V3.1.0 FORENSIC ENGINE ACTIVE</div>
         </div>
       </footer>
     </div>

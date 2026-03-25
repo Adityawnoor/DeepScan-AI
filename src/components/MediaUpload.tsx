@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, Link as LinkIcon, Clipboard } from "lucide-react"
+import { Upload, Camera, X, Image as ImageIcon, Music, Video, Loader2, Zap, Link as LinkIcon, Clipboard, ShieldCheck, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,10 +11,11 @@ import { cn } from "@/lib/utils"
 
 interface MediaUploadProps {
   onUpload: (dataUri: string) => void
+  onVerify?: (dataUri: string) => void
   isAnalyzing: boolean
 }
 
-export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
+export function MediaUpload({ onUpload, onVerify, isAnalyzing }: MediaUploadProps) {
   const { toast } = useToast()
   const [dragActive, setDragActive] = React.useState(false)
   const [preview, setPreview] = React.useState<string | null>(null)
@@ -98,11 +99,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
       }
       reader.readAsDataURL(blob)
     } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "URL Error",
-        description: "Could not load media from this URL.",
-      })
+      toast({ variant: "destructive", title: "URL Error", description: "Could not load media from this URL." })
       setIsLoadingUrl(false)
     }
   }
@@ -116,11 +113,7 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
       }
     } catch (err) {
       setIsWebcamOpen(false)
-      toast({
-        variant: "destructive",
-        title: "Webcam Error",
-        description: "Could not access camera.",
-      })
+      toast({ variant: "destructive", title: "Webcam Error", description: "Could not access camera." })
     }
   }
 
@@ -153,6 +146,10 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
     if (preview) onUpload(preview)
   }
 
+  const handleQuickVerify = () => {
+    if (preview && onVerify) onVerify(preview)
+  }
+
   const handlePaste = async () => {
     try {
       const items = await navigator.clipboard.read()
@@ -170,7 +167,6 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
           }
         }
       }
-      toast({ title: "No media found in clipboard" })
     } catch (e) {
       toast({ variant: "destructive", title: "Paste failed", description: "Grant clipboard permissions." })
     }
@@ -285,10 +281,10 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex gap-4 transform translate-z-20">
+          <div className="flex flex-col sm:flex-row gap-4 transform translate-z-20 w-full max-w-lg">
             <Button 
               size="lg" 
-              className="px-10 h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 animate-pulse-ring relative overflow-visible"
+              className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90 animate-pulse-ring relative overflow-visible"
               onClick={handleStartAnalysis}
               disabled={isAnalyzing}
             >
@@ -304,10 +300,20 @@ export function MediaUpload({ onUpload, isAnalyzing }: MediaUploadProps) {
                 </>
               )}
             </Button>
-            <Button variant="outline" size="lg" onClick={clearPreview} disabled={isAnalyzing} className="h-14 rounded-2xl font-black uppercase tracking-widest px-8 border-2 hover:bg-primary/5">
-              NEW CASE
+            <Button 
+              variant="outline"
+              size="lg" 
+              className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest shadow-lg border-2 border-primary/30 text-primary gap-2 hover-glow transition-all"
+              onClick={handleQuickVerify}
+              disabled={isAnalyzing}
+            >
+              <Globe className="w-4 h-4" />
+              QUICK VERIFY
             </Button>
           </div>
+          <Button variant="ghost" size="sm" onClick={clearPreview} disabled={isAnalyzing} className="font-black uppercase tracking-widest text-[10px] opacity-50 hover:opacity-100">
+            NEW CASE
+          </Button>
         </div>
       )}
     </Card>
