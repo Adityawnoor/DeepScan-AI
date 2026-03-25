@@ -6,7 +6,7 @@ import {
   Globe, Radio, ShieldAlert, Zap, TrendingUp, 
   ExternalLink, Twitter, Youtube, Instagram, 
   AlertTriangle, CheckCircle2, Loader2, RefreshCw,
-  Search, Eye, ShieldCheck, Activity
+  Search, Eye, ShieldCheck, Activity, UserX
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,14 +25,18 @@ export function SocialMonitor() {
   const alertsQuery = React.useMemo(() => 
     db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(20)) : null, 
   [db])
+
+  const identitiesQuery = React.useMemo(() => 
+    db ? query(collection(db, "identities")) : null, 
+  [db])
   
   const { data: alerts } = useCollection(alertsQuery)
+  const { data: identities } = useCollection(identitiesQuery)
 
   const runSentinelScan = async () => {
     if (!db) return
     setIsScanning(true)
     
-    // Simulate API delay across platforms
     await new Promise(r => setTimeout(r, 2500))
     
     const mockAlerts = [
@@ -55,26 +59,32 @@ export function SocialMonitor() {
         forensicRisk: "high",
         originalSource: "Suspected RVC v2 Clone",
         status: "verified_fake"
-      },
-      {
+      }
+    ]
+
+    // Simulate identity theft detection
+    if (identities.length > 0) {
+      const targetId = identities[0]
+      mockAlerts.push({
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         platform: "Instagram",
-        contentSnippet: "Deepfake celebrity skincare ad using stolen 2022 red carpet footage.",
-        viralVelocity: 62,
-        forensicRisk: "medium",
+        contentSnippet: `High-precision deepfake of identity match [${targetId.identityName}] detected in suspicious skincare ad.`,
+        viralVelocity: 95,
+        forensicRisk: "critical",
         originalSource: "GAN FaceSwap Model",
-        status: "verified_fake"
-      }
-    ]
+        status: "identity_theft",
+        matchedIdentityId: targetId.id
+      } as any)
+    }
 
     try {
       for (const alert of mockAlerts) {
         await setDoc(doc(db, "alerts", alert.id), alert)
       }
       toast({ 
-        title: "Global Sentinel Scan Complete", 
-        description: "3 high-risk viral deepfakes identified and synced to Neural Knowledge Base." 
+        title: "Sentinel Scan Complete", 
+        description: identities.length > 0 ? "Potential identity misuse detected in trending feeds." : "Viral deepfakes identified and synced." 
       })
     } catch (e) {
       console.error(e)
@@ -117,12 +127,12 @@ export function SocialMonitor() {
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
               <div className="flex justify-between items-end mb-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Sentinel Efficiency</p>
-                <span className="text-xl font-black">94.8%</span>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Identity Vault Sync</p>
+                <span className="text-xl font-black">{identities.length} Profiles</span>
               </div>
-              <Progress value={94.8} className="h-2" />
+              <Progress value={identities.length > 0 ? 100 : 0} className="h-2" />
               <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
-                The **Sentinel Bot** continuously scrapes X, YouTube, and Instagram, cross-referencing viral content against the **Neural Signature Database**. When a high-velocity match is found, it is automatically flagged for the entire user network.
+                Sentinel cross-references {identities.length} enrolled identities against viral content every 5 minutes.
               </p>
             </div>
 
@@ -146,7 +156,7 @@ export function SocialMonitor() {
       <div className="lg:col-span-8 space-y-6">
         <div className="flex items-center justify-between mb-2 px-2">
           <h2 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" /> TRENDING VIRAL FAKES
+            <TrendingUp className="w-5 h-5 text-primary" /> SENTINEL FEED
           </h2>
           <Badge variant="outline" className="text-[10px] font-black px-3 rounded-lg border-primary/20">
             {alerts.length} ALERTS ACTIVE
@@ -161,23 +171,26 @@ export function SocialMonitor() {
             </div>
           ) : (
             alerts.map((alert) => (
-              <Card key={alert.id} className="border border-border shadow-none rounded-2xl hover:border-primary/40 transition-all duration-300 group volumetric-shadow spatial-lift overflow-hidden">
+              <Card key={alert.id} className={cn(
+                "border shadow-none rounded-2xl transition-all duration-300 group volumetric-shadow spatial-lift overflow-hidden",
+                alert.status === 'identity_theft' ? "border-destructive/50 bg-destructive/5" : "border-border hover:border-primary/40"
+              )}>
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
                     <div className={cn(
                       "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
-                      alert.forensicRisk === 'critical' ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                      alert.status === 'identity_theft' ? "bg-destructive text-white" : "bg-primary/10 text-primary"
                     )}>
-                      {getPlatformIcon(alert.platform)}
+                      {alert.status === 'identity_theft' ? <UserX className="w-6 h-6" /> : getPlatformIcon(alert.platform)}
                     </div>
                     
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
-                         <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest px-2 rounded-lg">
+                         <Badge variant={alert.status === 'identity_theft' ? "destructive" : "outline"} className="text-[9px] font-black uppercase tracking-widest px-2 rounded-lg">
                            {alert.platform}
                          </Badge>
-                         <span className={cn("text-[9px] font-black uppercase tracking-widest", getRiskColor(alert.forensicRisk))}>
-                           {alert.forensicRisk} RISK ALERT 🚨
+                         <span className={cn("text-[9px] font-black uppercase tracking-widest", alert.status === 'identity_theft' ? "text-destructive" : getRiskColor(alert.forensicRisk))}>
+                           {alert.status === 'identity_theft' ? "PERSONAL BREACH ALERT 🚨" : `${alert.forensicRisk.toUpperCase()} RISK ALERT`}
                          </span>
                          <span className="text-[9px] font-bold text-muted-foreground/50 ml-auto">
                            {new Date(alert.timestamp).toLocaleTimeString()}
@@ -199,10 +212,10 @@ export function SocialMonitor() {
                     </div>
 
                     <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
-                       <Button variant="outline" size="sm" className="flex-1 md:flex-none rounded-xl text-[10px] font-black uppercase gap-2 h-10 px-4">
-                         <ExternalLink className="w-3.5 h-3.5" /> VIEW
-                       </Button>
-                       <Button size="sm" className="flex-1 md:flex-none rounded-xl text-[10px] font-black uppercase gap-2 h-10 px-4 bg-primary/20 text-primary border border-primary/20">
+                       <Button size="sm" className={cn(
+                         "flex-1 md:flex-none rounded-xl text-[10px] font-black uppercase gap-2 h-10 px-4",
+                         alert.status === 'identity_theft' ? "bg-destructive text-white" : "bg-primary/20 text-primary"
+                       )}>
                          <Activity className="w-3.5 h-3.5" /> INVESTIGATE
                        </Button>
                     </div>

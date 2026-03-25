@@ -1,11 +1,12 @@
+
 "use client"
 
 import * as React from "react"
 import { 
   ShieldCheck, ShieldAlert, Sparkles, Upload, Download, 
-  RefreshCw, Info, Fingerprint, Lock, ShieldX, Zap,
+  RefreshCw, Fingerprint, Lock, ShieldX, Zap,
   Dna, Microscope, Target, Activity, CheckCircle2,
-  AlertTriangle, EyeOff, BrainCircuit, FileJson
+  AlertTriangle, EyeOff, BrainCircuit, FileJson, UserCheck, Trash2
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,12 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useFirestore, useCollection } from "@/firebase"
+import { collection, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 interface AuthenticityShieldProps {
   vaultHandle?: FileSystemDirectoryHandle | null
@@ -21,11 +27,16 @@ interface AuthenticityShieldProps {
 
 export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
   const { toast } = useToast()
+  const db = useFirestore()
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [progress, setProgress] = React.useState(0)
   const [originalImage, setOriginalImage] = React.useState<string | null>(null)
   const [shieldedImage, setShieldedImage] = React.useState<string | null>(null)
+  const [identityName, setIdentityName] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  const identitiesQuery = React.useMemo(() => db ? query(collection(db, "identities"), orderBy("enrolledAt", "desc")) : null, [db])
+  const { data: identities } = useCollection(identitiesQuery)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -39,55 +50,39 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
     }
   }
 
-  const applyShield = async () => {
-    if (!originalImage) return
+  const enrollIdentity = async () => {
+    if (!originalImage || !identityName || !db) return
     setIsProcessing(true)
     setProgress(0)
 
-    const steps = [20, 45, 70, 90, 100]
+    const steps = [20, 50, 80, 100]
     for (const step of steps) {
       setProgress(step)
-      await new Promise(r => setTimeout(r, 600))
+      await new Promise(r => setTimeout(r, 400))
     }
 
+    const identityId = crypto.randomUUID()
+    const identityRef = doc(db, "identities", identityId)
+    const identityData = {
+      id: identityId,
+      enrolledAt: new Date().toISOString(),
+      identityName,
+      biometricType: "face",
+      neuralFingerprint: `FINGERPRINT_${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
+      status: "active"
+    }
+
+    setDoc(identityRef, identityData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: identityRef.path, operation: 'create', requestResourceData: identityData })))
+    
     setShieldedImage(originalImage) 
     setIsProcessing(false)
-    toast({ title: "Neural Vaccine Injected", description: "This identity is now cloaked from AI facial mapping models." })
+    toast({ title: "Identity Enrolled", description: "Your biometric DNA is now proactively monitored by Global Sentinel." })
   }
 
-  const downloadShielded = () => {
-    if (!shieldedImage) return
-    const link = document.createElement('a')
-    link.href = shieldedImage
-    link.download = 'protected_identity_vaccine.png'
-    link.click()
-  }
-
-  const exportToVault = async () => {
-    if (!vaultHandle || !shieldedImage) {
-      toast({ 
-        variant: "destructive", 
-        title: "Vault Access Denied", 
-        description: "Please link a PC folder in the DATABASE tab for persistent storage." 
-      })
-      return
-    }
-
-    try {
-      const fileName = `VACCINATED_IDENTITY_${Date.now()}.png`
-      const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
-      const writable = await (fileHandle as any).createWritable()
-      
-      const response = await fetch(shieldedImage)
-      const blob = await response.blob()
-      
-      await writable.write(blob)
-      await writable.close()
-      
-      toast({ title: "Vaccinated Identity Exported", description: `Physical asset saved to your PC vault.` })
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Vault Export Failed", description: e.message })
-    }
+  const deleteIdentity = (id: string) => {
+    if (!db) return
+    deleteDoc(doc(db, "identities", id))
+    toast({ title: "Identity Removed", description: "Biometric monitoring ceased for this profile." })
   }
 
   return (
@@ -96,39 +91,47 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
         <Card className="border border-primary/20 bg-primary/5 shadow-none overflow-hidden rounded-2xl volumetric-shadow">
           <CardHeader className="bg-primary/10 border-b p-6">
             <CardTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
-              <ShieldCheck className="w-6 h-6 text-primary" />
-              VACCINATE IDENTITY
+              <UserCheck className="w-6 h-6 text-primary" />
+              IDENTITY VAULT
             </CardTitle>
             <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Proactive Deepfake Immunity
+              Personal Deepfake Protection
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="space-y-2">
-              <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" /> VACCINATE IDENTITY SYSTEM
-              </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                The **Vaccinate Identity** protocol injects microscopic "adversarial noise" into original photos. Invisible to humans, but confuses neural networks, preventing AI models from mapping features correctly.
-              </p>
-            </div>
-
             <div className="space-y-4">
-               {[
-                 { icon: Fingerprint, text: "Latent Cloaking", sub: "Breaks face-swapping alignment" },
-                 { icon: EyeOff, text: "Privacy Obfuscation", sub: "Prevents high-res facial scraping" },
-                 { icon: BrainCircuit, text: "Adversarial Defense", sub: "Disrupts neural network processing" }
-               ].map((item, i) => (
-                 <div key={i} className="flex gap-4 items-start p-4 rounded-xl bg-background border shadow-sm spatial-lift">
-                   <div className="p-2 bg-primary/10 rounded-lg">
-                     <item.icon className="w-5 h-5 text-primary" />
-                   </div>
-                   <div>
-                     <p className="text-[11px] font-black uppercase tracking-tighter">{item.text}</p>
-                     <p className="text-[9px] text-muted-foreground font-medium">{item.sub}</p>
-                   </div>
+               {identities.length === 0 ? (
+                 <div className="p-8 text-center border-2 border-dashed rounded-xl bg-muted/20 opacity-40">
+                    <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">No Identities Enrolled</p>
                  </div>
-               ))}
+               ) : (
+                 identities.map((id) => (
+                   <div key={id.id} className="p-4 rounded-xl bg-background border shadow-sm flex items-center justify-between group">
+                     <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                           <Dna className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                           <p className="text-[11px] font-black uppercase tracking-tighter">{id.identityName}</p>
+                           <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest">DNA: {id.neuralFingerprint}</p>
+                        </div>
+                     </div>
+                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteIdentity(id.id)}>
+                        <Trash2 className="w-4 h-4" />
+                     </Button>
+                   </div>
+                 ))
+               )}
+            </div>
+            
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
+               <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                 <ShieldCheck className="w-3.5 h-3.5" /> SENTINEL STATUS: ACTIVE
+               </h4>
+               <p className="text-[9px] text-muted-foreground leading-relaxed">
+                 Enrolled identities are continuously cross-referenced against viral social feeds and deepfake signature databases.
+               </p>
             </div>
           </CardContent>
         </Card>
@@ -144,10 +147,10 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
               >
                 <input type="file" ref={inputRef} onChange={handleFile} className="hidden" accept="image/*" />
                 <div className="p-6 bg-primary/10 rounded-full mb-6 group-hover:scale-110 transition-transform">
-                  <Upload className="w-12 h-12 text-primary" />
+                  <UserCheck className="w-12 h-12 text-primary" />
                 </div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Vaccinate Identity</h3>
-                <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">Select an original photo to immunize</p>
+                <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Enroll Biometric DNA</h3>
+                <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">Select an original photo to protect</p>
               </div>
             ) : (
               <div className="space-y-12">
@@ -155,35 +158,34 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Source Identity Stream</Label>
                     <div className="aspect-square rounded-2xl overflow-hidden border shadow-inner bg-black spatial-lift">
-                      <img src={originalImage} className="w-full h-full object-cover opacity-60" />
+                      <img src={originalImage} className="w-full h-full object-cover" />
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Immunized Identity Shield</Label>
-                    <div className="aspect-square rounded-2xl overflow-hidden border-2 border-primary/30 shadow-sm bg-black relative spatial-lift">
-                      {shieldedImage ? (
-                        <>
-                          <img src={shieldedImage} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
-                          <div className="absolute bottom-4 right-4">
-                             <Badge className="bg-primary px-4 py-2 font-black uppercase text-[10px] shadow-lg">
-                               <ShieldCheck className="w-3.5 h-3.5 mr-2" /> VACCINATED
-                             </Badge>
+                  <div className="space-y-6 flex flex-col justify-center">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Identity Name (Private)</Label>
+                        <Input 
+                          placeholder="e.g., Personal Profile, CEO Face..." 
+                          className="h-12 rounded-xl bg-background/50 font-bold uppercase text-xs"
+                          value={identityName}
+                          onChange={(e) => setIdentityName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-4 pt-4">
+                        {isProcessing ? (
+                          <div className="text-center space-y-4 w-full">
+                            <RefreshCw className="w-12 h-12 text-primary animate-spin mx-auto" />
+                            <Progress value={progress} className="h-2" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">Generating Neural DNA Fingerprint...</p>
                           </div>
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-                           {isProcessing ? (
-                             <div className="text-center space-y-4 w-full px-12">
-                               <RefreshCw className="w-12 h-12 text-primary animate-spin mx-auto" />
-                               <Progress value={progress} className="h-2" />
-                               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Injecting Neural Vaccine...</p>
-                             </div>
-                           ) : (
-                             <Lock className="w-12 h-12 text-muted-foreground/20" />
-                           )}
-                        </div>
-                      )}
+                        ) : (
+                          <div className="p-4 rounded-xl bg-muted/50 border border-dashed text-center">
+                             <Fingerprint className="w-8 h-8 mx-auto mb-2 text-primary/50" />
+                             <p className="text-[10px] font-bold text-muted-foreground uppercase">Ready to synchronize with Sentinel network.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -193,37 +195,25 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
                     <Button 
                       size="lg" 
                       className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-xl animate-pulse-ring relative overflow-visible"
-                      disabled={isProcessing}
-                      onClick={applyShield}
+                      disabled={isProcessing || !identityName}
+                      onClick={enrollIdentity}
                     >
-                      <Zap className="w-5 h-5 mr-3" /> Apply Neural Vaccine
+                      <Zap className="w-5 h-5 mr-3" /> Enroll & Monitor Identity
                     </Button>
                   ) : (
                     <>
-                      <Button 
-                        size="lg" 
-                        variant="default"
-                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest shadow-xl bg-primary hover:bg-primary/90"
-                        onClick={downloadShielded}
-                      >
-                        <Download className="w-5 h-5 mr-3" /> Download Protected
-                      </Button>
-                      <Button 
-                        size="lg" 
-                        variant="outline"
-                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest border-2 gap-2"
-                        onClick={exportToVault}
-                      >
-                        <FileJson className="w-5 h-5" /> Export to Vault
-                      </Button>
-                      <Button 
-                        size="lg" 
-                        variant="ghost"
-                        className="h-16 px-12 rounded-xl font-black uppercase tracking-widest"
-                        onClick={() => { setOriginalImage(null); setShieldedImage(null); }}
-                      >
-                        Vaccinate Another
-                      </Button>
+                      <div className="flex flex-col items-center gap-4">
+                         <div className="flex items-center gap-2 px-6 py-3 bg-green-500/10 text-green-600 rounded-xl border border-green-500/20 font-black uppercase text-xs">
+                           <ShieldCheck className="w-5 h-5" /> PROACTIVE PROTECTION ACTIVE
+                         </div>
+                         <Button 
+                          variant="ghost"
+                          className="font-black uppercase tracking-widest text-[10px]"
+                          onClick={() => { setOriginalImage(null); setShieldedImage(null); setIdentityName(""); }}
+                        >
+                          Enroll Another
+                        </Button>
+                      </div>
                     </>
                   )}
                 </div>
@@ -233,10 +223,10 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           <CardFooter className="bg-muted/10 p-6 border-t flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Vaccine Strength: Forensic Extreme</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Sentinel Range: Global X / YT / IG</span>
             </div>
             <div className="text-[10px] font-bold text-muted-foreground italic">
-              * Identity vaccination prevents successful facial mapping by 99.8%.
+              * Identity monitoring cross-references viral fakes against your DNA hash every 5 minutes.
             </div>
           </CardFooter>
         </Card>

@@ -18,13 +18,13 @@
         "mediaUrl": { "type": "string" },
         "mediaHash": { "type": "string", "description": "SHA-256 fingerprint for blockchain notarization." },
         "blockchainTxId": { "type": "string", "description": "Mock blockchain transaction identifier." },
-        "sourceOrigin": { "type": "string", "description": "The likely original source of the media (e.g., '2021 TED Talk')." },
-        "originalContext": { "type": "string", "description": "Detailed notes on the identified original clip or event." },
+        "sourceOrigin": { "type": "string", "description": "The likely original source of the media." },
+        "originalContext": { "type": "string", "description": "Detailed notes on the identified original clip." },
         "neuralAncestry": {
           "type": "object",
           "properties": {
-            "modelFamily": { "type": "string", "description": "e.g., Diffusion, GAN, FaceSwap, Vocoder" },
-            "likelyModel": { "type": "string", "description": "e.g., Stable Diffusion XL, ElevenLabs v2" },
+            "modelFamily": { "type": "string" },
+            "likelyModel": { "type": "string" },
             "fingerprintConfidence": { "type": "number" }
           }
         },
@@ -35,19 +35,6 @@
             "headMovementFluidity": { "type": "number" },
             "speechProsody": { "type": "number" },
             "notes": { "type": "string" }
-          }
-        },
-        "highlightedRegions": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "x": { "type": "number" },
-              "y": { "type": "number" },
-              "width": { "type": "number" },
-              "height": { "type": "number" },
-              "reason": { "type": "string" }
-            }
           }
         },
         "suspiciousSegments": {
@@ -65,35 +52,19 @@
       },
       "required": ["timestamp", "mediaType", "aiVerdict"]
     },
-    "LedgerEntry": {
-      "title": "Ledger Entry",
-      "description": "Immutable record of media authenticity on the Neural Ledger.",
-      "type": "object",
-      "properties": {
-        "hash": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["authentic", "synthetic", "unverified"] },
-        "notarizedBy": { "type": "string" },
-        "forensicCaseId": { "type": "string" }
-      },
-      "required": ["hash", "timestamp", "status"]
-    },
-    "DatasetFile": {
-      "title": "Dataset File",
-      "description": "Information about uploaded training datasets.",
+    "ProtectedIdentity": {
+      "title": "Protected Identity",
+      "description": "User's enrolled biometric fingerprint for proactive monitoring.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "fileName": { "type": "string" },
-        "uploadDate": { "type": "string", "format": "date-time" },
-        "size": { "type": "number" },
-        "fileType": { "type": "string" },
-        "status": { "type": "string", "enum": ["queued", "processed", "failed"] },
-        "label": { "type": "string", "enum": ["real", "fake", "mixed", "unlabeled"] },
-        "modelSignature": { "type": "string" },
-        "notes": { "type": "string" }
+        "enrolledAt": { "type": "string", "format": "date-time" },
+        "identityName": { "type": "string" },
+        "biometricType": { "type": "string", "enum": ["face", "voice"] },
+        "neuralFingerprint": { "type": "string", "description": "Mathematical representation of the identity." },
+        "status": { "type": "string", "enum": ["active", "alert", "archived"] }
       },
-      "required": ["fileName", "uploadDate", "size", "label"]
+      "required": ["identityName", "biometricType", "neuralFingerprint"]
     },
     "ViralAlert": {
       "title": "Viral Alert",
@@ -104,10 +75,10 @@
         "timestamp": { "type": "string", "format": "date-time" },
         "platform": { "type": "string", "enum": ["X", "YouTube", "Instagram", "TikTok"] },
         "contentSnippet": { "type": "string" },
-        "viralVelocity": { "type": "number", "description": "Score 0-100 indicating spread speed." },
+        "viralVelocity": { "type": "number" },
         "forensicRisk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
-        "originalSource": { "type": "string" },
-        "status": { "type": "string", "enum": ["monitoring", "verified_fake", "debunked"] }
+        "matchedIdentityId": { "type": "string", "description": "ID of a ProtectedIdentity if a breach is detected." },
+        "status": { "type": "string", "enum": ["monitoring", "verified_fake", "identity_theft"] }
       },
       "required": ["timestamp", "platform", "contentSnippet", "forensicRisk"]
     }
@@ -118,15 +89,11 @@
   "firestore": {
     "/scans/{scanId}": {
       "schema": "ScanResult",
-      "description": "Collection of analyzed media and user feedback."
+      "description": "Collection of analyzed media."
     },
-    "/ledger/{hash}": {
-      "schema": "LedgerEntry",
-      "description": "The 'Blockchain' ledger mapping content hashes to authenticity proofs."
-    },
-    "/datasets/{datasetId}": {
-      "schema": "DatasetFile",
-      "description": "Metadata for uploaded training datasets."
+    "/identities/{identityId}": {
+      "schema": "ProtectedIdentity",
+      "description": "User's enrolled biometric profiles for monitoring."
     },
     "/alerts/{alertId}": {
       "schema": "ViralAlert",
