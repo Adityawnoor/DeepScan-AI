@@ -94,6 +94,22 @@
         "notes": { "type": "string" }
       },
       "required": ["fileName", "uploadDate", "size", "label"]
+    },
+    "ViralAlert": {
+      "title": "Viral Alert",
+      "description": "Real-time monitoring record of a detected deepfake trending on social platforms.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "platform": { "type": "string", "enum": ["X", "YouTube", "Instagram", "TikTok"] },
+        "contentSnippet": { "type": "string" },
+        "viralVelocity": { "type": "number", "description": "Score 0-100 indicating spread speed." },
+        "forensicRisk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "originalSource": { "type": "string" },
+        "status": { "type": "string", "enum": ["monitoring", "verified_fake", "debunked"] }
+      },
+      "required": ["timestamp", "platform", "contentSnippet", "forensicRisk"]
     }
   },
   "auth": {
@@ -111,6 +127,10 @@
     "/datasets/{datasetId}": {
       "schema": "DatasetFile",
       "description": "Metadata for uploaded training datasets."
+    },
+    "/alerts/{alertId}": {
+      "schema": "ViralAlert",
+      "description": "Trending deepfake alerts from social monitoring."
     }
   }
 }

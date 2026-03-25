@@ -12,6 +12,7 @@ import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
 import { AuthenticityShield } from "@/components/AuthenticityShield"
+import { SocialMonitor } from "@/components/SocialMonitor"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -21,7 +22,7 @@ import {
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, Globe,
   ShieldCheck as ShieldIcon,
-  Fingerprint, Eye, Video, Waves
+  Fingerprint, Eye, Video, Waves, Radio
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -41,9 +42,11 @@ export default function DeepScanHome() {
 
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
+  const alertsQuery = React.useMemo(() => db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db])
   
   const { data: scans } = useCollection(scansQuery)
   const { data: datasets } = useCollection(datasetsQuery)
+  const { data: recentAlerts } = useCollection(alertsQuery)
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
@@ -144,6 +147,13 @@ export default function DeepScanHome() {
         })
       }
 
+      if (recentAlerts.length > 0) {
+        context += `\n### VIRAL SENTINEL ALERTS (TRENDING FAKES):\n`
+        recentAlerts.forEach(a => {
+          context += `- VIRAL ALERT: Trending on ${a.platform}. Detail: ${a.contentSnippet}. Known Source: ${a.originalSource}\n`
+        })
+      }
+
       if (localIntelligence) context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
 
       let output
@@ -169,6 +179,8 @@ export default function DeepScanHome() {
         crossModalSync: output.crossModalSync || null,
         highlightedRegions: output.highlightedRegions || null,
         suspiciousSegments: output.suspiciousSegments || null,
+        sourceOrigin: output.sourceOrigin || null,
+        originalContext: output.originalContext || null,
         mediaHash: await calculateMediaHash(dataUri)
       }
 
@@ -250,9 +262,14 @@ export default function DeepScanHome() {
                   {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MicroscopeIcon className="w-5 h-5" />}
                   BEGIN INVESTIGATION
                 </Button>
-                <Button variant="outline" className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest border-2 gap-3 hover:scale-[1.05] transition-all duration-300" onClick={() => setActiveTab("protect")}>
-                  <ShieldIcon className="w-5 h-5 text-primary" /> VACCINATE IDENTITY
-                </Button>
+                <div className="flex gap-4">
+                   <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("protect")}>
+                     <ShieldIcon className="w-5 h-5 text-primary" /> PROTECT
+                   </Button>
+                   <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("sentinel")}>
+                     <Radio className="w-5 h-5 text-primary animate-pulse" /> SENTINEL
+                   </Button>
+                </div>
               </div>
             </div>
           </section>
@@ -262,6 +279,9 @@ export default function DeepScanHome() {
               <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
                 <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Sparkles className="w-3.5 h-3.5" /> ANALYZE
+                </TabsTrigger>
+                <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
+                  <Radio className="w-3.5 h-3.5" /> SENTINEL
                 </TabsTrigger>
                 <TabsTrigger value="protect" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <ShieldIcon className="w-3.5 h-3.5" /> PROTECT
@@ -293,6 +313,12 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="sentinel" className="mt-0">
+                <div className="animate-in fade-in duration-500">
+                   <SocialMonitor />
+                </div>
+              </TabsContent>
+
               <TabsContent value="protect" className="mt-0">
                 <div className="animate-in fade-in duration-500">
                    <AuthenticityShield vaultHandle={localFolderHandle} />
@@ -304,7 +330,7 @@ export default function DeepScanHome() {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousSegments: scan.suspiciousSegments, behavioralBiometrics: scan.behavioralBiometrics }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousSegments: scan.suspiciousSegments, behavioralBiometrics: scan.behavioralBiometrics, sourceOrigin: scan.sourceOrigin, originalContext: scan.originalContext }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>
