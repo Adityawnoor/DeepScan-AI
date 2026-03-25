@@ -3,14 +3,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * DeepScan AI Security Rules - V3.2 (Hybrid Resilience)
+     * DeepScan AI Security Rules - V3.3 (Forensic Resilience)
      *
      * CORE PHILOSOPHY:
-     * Strict User-Ownership for private data, and Authenticated-Access for global intelligence.
-     * All operations require Firebase Authentication.
+     * - Global Intelligence: Shared authenticated access for pattern learning and viral alerts.
+     * - User Privacy: Strict ownership of individual scans and identity profiles.
      */
-
-    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -23,41 +21,44 @@ service cloud.firestore {
     // --- Global Intelligence Collections (Shared Patterns & Sentinel) ---
 
     match /alerts/{alertId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     match /datasets/{datasetId} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
     match /ledger/{hash} {
-      allow read, write: if isSignedIn();
+      allow get, list, create, update, delete: if isSignedIn();
     }
 
-    // --- Workspace Collections (For Prototype Simplicity) ---
-
-    match /scans/{scanId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /identities/{identityId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // --- Hierarchical User Data (Private Settings) ---
+    // --- Hierarchical User Data (Private Settings & Investigations) ---
 
     match /users/{userId} {
+      // User Profile
       match /profile {
         allow get, list, create, update, delete: if isOwner(userId);
       }
       
+      // Personal Forensic Scans (MediaFiles)
       match /mediaFiles/{mediaFileId} {
         allow get, list, create, update, delete: if isOwner(userId);
         
+        // Deepfake Analysis Results
         match /detectionResults/{resultId} {
           allow get, list, create, update, delete: if isOwner(userId);
         }
       }
+
+      // Digital Identity Vault (Backwards compatibility for identities)
+      match /identities/{identityId} {
+        allow get, list, create, update, delete: if isOwner(userId);
+      }
+    }
+
+    // Global Identities (for top-level queries if used)
+    match /identities/{identityId} {
+      allow get, list, create, update, delete: if isSignedIn();
     }
   }
 }

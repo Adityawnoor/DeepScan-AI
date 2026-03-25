@@ -54,7 +54,8 @@ export default function DeepScanHome() {
   }, [auth, user])
 
   // Queries only fire when DB and User session are active
-  const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db, user])
+  // Scans are now correctly scoped to the user's private mediaFiles collection
+  const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "users", user.uid, "mediaFiles"), orderBy("timestamp", "desc"), limit(100)) : null, [db, user])
   const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
   const alertsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db, user])
   
@@ -163,10 +164,13 @@ export default function DeepScanHome() {
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
       if (db && user) {
-        const scanRef = doc(db, "scans", scanId)
+        // Scoping scan to users/{userId}/mediaFiles
+        const scanRef = doc(db, "users", user.uid, "mediaFiles", scanId)
         const scanData = {
+          id: scanId,
           timestamp: new Date().toISOString(),
           mediaType,
+          fileName: `Forensic_Case_${scanId.substring(0, 6)}`,
           fakeCategory: output.fakeCategory || (output.isDeepfake ? "Synthetic" : "Authentic"),
           aiVerdict: output.isDeepfake,
           aiConfidence: output.confidence,
@@ -244,7 +248,7 @@ export default function DeepScanHome() {
   const historyItems = React.useMemo(() => (scans || []).map(s => ({
     id: s.id,
     timestamp: s.timestamp,
-    fileName: "Forensic_Case_" + s.id.substring(0, 6),
+    fileName: s.fileName || "Forensic_Case_" + s.id.substring(0, 6),
     isDeepfake: s.aiVerdict,
     confidence: s.aiConfidence,
     type: s.mediaType
