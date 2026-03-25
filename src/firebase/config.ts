@@ -2,18 +2,17 @@
 /**
  * Firebase configuration object.
  * 
- * CRITICAL FOR LOCALHOST:
- * To ensure your "Neural Knowledge Base" and "Identity Vault" persist when running 
- * on Localhost (npm run dev), follow these steps:
+ * CRITICAL FOR FULL FORENSIC INTELLIGENCE:
+ * To enable the "Sentinel Monitoring Bot" and the "Neural Ledger," you must 
+ * link this workstation to a Firebase Project.
  * 
- * 1. Go to the Firebase Console (https://console.firebase.google.com).
- * 2. Select your DeepScan AI project.
- * 3. Click the Gear Icon (Project Settings) > General.
- * 4. Scroll down to "Your apps" and select the Web App (</> icon).
- * 5. Copy the 'firebaseConfig' object and replace the values below.
+ * STEPS TO CONNECT:
+ * 1. Go to https://console.firebase.google.com
+ * 2. Create a project named "DeepScan AI".
+ * 3. Add a "Web App" to your project.
+ * 4. Copy the 'firebaseConfig' object and replace the placeholder values below.
  * 
- * Once replaced, your Localhost environment will sync with the production 
- * Neural Ledger and Sentinel Monitoring bot.
+ * Once linked, your AI will begin receiving real-time viral deepfake alerts.
  */
 export const firebaseConfig = {
   apiKey: "REPLACE_WITH_YOUR_ACTUAL_API_KEY",

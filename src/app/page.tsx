@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -25,7 +26,7 @@ import {
   ShieldCheck as ShieldIcon,
   Fingerprint, Eye, Video, Waves, Radio,
   Frame, BarChart3, LineChart, Target,
-  BrainCircuit, WifiOff, CloudOff
+  BrainCircuit, WifiOff, CloudOff, Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -54,8 +55,8 @@ export default function DeepScanHome() {
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
   const knowledgeCount = React.useMemo(() => {
-    const datasetCount = datasets.length
-    const verifiedScanCount = scans.filter(s => s.userFeedback !== undefined).length
+    const datasetCount = datasets?.length || 0
+    const verifiedScanCount = scans?.filter(s => s.userFeedback !== undefined).length || 0
     return datasetCount + verifiedScanCount
   }, [datasets, scans])
 
@@ -116,7 +117,7 @@ export default function DeepScanHome() {
     try {
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
       
-      const verifiedScans = scans.filter(s => s.userFeedback !== undefined && s.aiVerdict === true)
+      const verifiedScans = scans?.filter(s => s.userFeedback !== undefined && s.aiVerdict === true) || []
       if (verifiedScans.length > 0) {
         context += `### KNOWN TOOL SIGNATURES (CLOUD BRAIN):\n`
         verifiedScans.slice(0, 10).forEach(s => {
@@ -126,14 +127,14 @@ export default function DeepScanHome() {
         })
       }
       
-      if (datasets.length > 0) {
+      if (datasets?.length > 0) {
         context += `\n### TRAINING DATA SIGNATURES:\n`
         datasets.slice(0, 10).forEach(d => {
           if (d.modelSignature) context += `- SIGNATURE [${d.modelSignature}]: ${d.notes}\n`
         })
       }
 
-      if (recentAlerts.length > 0) {
+      if (recentAlerts?.length > 0) {
         context += `\n### VIRAL SENTINEL ALERTS (TRENDING FAKES):\n`
         recentAlerts.forEach(a => {
           context += `- VIRAL ALERT: Trending on ${a.platform}. Detail: ${a.contentSnippet}. Known Source: ${a.originalSource}\n`
@@ -194,7 +195,7 @@ export default function DeepScanHome() {
   }
 
   const handleSelectItem = (id: string) => {
-    const scan = scans.find(s => s.id === id)
+    const scan = scans?.find(s => s.id === id)
     if (scan) {
       setActiveTab("analyze")
       setCurrentResult({ 
@@ -220,7 +221,7 @@ export default function DeepScanHome() {
     }
   }
 
-  const historyItems = React.useMemo(() => scans.map(s => ({
+  const historyItems = React.useMemo(() => (scans || []).map(s => ({
     id: s.id,
     timestamp: s.timestamp,
     fileName: "Forensic_Case_" + s.id.substring(0, 6),
@@ -262,14 +263,23 @@ export default function DeepScanHome() {
 
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
         {!db && (
-          <div className="mb-8 p-4 bg-destructive/5 border border-destructive/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <CloudOff className="w-5 h-5 text-destructive" />
-            <div className="flex-1">
-              <p className="text-[11px] font-black uppercase tracking-widest text-destructive">Firebase Disconnected / Misconfigured</p>
-              <p className="text-[10px] font-medium text-muted-foreground">The "Global Brain" is currently offline. You are in **Offline Forensic Mode**. Patterns will be mirror-saved only to your local PC Vault.</p>
+          <div className="mb-8 p-6 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+               <Info className="w-6 h-6 text-primary" />
             </div>
-            <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase border-destructive/20 text-destructive hover:bg-destructive/10" onClick={() => window.location.reload()}>
-              Retry Connection
+            <div className="flex-1">
+              <h4 className="text-[12px] font-black uppercase tracking-widest text-primary mb-1">Upgrade to Cloud Intelligence</h4>
+              <p className="text-[11px] font-medium text-muted-foreground leading-relaxed">
+                You are currently in **Offline Forensic Mode**. To enable the **Sentinel Monitoring Bot** (viral deepfake alerts) and the **Neural Ledger** (blockchain notarization), please link your Firebase Project in the configuration.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-10 px-6 text-[10px] font-black uppercase border-primary/30 text-primary hover:bg-primary/10" 
+              onClick={() => setActiveTab("datasets")}
+            >
+              Connect Now
             </Button>
           </div>
         )}
