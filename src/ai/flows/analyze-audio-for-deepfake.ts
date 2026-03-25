@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for analyzing audio to detect deepfakes using rhythmic behavior.
@@ -44,17 +45,18 @@ const audioDeepfakeDetectionPrompt = ai.definePrompt({
 
 {{#if learnedContext}}
 ### LEARNED KNOWLEDGE BASE (MANDATORY)
-Incorporate these user-verified observations:
+Incorporate these user-verified observations to identify patterns:
 {{{learnedContext}}}
 {{/if}}
 
 TASK 1: SPEECH RHYTHM (PROSODY)
 Analyze the cadence. Are the pauses natural or "too perfect"?
-Look for micro-stutters or "breathless" sentences.
+Look for micro-stutters or "breathless" sentences characteristic of neural vocoders.
 
 TASK 2: TIMELINE BREAKDOWN (MANDATORY)
-Break the audio into segments. For EACH segment, determine if it is "Real" or "Synthetic".
-Be precise with start and end times. Identify where neural cloning starts and where original voice ends.
+Break the audio into logical segments (e.g., [0-5s], [5-10s]). 
+For EACH segment, determine if it is "Real" or "Synthetic".
+Be precise with start and end times. Identify exactly where synthetic cloning begins.
 
 Audio to analyze: {{media url=audioDataUri}}`,
 });

@@ -40,12 +40,14 @@
             }
           }
         },
-        "suspiciousTimestamps": {
+        "suspiciousSegments": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "timestamp": { "type": "number" },
+              "startTime": { "type": "number" },
+              "endTime": { "type": "number" },
+              "isSynthetic": { "type": "boolean" },
               "description": { "type": "string" }
             }
           }
