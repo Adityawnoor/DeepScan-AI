@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -85,7 +86,7 @@ export default function DeepScanHome() {
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // Step 1: Build learnedContext for AI Training loop
+      // Step 1: Build learnedContext for AI Training loop (The Intelligence Recovery)
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
       
       const verifiedScans = scans?.filter(s => s.userFeedback !== undefined && s.aiVerdict === true) || []
@@ -98,21 +99,21 @@ export default function DeepScanHome() {
         })
       }
       
-      if (datasets?.length > 0) {
+      if (datasets && datasets.length > 0) {
         context += `\n### TRAINING DATA SIGNATURES:\n`
         datasets.slice(0, 10).forEach(d => {
           if (d.modelSignature) context += `- SIGNATURE [${d.modelSignature}]: ${d.notes}\n`
         })
       }
 
-      if (recentAlerts?.length > 0) {
+      if (recentAlerts && recentAlerts.length > 0) {
         context += `\n### VIRAL SENTINEL ALERTS (TRENDING FAKES):\n`
         recentAlerts.forEach(a => {
           context += `- VIRAL ALERT: Trending on ${a.platform}. Detail: ${a.contentSnippet}. Known Source: ${a.originalSource}\n`
         })
       }
 
-      // Incorporate local PC intelligence if available
+      // Incorporate local PC intelligence if available from vault mirror
       if (localIntelligence) {
         context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
       }
@@ -142,7 +143,7 @@ export default function DeepScanHome() {
           aiVerdict: output.isDeepfake,
           aiConfidence: output.confidence,
           explanation: output.explanation,
-          mediaUrl: "Protected in Vault", // In a real app, this would be a Storage URL
+          mediaUrl: "Protected in Vault", 
           neuralAncestry: output.neuralAncestry || null,
           biometricVitals: output.biometricVitals || null,
           behavioralBiometrics: output.behavioralBiometrics || null,
@@ -160,7 +161,7 @@ export default function DeepScanHome() {
         })
       }
       
-      // Step 3: Mirror to PC Vault automatically if connected
+      // Step 3: Mirror to PC Vault automatically if connected (Hardware Persistence)
       if (localFolderHandle) {
         const fileName = `SCAN_${scanId.substring(0, 8)}.json`
         const fileHandle = await localFolderHandle.getFileHandle(fileName, { create: true })
