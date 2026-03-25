@@ -9,7 +9,7 @@ import {
   Gavel,
   ShieldX, Activity, Globe,
   Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History, Frame, Printer, ShieldAlert,
-  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock, BrainCircuit
+  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock, BrainCircuit, UserCheck, Check, X
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -154,7 +154,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'update', requestResourceData: updateData }))
     })
     
-    toast({ title: "Audit Logged", description: "This lesson is now part of the global intelligence base." })
+    toast({ 
+      title: isCorrect ? "Accuracy Confirmed" : "Error Logged", 
+      description: isCorrect ? "Human verification synced to Cloud Brain." : "Forensic error recorded for pattern re-training." 
+    })
   }
 
   const exportEvidence = async () => {
@@ -481,19 +484,33 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                          <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">Compliant with IEEE 7011 Standards</p>
                       </div>
                    </div>
-                  <Textarea 
-                    placeholder="Enter manual forensic observations for legal exhibit..."
-                    className="text-xs bg-background/50 rounded-xl min-h-[100px]"
-                    value={userComment}
-                    onChange={(e) => setUserComment(e.target.value)}
-                  />
-                  <div className="flex gap-4">
-                    <Button variant="outline" className="flex-1 font-black uppercase text-[10px]" onClick={() => handleFeedback(true)}>
-                       Verify Verdict
-                    </Button>
-                    <Button variant="outline" className="flex-1 font-black uppercase text-[10px] text-destructive" onClick={() => handleFeedback(false)}>
-                       Dispute Verdict
-                    </Button>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Human Audit Notes</Label>
+                    <Textarea 
+                      placeholder="Enter manual forensic observations for legal exhibit..."
+                      className="text-xs bg-background/50 rounded-xl min-h-[100px]"
+                      value={userComment}
+                      onChange={(e) => setUserComment(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Human Verification Audit</Label>
+                    <div className="flex gap-4">
+                      <Button 
+                        variant={feedbackSubmitted === true ? "default" : "outline"} 
+                        className={cn("flex-1 font-black uppercase text-[10px] gap-2 h-12 rounded-xl", feedbackSubmitted === true && "bg-green-600 text-white")} 
+                        onClick={() => handleFeedback(true)}
+                      >
+                        <Check className="w-4 h-4" /> Correct Verdict
+                      </Button>
+                      <Button 
+                        variant={feedbackSubmitted === false ? "destructive" : "outline"} 
+                        className="flex-1 font-black uppercase text-[10px] gap-2 h-12 rounded-xl" 
+                        onClick={() => handleFeedback(false)}
+                      >
+                        <X className="w-4 h-4" /> Incorrect Verdict
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </TabsContent>

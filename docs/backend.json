@@ -61,11 +61,11 @@
         "id": { "type": "string" },
         "enrolledAt": { "type": "string", "format": "date-time" },
         "identityName": { "type": "string" },
-        "biometricType": { "type": "string", "enum": ["face", "voice"] },
-        "neuralFingerprint": { "type": "string", "description": "Mathematical representation of the identity." },
+        "faceSignatures": { "type": "array", "items": { "type": "string" }, "description": "Neural fingerprints of the 3 enrolled photos." },
+        "voiceSignature": { "type": "string", "description": "Neural fingerprint of the enrolled audio." },
         "status": { "type": "string", "enum": ["active", "alert", "archived"] }
       },
-      "required": ["identityName", "biometricType", "neuralFingerprint"]
+      "required": ["identityName", "faceSignatures", "voiceSignature"]
     },
     "ViralAlert": {
       "title": "Viral Alert",
