@@ -20,7 +20,7 @@ import {
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
   Cpu, Fingerprint, Layers, CheckCircle2, HardDrive, Globe,
-  ShieldAlert, Lock, Waves, Eye
+  ShieldAlert, Lock, Waves, Eye, Video
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
