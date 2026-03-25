@@ -54,7 +54,7 @@ export default function DeepScanHome() {
     }
   }, [auth, user])
 
-  // Queries only fire when DB and User session are active
+  // Hybrid Queries: Pulling Neural Memory from Cloud
   const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "users", user.uid, "mediaFiles"), orderBy("timestamp", "desc"), limit(100)) : null, [db, user])
   const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
   const alertsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db, user])
@@ -83,10 +83,11 @@ export default function DeepScanHome() {
     }
   }
 
+  // HYBRID NEURAL SYSTEM: runAnalysis
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // Step 1: Build learnedContext for AI Training loop (The Intelligence Recovery)
+      // Step 1: Context Injection (The Neural Memory Sync)
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
       
       const verifiedScans = scans?.filter(s => s.userFeedback !== undefined && s.aiVerdict === true) || []
@@ -113,11 +114,7 @@ export default function DeepScanHome() {
         })
       }
 
-      // Incorporate local PC intelligence if available from vault mirror
-      if (localIntelligence) {
-        context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
-      }
-
+      // Step 2: AI Execution with Context
       let output
       if (dataUri.startsWith('data:image/')) {
         output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
@@ -131,7 +128,7 @@ export default function DeepScanHome() {
       const mediaType = dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image'
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
-      // Step 2: Persist investigation to Cloud Hub (Firestore)
+      // Step 3: Dual Persistence Loop (Cloud + PC)
       if (db && user) {
         const scanRef = doc(db, "users", user.uid, "mediaFiles", scanId)
         const scanData = {
@@ -161,7 +158,7 @@ export default function DeepScanHome() {
         })
       }
       
-      // Step 3: Mirror to PC Vault automatically if connected (Hardware Persistence)
+      // Automatic PC Vault Sync
       if (localFolderHandle) {
         const fileName = `SCAN_${scanId.substring(0, 8)}.json`
         const fileHandle = await localFolderHandle.getFileHandle(fileName, { create: true })
@@ -170,7 +167,7 @@ export default function DeepScanHome() {
           id: scanId,
           output,
           timestamp: new Date().toISOString(),
-          source: "Cloud Mirrored"
+          source: "Neural Mirror"
         }, null, 2))
         await writable.close()
         toast({ title: "PC Vault Sync", description: "Forensic record mirrored to your physical database." })
@@ -178,7 +175,7 @@ export default function DeepScanHome() {
 
       toast({ 
         title: "Analysis Complete", 
-        description: isCloudActive ? "Intelligence synced to Neural Ledger & Vault." : "Forensic result generated (Offline Vault Mode)." 
+        description: isCloudActive ? "Intelligence synced to Neural Ledger & Vault." : "Forensic result generated (Physical Vault Mode)." 
       })
 
     } catch (e: any) {
@@ -241,7 +238,7 @@ export default function DeepScanHome() {
                 ) : (
                   <>
                     <WifiOff className="w-3.5 h-3.5 text-destructive" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">MODE: <span className="text-destructive">OFFLINE VAULT</span></span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">MODE: <span className="text-destructive">PHYSICAL VAULT</span></span>
                   </>
                 )}
               </div>
@@ -262,19 +259,11 @@ export default function DeepScanHome() {
                <Info className="w-6 h-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h4 className="text-[12px] font-black uppercase tracking-widest text-primary mb-1">Hybrid Forensic Mode Active</h4>
+              <h4 className="text-[12px] font-black uppercase tracking-widest text-primary mb-1">Hardware Forensic Isolation</h4>
               <p className="text-[11px] font-medium text-muted-foreground leading-relaxed">
-                You are currently in **Offline Forensic Mode**. Investigations are powered by local AI and stored in your **PC Vault**. Connect to the cloud to enable **Global Sentinel Monitoring** and **Blockchain Notarization**.
+                You are currently in **Physical Vault Mode**. Investigations are powered by local AI and archived to your **PC Vault**. Connect to the Cloud to enable **Neural Ledger Notarization** and **Sentinel Tracking**.
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-10 px-6 text-[10px] font-black uppercase border-primary/30 text-primary hover:bg-primary/10" 
-              onClick={() => setActiveTab("datasets")}
-            >
-              Configure Cloud
-            </Button>
           </div>
         )}
 
@@ -283,7 +272,7 @@ export default function DeepScanHome() {
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
-                  <Activity className="w-3.5 h-3.5" /> NEURAL SYNERGY ENGINE
+                  <Activity className="w-3.5 h-3.5" /> HYBRID NEURAL SYSTEM
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
                   THE AI <span className="text-primary italic">GROWS.</span>

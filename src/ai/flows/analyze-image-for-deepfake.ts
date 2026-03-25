@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements "The Forensic Singularity Engine" for image analysis with Provenance Trace.
@@ -12,7 +13,7 @@ const AnalyzeImageForDeepfakeInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe("The image to analyze as a data URI."),
-  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context derived from previous investigations.'),
+  learnedContext: z.string().optional().describe('MANDATORY Neural Memory context derived from previous investigations and Pattern Hub signatures.'),
 });
 
 const AnalyzeImageForDeepfakeOutputSchema = z.object({
@@ -48,7 +49,7 @@ const forensicSingularityImage = ai.definePrompt({
   prompt: `You are the Forensic Singularity Engine. 
 
   ### NEURAL MEMORY (CONTEXT)
-  Use this context from previous cases to identify recurring tool signatures and artifacts:
+  Utilize this historical intelligence to identify recurring tool signatures, known artifacts, and previously verified deepfake patterns:
   {{{learnedContext}}}
 
   TASK 1: PROVENANCE TRACE & CATEGORIZATION
@@ -58,13 +59,13 @@ const forensicSingularityImage = ai.definePrompt({
   - Style Transfer: Applying an artistic or neural filter to a real photo.
   - Attribute Edit: Modifying specific features (age, hair, expression) while keeping identity.
 
-  Analyze the image to identify if it originates from a known event, person, or public template. 
+  Analyze the image to identify if it originates from a known event, person, or public template based on the Neural Memory.
 
   TASK 2: NEURAL ORIGIN TRACEBACK
-  Identify the specific generative model signature (Diffusion, GAN, etc.).
+  Identify the specific generative model signature (Diffusion, GAN, etc.). Use the fingerprints provided in the context.
 
   TASK 3: BIOMETRIC PULSE EXTRACTION
-  Check skin textures for pulse signals (rPPG).
+  Check skin textures for pulse signals (rPPG). Synthetic skin often lacks this signal.
 
   TASK 4: EXPLAINABLE AI MAPPING
   Highlight suspicious regions using percentage coordinates.
