@@ -9,7 +9,7 @@ import {
   Gavel,
   ShieldX, Activity, Globe,
   Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History, Frame, Printer, ShieldAlert,
-  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock, BrainCircuit, UserCheck, Check, X
+  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock, BrainCircuit, UserCheck, Check, X, Loader2
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useFirestore } from "@/firebase"
+import { useFirestore, useUser } from "@/firebase"
 import { doc, updateDoc, setDoc, getDoc } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -36,6 +36,7 @@ interface AnalysisResultProps {
 export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandle }: AnalysisResultProps) {
   const { toast } = useToast()
   const db = useFirestore()
+  const { user } = useUser()
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
   const [userComment, setUserComment] = React.useState("")
   const [activeHighlight, setActiveHighlight] = React.useState<number | null>(null)
@@ -77,7 +78,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   }, [checkLedger])
 
   const notarizeOnBlockchain = async () => {
-    if (!db) return
+    if (!db || !user) return
     setIsNotarizing(true)
     try {
       const hash = await calculateMediaHash(mediaUrl)
@@ -97,7 +98,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
       await setDoc(ledgerRef, ledgerEntry)
       
-      const scanRef = doc(db, "scans", scanId)
+      const scanRef = doc(db, "users", user.uid, "mediaFiles", scanId)
       await updateDoc(scanRef, {
         mediaHash: hash,
         blockchainTxId: txId
@@ -140,10 +141,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   }
 
   const handleFeedback = (isCorrect: boolean) => {
-    if (!db) return
+    if (!db || !user) return
     setFeedbackSubmitted(isCorrect)
     
-    const scanRef = doc(db, "scans", scanId)
+    const scanRef = doc(db, "users", user.uid, "mediaFiles", scanId)
     const updateData = {
       userFeedback: isCorrect ? isFake : !isFake,
       isCorrect,
@@ -155,7 +156,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
     })
     
     toast({ 
-      title: isCorrect ? "Accuracy Confirmed" : "Error Logged", 
+      title: "Accuracy Sync", 
       description: isCorrect ? "Human verification synced to Cloud Brain." : "Forensic error recorded for pattern re-training." 
     })
   }

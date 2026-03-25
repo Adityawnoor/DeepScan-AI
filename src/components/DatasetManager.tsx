@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -19,7 +20,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
 import { collection, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -33,14 +34,15 @@ interface DatasetManagerProps {
 export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: DatasetManagerProps) {
   const { toast } = useToast()
   const db = useFirestore()
+  const { user } = useUser()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
   const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
   const [modelSignature, setModelSignature] = React.useState<string>("")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const datasetsQuery = useMemoFirebase(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
-  const scansQuery = useMemoFirebase(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc")) : null, [db])
+  const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
+  const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "users", user.uid, "mediaFiles"), orderBy("timestamp", "desc")) : null, [db, user])
   
   const { data: datasets } = useCollection(datasetsQuery)
   const { data: scans } = useCollection(scansQuery)
@@ -125,7 +127,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   }
 
   const handleManualIngestion = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!db) return
+    if (!db || !user) return
     const file = e.target.files?.[0]
     if (!file || !datasetNotes.trim()) {
       toast({ variant: "destructive", title: "Missing Data", description: "Forensic notes and pattern sample required." })

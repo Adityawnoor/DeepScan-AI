@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -15,13 +16,14 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
 import { collection, query, orderBy, limit } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
 export function ModelEvolutionTracker() {
   const db = useFirestore()
-  const scansQuery = useMemoFirebase(() => db ? query(collection(db, "scans"), orderBy("timestamp", "asc")) : null, [db])
+  const { user } = useUser()
+  const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "users", user.uid, "mediaFiles"), orderBy("timestamp", "asc")) : null, [db, user])
   const { data: scans } = useCollection(scansQuery)
 
   const evolutionData = React.useMemo(() => {
