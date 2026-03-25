@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -154,7 +153,7 @@ export default function DeepScanHome() {
         behavioralBiometrics: output.behavioralBiometrics || null,
         crossModalSync: output.crossModalSync || null,
         highlightedRegions: output.highlightedRegions || null,
-        suspiciousTimestamps: output.suspiciousTimestamps || null,
+        suspiciousSegments: output.suspiciousSegments || null,
         mediaHash: await calculateMediaHash(dataUri)
       }
 
@@ -290,7 +289,7 @@ export default function DeepScanHome() {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousTimestamps: scan.suspiciousTimestamps, behavioralBiometrics: scan.behavioralBiometrics }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousSegments: scan.suspiciousSegments, behavioralBiometrics: scan.behavioralBiometrics }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>

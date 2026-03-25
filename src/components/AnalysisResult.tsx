@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -9,7 +8,7 @@ import {
   Map as MapIcon, Gavel,
   ShieldX, Copy, Activity, Cpu, Layers, MessageSquare,
   Database, AlertCircle, Scan, Link, Globe, Shield,
-  Waves, Zap, Eye, Move
+  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -174,6 +173,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         biometrics: result.biometricVitals,
         crossModal: result.crossModalSync,
         behavioral: result.behavioralBiometrics,
+        timeline: result.suspiciousSegments,
         humanVerification: feedbackSubmitted,
         userComment
       }
@@ -222,10 +222,10 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
               <Progress value={confidence} className={cn("h-4 rounded-xl bg-muted", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
             </div>
 
-            <Tabs defaultValue="why" className="w-full">
+            <Tabs defaultValue="timeline" className="w-full">
               <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-xl h-11 border">
-                <TabsTrigger value="why" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <Info className="w-3.5 h-3.5" /> Why?
+                <TabsTrigger value="timeline" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <Clock className="w-3.5 h-3.5" /> Timeline
                 </TabsTrigger>
                 <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <Activity className="w-3.5 h-3.5" /> Behavior
@@ -241,56 +241,68 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="why" className="pt-6 space-y-4">
+              <TabsContent value="timeline" className="pt-6 space-y-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Scan className="w-4 h-4 text-primary" />
-                    <h3 className="text-sm font-black uppercase tracking-tighter">FORENSIC BREAKDOWN</h3>
+                    <Clock className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-black uppercase tracking-tighter">FORENSIC TIMELINE</h3>
                   </div>
                   
-                  {isFake ? (
-                    <div className="space-y-3">
-                      {result.highlightedRegions?.map((region: any, i: number) => (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "p-3 border rounded-xl bg-destructive/5 cursor-pointer transition-all hover:bg-destructive/10",
-                            activeHighlight === i ? "border-destructive ring-1 ring-destructive" : "border-destructive/20"
-                          )}
-                          onMouseEnter={() => setActiveHighlight(i)}
-                          onMouseLeave={() => setActiveHighlight(null)}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                            <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Anomaly #{i+1}</span>
+                  <div className="space-y-3">
+                    {result.suspiciousSegments?.length > 0 ? (
+                      result.suspiciousSegments.map((segment: any, i: number) => (
+                        <div key={i} className={cn(
+                          "p-4 border rounded-xl flex items-center justify-between transition-all",
+                          segment.isSynthetic ? "bg-destructive/5 border-destructive/20" : "bg-green-500/5 border-green-500/20"
+                        )}>
+                          <div className="flex items-center gap-4">
+                            <div className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center",
+                              segment.isSynthetic ? "bg-destructive/10" : "bg-green-500/10"
+                            )}>
+                              {segment.isSynthetic ? <AlertTriangle className="w-5 h-5 text-destructive" /> : <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-[11px] font-black uppercase tracking-widest text-foreground">
+                                [{segment.startTime.toFixed(2)}s – {segment.endTime.toFixed(2)}s]
+                              </p>
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">{segment.description}</p>
+                            </div>
                           </div>
-                          <p className="text-xs font-bold text-foreground/90">{region.reason}</p>
+                          <Badge variant={segment.isSynthetic ? "destructive" : "outline"} className={cn("uppercase text-[8px] font-black tracking-widest px-2 py-0.5", !segment.isSynthetic && "text-green-600 border-green-200 bg-green-50")}>
+                            {segment.isSynthetic ? "SYNTHETIC" : "REAL"}
+                          </Badge>
                         </div>
-                      ))}
-                      {result.suspiciousTimestamps?.map((ts: any, i: number) => (
-                        <div key={i} className="p-3 border border-destructive/20 rounded-xl bg-destructive/5">
-                           <div className="flex items-center gap-2 mb-1">
-                            <Video className="w-3.5 h-3.5 text-destructive" />
-                            <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Temporal Glitch @ {ts.timestamp}s</span>
-                          </div>
-                          <p className="text-xs font-bold text-foreground/90">{ts.description}</p>
+                      ))
+                    ) : (
+                      <div className="p-4 border rounded-xl bg-muted/10 space-y-2">
+                         <div className="flex items-center gap-2">
+                          <Scan className="w-4 h-4 text-primary" />
+                          <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Temporal Analysis Breakdown</span>
                         </div>
-                      ))}
-                      {(!result.highlightedRegions?.length && !result.suspiciousTimestamps?.length) && (
-                        <p className="text-xs font-medium leading-relaxed text-foreground/80 p-4 border rounded-xl bg-muted/10">
-                          {result.explanation}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="p-4 border border-green-500/20 rounded-xl bg-green-500/5 space-y-2">
-                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-green-500" />
-                        <span className="text-[10px] font-black uppercase text-green-600 tracking-widest">Passed Authenticity Scan</span>
+                        <p className="text-xs font-medium text-foreground/80">{result.explanation}</p>
                       </div>
-                      <p className="text-xs font-medium text-foreground/80">{result.explanation}</p>
-                    </div>
-                  )}
+                    )}
+
+                    {/* Image Highlight support strictly preserved */}
+                    {mediaType === 'image' && result.highlightedRegions?.map((region: any, i: number) => (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "p-3 border rounded-xl bg-destructive/5 cursor-pointer transition-all hover:bg-destructive/10",
+                          activeHighlight === i ? "border-destructive ring-1 ring-destructive" : "border-destructive/20"
+                        )}
+                        onMouseEnter={() => setActiveHighlight(i)}
+                        onMouseLeave={() => setActiveHighlight(null)}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                          <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Artifact @ Region #{i+1}</span>
+                        </div>
+                        <p className="text-xs font-bold text-foreground/90">{region.reason}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </TabsContent>
 

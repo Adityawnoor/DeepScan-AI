@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file implements "Temporal Neural Synergy" for video analysis with Behavior-Based Detection.
@@ -34,9 +33,11 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
     shimmeringScore: z.number().describe("Level of 'ghosting' or pixel shimmering detected between frames."),
     identityConsistency: z.number().describe("How well the face maintains identity across temporal shifts."),
   }),
-  suspiciousTimestamps: z.array(z.object({
-    timestamp: z.number().describe('Timestamp in seconds.'),
-    description: z.string().describe("Reason for anomaly (e.g., 'Blink frequency unnatural', 'Face warping', 'Sync lag')."),
+  suspiciousSegments: z.array(z.object({
+    startTime: z.number().describe('Start time in seconds.'),
+    endTime: z.number().describe('End time in seconds.'),
+    isSynthetic: z.boolean().describe('Whether this specific segment is synthetic or real.'),
+    description: z.string().describe("Reason for anomaly or confirmation of authenticity."),
   })).optional(),
 });
 
@@ -55,17 +56,16 @@ const temporalSynergyEngine = ai.definePrompt({
   TASK 1: BEHAVIOR-BASED DETECTION
   Analyze eye blinking patterns. Are they too rare (The Stare Artifact) or perfectly periodic?
   Check head movement for micro-jitters or "bobble-head" effects during turns.
-  Does the bone structure align with movement?
 
   TASK 2: CROSS-MODAL SYNCHRONIZATION (THE "SYNC GHOST")
   Analyze the audio track against the speaker's lip movements. 
-  Look for:
-  - Latency: Is the audio arriving 2-3 frames before the viseme?
-  - Phoneme Mismatch: Does an 'M' sound occur while the lips are open?
-  - Voice Fingerprint: Does the vocal texture have neural vocoder artifacts?
 
   TASK 3: TEMPORAL COHERENCE
   Identify "Neural Shimmer" - pixel-level inconsistencies during head turns.
+
+  TASK 4: TIMELINE BREAKDOWN (MANDATORY)
+  Break the video into logical segments. For EACH segment, determine if it is "Real" or "Synthetic".
+  Be precise with start and end times. Identify the exact moment a face-swap kicks in or an audio dub occurs.
 
   Video: {{media url=videoDataUri}}`,
 });
