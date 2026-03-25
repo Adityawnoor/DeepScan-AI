@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -12,6 +13,7 @@ import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistor
 import { DatasetManager } from "@/components/DatasetManager"
 import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { SocialMonitor } from "@/components/SocialMonitor"
+import { ModelEvolutionTracker } from "@/components/ModelEvolutionTracker"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -22,7 +24,7 @@ import {
   Network, Loader2, Globe,
   ShieldCheck as ShieldIcon,
   Fingerprint, Eye, Video, Waves, Radio,
-  Frame
+  Frame, BarChart3, LineChart
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -49,26 +51,6 @@ export default function DeepScanHome() {
   const { data: recentAlerts } = useCollection(alertsQuery)
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
-
-  const readLocalIntelligence = async (handle: FileSystemDirectoryHandle) => {
-    let context = ""
-    try {
-      for await (const entry of (handle as any).values()) {
-        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-          const file = await entry.getFile()
-          const text = await file.text()
-          try {
-            const report = JSON.parse(text)
-            if (report.verdict) {
-              const signature = report.neuralDNA ? ` (Signature: ${report.neuralDNA.likelyModel})` : ""
-              context += `[LOCAL VAULT]: Case ${entry.name} verified as ${report.verdict}${signature}. Audit Notes: ${report.userComment || 'None'}\n`
-            }
-          } catch (e) {}
-        }
-      }
-      setLocalIntelligence(context)
-    } catch (e) {}
-  }
 
   const knowledgeCount = React.useMemo(() => {
     const datasetCount = datasets.length
@@ -268,8 +250,8 @@ export default function DeepScanHome() {
                    <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("protect")}>
                      <ShieldIcon className="w-5 h-5 text-primary" /> PROTECT
                    </Button>
-                   <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("sentinel")}>
-                     <Radio className="w-5 h-5 text-primary animate-pulse" /> SENTINEL
+                   <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("evolution")}>
+                     <BarChart3 className="w-5 h-5 text-primary" /> EVOLUTION
                    </Button>
                 </div>
               </div>
@@ -278,9 +260,12 @@ export default function DeepScanHome() {
 
           <div ref={workstationRef} className="space-y-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
+              <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
                 <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Sparkles className="w-3.5 h-3.5" /> ANALYZE
+                </TabsTrigger>
+                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
+                  <LineChart className="w-3.5 h-3.5" /> EVOLUTION
                 </TabsTrigger>
                 <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Radio className="w-3.5 h-3.5" /> SENTINEL
@@ -312,6 +297,12 @@ export default function DeepScanHome() {
                       </div>
                     )}
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="evolution" className="mt-0">
+                <div className="animate-in fade-in duration-500">
+                   <ModelEvolutionTracker />
                 </div>
               </TabsContent>
 
