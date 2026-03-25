@@ -11,6 +11,7 @@ import { MediaUpload } from "@/components/MediaUpload"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { DetectionHistory, type HistoryItem } from "@/components/DetectionHistory"
 import { DatasetManager } from "@/components/DatasetManager"
+import { AuthenticityShield } from "@/components/AuthenticityShield"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -19,7 +20,8 @@ import {
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
-  Cpu, Fingerprint, Layers, CheckCircle2, HardDrive, Globe
+  Cpu, Fingerprint, Layers, CheckCircle2, HardDrive, Globe,
+  ShieldAlert, Lock
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -54,6 +56,10 @@ export default function DeepScanHome() {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
       dbRequest.onsuccess = () => {
         const idb = dbRequest.result
+        if (!idb.objectStoreNames.contains("vaultStore")) {
+          // Store might not exist yet
+          return
+        }
         const transaction = idb.transaction("vaultStore", "readonly")
         const store = transaction.objectStore("vaultStore")
         const getRequest = store.get("localFolderHandle")
@@ -65,6 +71,12 @@ export default function DeepScanHome() {
             setVaultPermissionStatus(permission)
             if (permission === 'granted') readLocalIntelligence(handle)
           }
+        }
+      }
+      dbRequest.onupgradeneeded = () => {
+        const idb = dbRequest.result
+        if (!idb.objectStoreNames.contains("vaultStore")) {
+          idb.createObjectStore("vaultStore")
         }
       }
     } catch (e) {}
@@ -178,6 +190,8 @@ export default function DeepScanHome() {
         mediaUrl: "Protected in Vault",
         neuralAncestry: output.neuralAncestry || null,
         biometricVitals: output.biometricVitals || null,
+        highlightedRegions: output.highlightedRegions || null,
+        suspiciousTimestamps: output.suspiciousTimestamps || null,
         mediaHash: await calculateMediaHash(dataUri)
       }
 
@@ -230,10 +244,10 @@ export default function DeepScanHome() {
                   <Activity className="w-3.5 h-3.5" /> ADVANCED NEURAL FORENSICS
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
-                  AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
+                  STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  DeepScan utilizes the **Neural Ledger Protocol** to notarize media fingerprints on an immutable forensic chain. Stop the AI ghost before it spreads.
+                  DeepScan utilizes the **Neural Ledger Protocol** and **Adversarial Identity Vaccination** to notarize and protect your media. Investigate the unseen.
                 </p>
                 <div className="flex gap-4 pt-4">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl">
@@ -244,7 +258,7 @@ export default function DeepScanHome() {
               <div className="w-full lg:w-auto flex flex-col gap-4">
                 <Button 
                   className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest volumetric-shadow bg-primary text-white gap-3 hover:scale-[1.05] transition-all duration-300"
-                  onClick={() => workstationRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  onClick={() => { setActiveTab("analyze"); workstationRef.current?.scrollIntoView({ behavior: "smooth" }); }}
                   disabled={isAnalyzing}
                 >
                   {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MicroscopeIcon className="w-5 h-5" />}
@@ -262,6 +276,9 @@ export default function DeepScanHome() {
               <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8">
                 <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Sparkles className="w-3.5 h-3.5" /> ANALYZE
+                </TabsTrigger>
+                <TabsTrigger value="protect" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
+                  <ShieldIcon className="w-3.5 h-3.5" /> PROTECT
                 </TabsTrigger>
                 <TabsTrigger value="history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Clock className="w-3.5 h-3.5" /> HISTORY
@@ -290,12 +307,18 @@ export default function DeepScanHome() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="protect" className="mt-0">
+                <div className="animate-in fade-in duration-500">
+                   <AuthenticityShield vaultHandle={localFolderHandle} />
+                </div>
+              </TabsContent>
+
               <TabsContent value="history" className="mt-0">
                 <DetectionHistory items={historyItems} onClear={() => {}} onSelectItem={(id) => {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, highlightedRegions: scan.highlightedRegions, suspiciousTimestamps: scan.suspiciousTimestamps }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>
@@ -318,7 +341,7 @@ export default function DeepScanHome() {
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
             <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Neural Ledger</a>
+            <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">V3.1.0 FORENSIC ENGINE ACTIVE</div>
         </div>
