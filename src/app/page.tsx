@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -50,7 +49,6 @@ export default function DeepScanHome() {
   const [activeTab, setActiveTab] = React.useState("analyze")
   
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
-  const [localIntelligence, setLocalIntelligence] = React.useState<string>("")
 
   // Auto-authentication for Neural Ledger access
   React.useEffect(() => {

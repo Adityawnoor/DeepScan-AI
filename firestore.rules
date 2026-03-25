@@ -3,11 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * DeepScan AI Security Rules - V3.3 (Forensic Resilience)
-     *
-     * CORE PHILOSOPHY:
-     * - Global Intelligence: Shared authenticated access for pattern learning and viral alerts.
-     * - User Privacy: Strict ownership of individual scans and identity profiles.
+     * DeepScan AI Security Rules - V3.4 (Neural Hub Authorization)
      */
 
     function isSignedIn() {
@@ -18,7 +14,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- Global Intelligence Collections (Shared Patterns & Sentinel) ---
+    // --- Global Intelligence Collections (Shared Learning Hub) ---
 
     match /alerts/{alertId} {
       allow get, list, create, update, delete: if isSignedIn();
@@ -32,7 +28,7 @@ service cloud.firestore {
       allow get, list, create, update, delete: if isSignedIn();
     }
 
-    // --- Hierarchical User Data (Private Settings & Investigations) ---
+    // --- Private Forensic Workspaces ---
 
     match /users/{userId} {
       // User Profile
@@ -40,7 +36,7 @@ service cloud.firestore {
         allow get, list, create, update, delete: if isOwner(userId);
       }
       
-      // Personal Forensic Scans (MediaFiles)
+      // Private Investigative Vault
       match /mediaFiles/{mediaFileId} {
         allow get, list, create, update, delete: if isOwner(userId);
         
@@ -50,13 +46,13 @@ service cloud.firestore {
         }
       }
 
-      // Digital Identity Vault (Backwards compatibility for identities)
+      // Digital Identity Vault
       match /identities/{identityId} {
         allow get, list, create, update, delete: if isOwner(userId);
       }
     }
-
-    // Global Identities (for top-level queries if used)
+    
+    // Global Identities (for sentinel matching)
     match /identities/{identityId} {
       allow get, list, create, update, delete: if isSignedIn();
     }

@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -456,8 +455,8 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">3. Classification</Label>
                 <Select value={trainingLabel} onValueChange={(val: any) => setTrainingLabel(val)}>
-                  <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-12"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-xl">
+                  <SelectTrigger className="rounded-xl font-bold uppercase text-[10px] h-12 border-primary/20 bg-background/50 focus:ring-primary/40"><SelectValue /></SelectTrigger>
+                  <SelectContent className="rounded-xl border-primary/20">
                     <SelectItem value="real" className="text-[10px] font-black uppercase">Authentic</SelectItem>
                     <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Synthetic (Deepfake)</SelectItem>
                   </SelectContent>
