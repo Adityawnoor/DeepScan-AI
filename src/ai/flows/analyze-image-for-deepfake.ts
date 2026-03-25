@@ -12,7 +12,7 @@ const AnalyzeImageForDeepfakeInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe("The image to analyze as a data URI."),
-  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context.'),
+  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context derived from previous investigations.'),
 });
 
 const AnalyzeImageForDeepfakeOutputSchema = z.object({
@@ -46,6 +46,10 @@ const forensicSingularityImage = ai.definePrompt({
   input: { schema: AnalyzeImageForDeepfakeInputSchema },
   output: { schema: AnalyzeImageForDeepfakeOutputSchema },
   prompt: `You are the Forensic Singularity Engine. 
+
+  ### NEURAL MEMORY (CONTEXT)
+  Use this context from previous cases to identify recurring tool signatures and artifacts:
+  {{{learnedContext}}}
 
   TASK 1: PROVENANCE TRACE & CATEGORIZATION
   Identify the specific category of manipulation:

@@ -12,7 +12,7 @@ const AnalyzeVideoForDeepfakeInputSchema = z.object({
   videoDataUri: z
     .string()
     .describe("The video to analyze as a data URI."),
-  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context.'),
+  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context derived from historical investigations.'),
 });
 
 const AnalyzeVideoForDeepfakeOutputSchema = z.object({
@@ -51,6 +51,10 @@ const temporalSynergyEngine = ai.definePrompt({
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
   prompt: `You are the Temporal Neural Forensic Analyst.
+
+  ### NEURAL SYNERGY CONTEXT (MEMORY)
+  Analyze using historical patterns and identified signatures:
+  {{{learnedContext}}}
 
   TASK 1: CATEGORIZATION & PROVENANCE
   Categorize the manipulation:

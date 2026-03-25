@@ -54,7 +54,6 @@ export default function DeepScanHome() {
   }, [auth, user])
 
   // Queries only fire when DB and User session are active
-  // Scans are now correctly scoped to the user's private mediaFiles collection
   const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "users", user.uid, "mediaFiles"), orderBy("timestamp", "desc"), limit(100)) : null, [db, user])
   const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
   const alertsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db, user])
@@ -83,49 +82,10 @@ export default function DeepScanHome() {
     }
   }
 
-  const runQuickVerify = async (dataUri: string) => {
-    if (!db || !user) {
-      toast({ variant: "destructive", title: "Authentication Required", description: "Ledger verification requires a valid forensic session." })
-      return
-    }
-    setIsAnalyzing(true)
-    try {
-      const hash = await calculateMediaHash(dataUri)
-      if (!hash) throw new Error("Could not generate media fingerprint.")
-
-      const ledgerRef = doc(db, "ledger", hash)
-      const ledgerSnap = await getDoc(ledgerRef)
-
-      if (ledgerSnap.exists()) {
-        const data = ledgerSnap.data()
-        const scanId = data.forensicCaseId || crypto.randomUUID()
-        
-        setCurrentResult({
-          id: scanId,
-          mediaUrl: dataUri,
-          mediaType: dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image',
-          output: {
-            isDeepfake: data.status === 'synthetic',
-            fakeCategory: data.status === 'synthetic' ? 'Blockchain Verified Synthetic' : 'Authentic',
-            confidence: 100,
-            explanation: `IMMUTABLE PROOF: This file hash (${hash.substring(0, 16)}...) was notarized on ${new Date(data.timestamp).toLocaleString()}. Verdict: ${data.status.toUpperCase()}.`,
-            neuralAncestry: { modelFamily: "On-Chain Notarized", likelyModel: "Authoritative Record", fingerprintConfidence: 100 }
-          }
-        })
-        toast({ title: "Blockchain Verified", description: "This file matches an authoritative immutable record." })
-      } else {
-        toast({ variant: "destructive", title: "Unverified Asset", description: "No blockchain record found for this content hash." })
-      }
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Verification Error", description: e.message })
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
-
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
+      // Step 1: Build learnedContext for AI Training loop
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
       
       const verifiedScans = scans?.filter(s => s.userFeedback !== undefined && s.aiVerdict === true) || []
@@ -152,19 +112,26 @@ export default function DeepScanHome() {
         })
       }
 
-      if (localIntelligence) context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
+      // Incorporate local PC intelligence if available
+      if (localIntelligence) {
+        context += `\n### PHYSICAL VAULT EVIDENCE:\n${localIntelligence}\n`
+      }
 
       let output
-      if (dataUri.startsWith('data:image/')) output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
-      else if (dataUri.startsWith('data:audio/')) output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
-      else if (dataUri.startsWith('data:video/')) output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
+      if (dataUri.startsWith('data:image/')) {
+        output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
+      } else if (dataUri.startsWith('data:audio/')) {
+        output = await analyzeAudioForDeepfake({ audioDataUri: dataUri, learnedContext: context })
+      } else if (dataUri.startsWith('data:video/')) {
+        output = await analyzeVideoForDeepfake({ videoDataUri: dataUri, learnedContext: context })
+      }
 
       const scanId = crypto.randomUUID()
       const mediaType = dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image'
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
+      // Step 2: Persist investigation to Cloud Hub (Firestore)
       if (db && user) {
-        // Scoping scan to users/{userId}/mediaFiles
         const scanRef = doc(db, "users", user.uid, "mediaFiles", scanId)
         const scanData = {
           id: scanId,
@@ -175,7 +142,7 @@ export default function DeepScanHome() {
           aiVerdict: output.isDeepfake,
           aiConfidence: output.confidence,
           explanation: output.explanation,
-          mediaUrl: "Protected in Vault",
+          mediaUrl: "Protected in Vault", // In a real app, this would be a Storage URL
           neuralAncestry: output.neuralAncestry || null,
           biometricVitals: output.biometricVitals || null,
           behavioralBiometrics: output.behavioralBiometrics || null,
@@ -188,28 +155,30 @@ export default function DeepScanHome() {
           userId: user.uid
         }
 
-        setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
+        setDoc(scanRef, scanData).catch(err => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData }))
+        })
       }
       
-      // Mirror to PC Vault automatically if connected
+      // Step 3: Mirror to PC Vault automatically if connected
       if (localFolderHandle) {
         const fileName = `SCAN_${scanId.substring(0, 8)}.json`
         const fileHandle = await localFolderHandle.getFileHandle(fileName, { create: true })
         const writable = await (fileHandle as any).createWritable()
-        await writable.write(JSON.stringify({ id: scanId, output, timestamp: new Date().toISOString() }, null, 2))
+        await writable.write(JSON.stringify({
+          id: scanId,
+          output,
+          timestamp: new Date().toISOString(),
+          source: "Cloud Mirrored"
+        }, null, 2))
         await writable.close()
         toast({ title: "PC Vault Sync", description: "Forensic record mirrored to your physical database." })
       }
 
-      if (output.isDeepfake && (!output.neuralAncestry?.likelyModel || output.neuralAncestry.likelyModel === "Unknown")) {
-        toast({ 
-          variant: "destructive", 
-          title: "NEW DEEPFAKE STYLE DETECTED", 
-          description: "This signature does not match any known families. Committed to Pattern Learning Hub." 
-        })
-      } else {
-        toast({ title: "Analysis Complete", description: db ? "Intelligence synced to Neural Ledger & Vault." : "Forensic result generated (Offline Vault Mode)." })
-      }
+      toast({ 
+        title: "Analysis Complete", 
+        description: isCloudActive ? "Intelligence synced to Neural Ledger & Vault." : "Forensic result generated (Offline Vault Mode)." 
+      })
 
     } catch (e: any) {
       toast({ variant: "destructive", title: "Scan Failed", description: e.message })
@@ -313,21 +282,21 @@ export default function DeepScanHome() {
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
-                  <Activity className="w-3.5 h-3.5" /> MULTI-MODAL FORENSICS
+                  <Activity className="w-3.5 h-3.5" /> NEURAL SYNERGY ENGINE
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
-                  STOP THE <span className="text-primary italic">AI GHOST.</span>
+                  THE AI <span className="text-primary italic">GROWS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  DeepScan utilizes **Temporal Neural Synergy** and **Style Transfer Detection** to identify Face Swapping, Lip Syncing, and AI filters. Investigate the unseen.
+                  DeepScan learns from every case. Every analyzed artifact strengthens the **Neural Memory**, creating an immune system against synthetic misinformation.
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                   {[
-                    { icon: Eye, text: "Ocular Biometrics" },
-                    { icon: Frame, text: "Temporal Synergy" },
-                    { icon: Waves, text: "Prosody Analysis" },
-                    { icon: Fingerprint, text: "Neural Traceback" }
+                    { icon: Eye, text: "Self-Training" },
+                    { icon: Frame, text: "Vault Recovery" },
+                    { icon: Waves, text: "Memory Sync" },
+                    { icon: Fingerprint, text: "Pattern Hub" }
                   ].map((cap, i) => (
                     <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background border shadow-sm border-primary/5">
                       <cap.icon className="w-4 h-4 text-primary" />
@@ -366,7 +335,7 @@ export default function DeepScanHome() {
                 <TabsTrigger value="vault" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Target className="w-3.5 h-3.5" /> VAULT
                 </TabsTrigger>
-                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!isCloudActive}>
+                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <LineChart className="w-3.5 h-3.5" /> EVOLUTION
                 </TabsTrigger>
                 <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!isCloudActive}>
@@ -386,7 +355,7 @@ export default function DeepScanHome() {
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0">
                 <div className="space-y-12">
                   <div className={cn("grid grid-cols-1 gap-8", currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1")}>
-                    <MediaUpload onUpload={runAnalysis} onVerify={runQuickVerify} isAnalyzing={isAnalyzing} />
+                    <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                     {currentResult && (
                       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <AnalysisResult 

@@ -48,27 +48,25 @@ const audioDeepfakeDetectionPrompt = ai.definePrompt({
   output: { schema: AnalyzeAudioForDeepfakeOutputSchema },
   prompt: `You are an elite vocal forensics expert specializing in Behavioral Speech Analysis and Neural Ancestry Traceback.
 
-{{#if learnedContext}}
-### LEARNED KNOWLEDGE BASE (MANDATORY)
-Incorporate these user-verified observations and known tool signatures to identify patterns:
-{{{learnedContext}}}
-{{/if}}
+  ### LEARNED KNOWLEDGE BASE (NEURAL MEMORY)
+  Incorporate these user-verified observations and known tool signatures to identify patterns:
+  {{{learnedContext}}}
 
-TASK 1: NEURAL ANCESTRY TRACEBACK & CATEGORIZATION
-Identify the specific tool used to clone the voice. Categorize the manipulation:
-- Voice Cloning: Cloning a specific person's voice.
-- Text-To-Speech: Generating speech from text using generic models.
-- Audio Conversion: Changing the style or speaker of an existing recording.
+  TASK 1: NEURAL ANCESTRY TRACEBACK & CATEGORIZATION
+  Identify the specific tool used to clone the voice. Categorize the manipulation:
+  - Voice Cloning: Cloning a specific person's voice.
+  - Text-To-Speech: Generating speech from text using generic models.
+  - Audio Conversion: Changing the style or speaker of an existing recording.
 
-TASK 2: SPEECH RHYTHM (PROSODY)
-Analyze the cadence. Are the pauses natural or "too perfect"?
-Look for micro-stutters or "breathless" sentences characteristic of neural vocoders.
+  TASK 2: SPEECH RHYTHM (PROSODY)
+  Analyze the cadence. Are the pauses natural or "too perfect"?
+  Look for micro-stutters or "breathless" sentences characteristic of neural vocoders.
 
-TASK 3: TIMELINE BREAKDOWN (MANDATORY)
-Break the audio into logical segments. For EACH segment, determine if it is "Real" or "Synthetic".
-Be precise with start and end times. Identify exactly where synthetic cloning begins.
+  TASK 3: TIMELINE BREAKDOWN (MANDATORY)
+  Break the audio into logical segments. For EACH segment, determine if it is "Real" or "Synthetic".
+  Be precise with start and end times. Identify exactly where synthetic cloning begins.
 
-Audio to analyze: {{media url=audioDataUri}}`,
+  Audio to analyze: {{media url=audioDataUri}}`,
 });
 
 export async function analyzeAudioForDeepfake(
