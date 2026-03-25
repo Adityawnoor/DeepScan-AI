@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -105,7 +104,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
     }
     setIsSeeding(true)
     try {
-      // 1. Seed Global Patterns
       const patterns = [
         { id: 'p-gan-jitter', title: 'GAN Facial Jitter Signature', model: 'StyleGAN3', desc: 'Identified micro-shifts in ocular alignment during 12fps rendering.' },
         { id: 'p-rvc-vocal', title: 'RVC Vocal Ghosting', model: 'RVC v2', desc: 'Spectral gaps detected in mid-frequency vocal ranges characteristic of voice cloning.' },
@@ -125,7 +123,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
         })
       }
 
-      // 2. Seed Global Alerts
       const alerts = [
         { id: 'a-viral-1', platform: 'X', contentSnippet: 'Viral AI-generated endorsement of unlicensed product.', viralVelocity: 92, forensicRisk: 'critical', originalSource: "Unknown Bot Farm", timestamp: new Date().toISOString(), status: "monitoring" },
         { id: 'a-viral-2', platform: 'YouTube', contentSnippet: 'Deepfake of tech CEO announcing fake airdrop.', viralVelocity: 78, forensicRisk: 'high', originalSource: "Suspected Sora Clone", timestamp: new Date().toISOString(), status: "verified_fake" }
@@ -135,7 +132,6 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
         await setDoc(doc(db, "alerts", a.id), a)
       }
 
-      // 3. Seed Private User History (So they see data in History tab)
       const mockScans = [
         { 
           id: crypto.randomUUID(), 
@@ -267,7 +263,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
         status: "processed",
         isPattern: true
       }
-      setDoc(datasetRef, datasetData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: datasetRef.path, operation: 'create', requestResourceData: datasetData })))
+      await setDoc(datasetRef, datasetData)
       setDatasetNotes("")
       setModelSignature("")
       toast({ title: "Pattern Ingested", description: "Malicious signature learned and persisted." })
