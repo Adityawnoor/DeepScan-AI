@@ -49,6 +49,7 @@ export default function DeepScanHome() {
 
   // Persistence: Restore PC Vault handle from IndexedDB (Layer 3)
   const loadVaultFromMemory = React.useCallback(async () => {
+    if (typeof window === 'undefined') return
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
       dbRequest.onupgradeneeded = () => {
@@ -184,6 +185,7 @@ export default function DeepScanHome() {
   }
 
   const disconnectVault = async () => {
+    if (typeof window === 'undefined') return
     const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
     dbRequest.onsuccess = () => {
       const idb = dbRequest.result
