@@ -19,7 +19,7 @@ import {
   Microscope as MicroscopeIcon,
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
-  Cpu, Fingerprint, Layers, CheckCircle2
+  Cpu, Fingerprint, Layers, CheckCircle2, HardDrive
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -37,6 +37,7 @@ export default function DeepScanHome() {
   // Persistence states for PC Vault (Layer 2 & 3)
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
+  const [localIntelligence, setLocalIntelligence] = React.useState<string>("")
 
   // Real-time Neural Cloud Sync (Layer 1)
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
@@ -47,7 +48,7 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // Persistence: Restore PC Vault handle from IndexedDB (Layer 3)
+  // Persistence: Restore PC Vault handle from IndexedDB
   const loadVaultFromMemory = React.useCallback(async () => {
     if (typeof window === 'undefined') return
     try {
@@ -69,6 +70,9 @@ export default function DeepScanHome() {
             setLocalFolderHandle(handle)
             const permission = await handle.queryPermission({ mode: 'readwrite' })
             setVaultPermissionStatus(permission)
+            if (permission === 'granted') {
+              readLocalIntelligence(handle)
+            }
           }
         }
       }
@@ -76,6 +80,28 @@ export default function DeepScanHome() {
       console.warn("Vault handle could not be retrieved from memory.", e)
     }
   }, [])
+
+  // Read local forensic files to seed the AI "Memory"
+  const readLocalIntelligence = async (handle: FileSystemDirectoryHandle) => {
+    let context = ""
+    try {
+      for await (const entry of (handle as any).values()) {
+        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+          const file = await entry.getFile()
+          const text = await file.text()
+          try {
+            const report = JSON.parse(text)
+            if (report.verdict) {
+              context += `[LOCAL PHYSICAL EVIDENCE]: Case ${entry.name} verified as ${report.verdict}. Notes: ${report.userComment || 'None'}\n`
+            }
+          } catch (e) {}
+        }
+      }
+      setLocalIntelligence(context)
+    } catch (e) {
+      console.error("Failed to read local vault intelligence", e)
+    }
+  }
 
   React.useEffect(() => {
     loadVaultFromMemory()
@@ -93,6 +119,7 @@ export default function DeepScanHome() {
       const status = await localFolderHandle.requestPermission({ mode: 'readwrite' })
       setVaultPermissionStatus(status)
       if (status === 'granted') {
+        readLocalIntelligence(localFolderHandle)
         toast({ title: "Vault Re-verified", description: "Physical Database is active and writable." })
       }
     } catch (e) {
@@ -100,33 +127,34 @@ export default function DeepScanHome() {
     }
   }
 
-  // Neural Learning: Gather learned facts from all databases for AI injection
+  // Neural Learning: Gather learned facts from Cloud + Local databases
   const runAnalysisWithLearning = async (dataUri: string): Promise<any> => {
     let context = `NEURAL SINGULARITY DIRECTIVE (MANDATORY GROUND TRUTH):\n`
     
-    // 1. Inject manually verified scan results
+    // 1. Inject Cloud Memory
     const verifiedScans = scans.filter(s => s.userFeedback !== undefined)
     if (verifiedScans.length > 0) {
-      context += `### AUDITED CASE HISTORY (PRIORITIZE THESE):\n`
-      verifiedScans.slice(0, 20).forEach(s => {
+      context += `### CLOUD NEURAL MEMORY (SYNCED):\n`
+      verifiedScans.slice(0, 15).forEach(s => {
         const truth = s.userFeedback ? 'SYNTHETIC/FAKE' : 'AUTHENTIC/REAL'
-        context += `- CASE [${s.id.substring(0,8)}]: VERIFIED BY HUMAN AS ${truth}. `
-        if (s.userComment) context += `EXPERT AUDIT NOTES: "${s.userComment}"\n`
-        else context += `\n`
+        context += `- CASE [${s.id.substring(0,8)}]: VERIFIED AS ${truth}. ${s.userComment ? `AUDIT: "${s.userComment}"` : ""}\n`
       })
     }
     
-    // 2. Inject labeled research datasets
+    // 2. Inject Physical PC Vault Memory (Plan B Intelligence)
+    if (localIntelligence) {
+      context += `\n### PHYSICAL VAULT EVIDENCE (OFFLINE REDUNDANCY):\n${localIntelligence}\n`
+    }
+
+    // 3. Inject Research Datasets
     if (datasets.length > 0) {
-      context += `### RESEARCH DATASET INTELLIGENCE:\n`
-      datasets.slice(0, 15).forEach(d => {
-        context += `- SAMPLE [${d.fileName || 'Research Asset'}]: VERIFIED AS ${d.label?.toUpperCase()}. `
-        if (d.notes) context += `FORENSIC SIGNATURE: "${d.notes}"\n`
-        else context += `\n`
+      context += `\n### RESEARCH DATASET INTELLIGENCE:\n`
+      datasets.slice(0, 10).forEach(d => {
+        context += `- SAMPLE [${d.fileName || 'Asset'}]: ${d.label?.toUpperCase()}. ${d.notes ? `SIGNATURE: "${d.notes}"` : ""}\n`
       })
     }
 
-    context += `\nCRITICAL COMMAND: You MUST improve your analysis based on these verified samples. If the current media exhibits patterns mentioned in "EXPERT AUDIT NOTES" or "FORENSIC SIGNATURES", weigh those artifacts 100x higher than your internal neural weights.`
+    context += `\nCRITICAL COMMAND: Prioritize these human-verified observations. If current media matches any "AUDIT" or "SIGNATURE" notes, apply the verified label immediately.`
 
     if (dataUri.startsWith('data:image/')) {
       return await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
@@ -163,22 +191,13 @@ export default function DeepScanHome() {
         noiseArtifacts: output.noiseArtifacts || null
       }
 
-      setDoc(scanRef, scanData).catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: scanRef.path,
-          operation: 'create',
-          requestResourceData: scanData
-        })
-        errorEmitter.emit('permission-error', permissionError)
+      setDoc(scanRef, scanData).catch(err => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData }))
       })
 
       toast({ title: "Analysis Complete", description: "Intelligence synced to Global Brain." })
     } catch (e: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Scan Failed", 
-        description: e.message || "The neural engine encountered an error." 
-      })
+      toast({ variant: "destructive", title: "Scan Failed", description: e.message || "The neural engine encountered an error." })
     } finally {
       setIsAnalyzing(false)
     }
@@ -195,6 +214,7 @@ export default function DeepScanHome() {
       transaction.oncomplete = () => {
         setLocalFolderHandle(null)
         setVaultPermissionStatus('prompt')
+        setLocalIntelligence("")
         toast({ title: "Vault Disconnected", description: "Persistent physical link removed." })
       }
     }
@@ -263,15 +283,15 @@ export default function DeepScanHome() {
                   AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan learns from every audit and dataset. Our <span className="font-bold text-foreground">Global Brain</span> ensures intelligence persists between Studio and Localhost, while your <span className="font-bold text-foreground">PC Vault</span> stores hard forensic evidence.
+                  DeepScan learns from every audit. Our <span className="font-bold text-foreground text-primary">Neural Insurance Protocol</span> ensures intelligence persists on your <span className="font-bold text-foreground">PC Vault</span> even if the Cloud goes offline.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
                     <Zap className="w-3 h-3" />
-                    {knowledgeCount} LESSONS LEARNED
+                    {knowledgeCount} LESSONS SYNCED
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
-                    <Activity className="w-3 h-3" />
+                    <HardDrive className="w-3 h-3" />
                     DUAL-SYNC ACTIVE
                   </div>
                 </div>
@@ -304,48 +324,28 @@ export default function DeepScanHome() {
           <div ref={workstationRef} className="space-y-8 preserve-3d">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="bg-transparent h-auto p-0 mb-8 border-b rounded-none gap-8 preserve-3d">
-                <TabsTrigger 
-                  value="analyze" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  ANALYZE
+                <TabsTrigger value="analyze" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+                  <Sparkles className="w-3.5 h-3.5" /> ANALYZE
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="protect" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
-                >
-                  <ShieldIcon className="w-3.5 h-3.5" />
-                  PROTECT
+                <TabsTrigger value="protect" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+                  <ShieldIcon className="w-3.5 h-3.5" /> PROTECT
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="history" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  HISTORY
+                <TabsTrigger value="history" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+                  <Clock className="w-3.5 h-3.5" /> HISTORY
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="datasets" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80"
-                >
-                  <Database className="w-3.5 h-3.5" />
-                  TRAINING
+                <TabsTrigger value="datasets" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2 transition-all duration-300 hover:text-primary/80">
+                  <Database className="w-3.5 h-3.5" /> TRAINING
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="analyze" className="mt-0 focus-visible:ring-0 preserve-3d">
                 <div className="space-y-12 preserve-3d">
-                  <div className={cn(
-                    "grid grid-cols-1 gap-8",
-                    currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1"
-                  )}>
+                  <div className={cn("grid grid-cols-1 gap-8", currentResult ? "lg:grid-cols-[450px_1fr]" : "grid-cols-1")}>
                     <div className="space-y-8 preserve-3d">
                       <div className="spatial-lift preserve-3d">
                         <MediaUpload onUpload={runAnalysis} isAnalyzing={isAnalyzing} />
                       </div>
                     </div>
-
                     {currentResult && (
                       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 spatial-lift preserve-3d">
                         <AnalysisResult 
@@ -358,60 +358,16 @@ export default function DeepScanHome() {
                       </div>
                     )}
                   </div>
-
-                  <div className="py-12 border rounded-2xl bg-primary/5 p-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                    <div className="flex flex-col gap-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Cpu className="w-5 h-5 text-primary" />
-                        </div>
-                        <h3 className="text-lg font-black uppercase tracking-tighter">Forensic Capabilities</h3>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[
-                          "GENERATIVE MODEL FINGERPRINTING",
-                          "HIGH-FREQUENCY NOISE FLOOR ANALYSIS",
-                          "TEMPORAL CONSISTENCY CHECKS",
-                          "METADATA CHAIN-OF-CUSTODY"
-                        ].map((item, i) => (
-                          <div key={i} className="flex items-center gap-3 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-border shadow-sm">
-                            <CheckCircle2 className="w-4 h-4 text-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-foreground/80">{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
                   {!currentResult && historyItems.length > 0 && (
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 preserve-3d">
                       <div className="flex items-center gap-3 mb-6">
                         <History className="w-5 h-5 text-primary" />
                         <h2 className="text-xl font-black uppercase tracking-tighter">Recent Investigative History</h2>
                       </div>
-                      <DetectionHistory 
-                        items={historyItems.slice(0, 5)} 
-                        onClear={() => {}} 
-                        onSelectItem={(id) => {
-                          const scan = scans.find(s => s.id === id)
-                          if (scan) {
-                            setCurrentResult({
-                              id: scan.id,
-                              output: {
-                                isDeepfake: scan.aiVerdict,
-                                confidence: scan.aiConfidence,
-                                explanation: scan.explanation,
-                                neuralAncestry: scan.neuralAncestry,
-                                biometricVitals: scan.biometricVitals,
-                                noiseArtifacts: scan.noiseArtifacts
-                              },
-                              mediaUrl: scan.mediaUrl || "", 
-                              mediaType: scan.mediaType
-                            })
-                          }
-                        }} 
-                      />
+                      <DetectionHistory items={historyItems.slice(0, 5)} onClear={() => {}} onSelectItem={(id) => {
+                        const scan = scans.find(s => s.id === id)
+                        if (scan) setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, noiseArtifacts: scan.noiseArtifacts }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                      }} />
                     </div>
                   )}
                 </div>
@@ -422,42 +378,18 @@ export default function DeepScanHome() {
                   knowledgeCount={knowledgeCount} 
                   vaultHandle={localFolderHandle}
                   vaultPermissionStatus={vaultPermissionStatus}
-                  onVaultChange={(name, handle) => {
-                    if (handle) {
-                      setLocalFolderHandle(handle);
-                      setVaultPermissionStatus('granted');
-                    } else {
-                      setLocalFolderHandle(null);
-                      setVaultPermissionStatus('prompt');
-                    }
-                  }} 
+                  onVaultChange={(name, handle) => { if (handle) { setLocalFolderHandle(handle); setVaultPermissionStatus('granted'); readLocalIntelligence(handle); } else { setLocalFolderHandle(null); setVaultPermissionStatus('prompt'); setLocalIntelligence(""); } }} 
                 />
               </TabsContent>
 
               <TabsContent value="history" className="mt-0">
-                <DetectionHistory 
-                  items={historyItems} 
-                  onClear={() => {}} 
-                  onSelectItem={(id) => {
-                    const scan = scans.find(s => s.id === id)
-                    if (scan) {
-                      setActiveTab("analyze")
-                      setCurrentResult({
-                        id: scan.id,
-                        output: {
-                          isDeepfake: scan.aiVerdict,
-                          confidence: scan.aiConfidence,
-                          explanation: scan.explanation,
-                          neuralAncestry: scan.neuralAncestry,
-                          biometricVitals: scan.biometricVitals,
-                          noiseArtifacts: scan.noiseArtifacts
-                        },
-                        mediaUrl: scan.mediaUrl || "",
-                        mediaType: scan.mediaType
-                      })
-                    }
-                  }} 
-                />
+                <DetectionHistory items={historyItems} onClear={() => {}} onSelectItem={(id) => {
+                  const scan = scans.find(s => s.id === id)
+                  if (scan) {
+                    setActiveTab("analyze")
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, noiseArtifacts: scan.noiseArtifacts }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                  }
+                }} />
               </TabsContent>
 
               <TabsContent value="datasets" className="mt-0">
@@ -465,15 +397,7 @@ export default function DeepScanHome() {
                   knowledgeCount={knowledgeCount} 
                   vaultHandle={localFolderHandle}
                   vaultPermissionStatus={vaultPermissionStatus}
-                  onVaultChange={(name, handle) => {
-                    if (handle) {
-                      setLocalFolderHandle(handle);
-                      setVaultPermissionStatus('granted');
-                    } else {
-                      setLocalFolderHandle(null);
-                      setVaultPermissionStatus('prompt');
-                    }
-                  }} 
+                  onVaultChange={(name, handle) => { if (handle) { setLocalFolderHandle(handle); setVaultPermissionStatus('granted'); readLocalIntelligence(handle); } else { setLocalFolderHandle(null); setVaultPermissionStatus('prompt'); setLocalIntelligence(""); } }} 
                 />
               </TabsContent>
             </Tabs>
@@ -485,12 +409,12 @@ export default function DeepScanHome() {
         <div className="container mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <DeepScanLogo />
           <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors uppercase">Forensic Standards</a>
-            <a href="#" className="hover:text-primary transition-colors uppercase">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors uppercase">Immune Protocol</a>
+            <a href="#" className="hover:text-primary transition-colors">Forensic Standards</a>
+            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">
-            V3.1.0 FORENSIC ENGINE
+            V3.1.0 NEURAL INSURANCE ACTIVE
           </div>
         </div>
       </footer>
