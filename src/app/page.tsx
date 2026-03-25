@@ -34,11 +34,11 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Persistence states for PC Vault
+  // Persistence states for PC Vault (Layer 2 & 3)
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
 
-  // Real-time Neural Cloud Sync
+  // Real-time Neural Cloud Sync (Layer 1)
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -47,7 +47,7 @@ export default function DeepScanHome() {
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
 
-  // Persistence: Restore PC Vault handle from memory (IndexedDB)
+  // Persistence: Restore PC Vault handle from IndexedDB (Layer 3)
   const loadVaultFromMemory = React.useCallback(async () => {
     try {
       const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
@@ -261,7 +261,7 @@ export default function DeepScanHome() {
                   AUTHENTICITY <span className="text-primary italic">MATTERS.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium transform translate-z-5">
-                  DeepScan learns from every audit. Our <span className="font-bold text-foreground">Cloud Brain</span> ensures analysis persistence between Studio and Localhost, while your <span className="font-bold text-foreground">PC Vault</span> stores hard forensic evidence.
+                  DeepScan learns from every audit and dataset. Our <span className="font-bold text-foreground">Global Brain</span> ensures intelligence persists between Studio and Localhost, while your <span className="font-bold text-foreground">PC Vault</span> stores hard forensic evidence.
                 </p>
                 <div className="flex gap-4 pt-4 preserve-3d">
                   <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl spatial-lift">
