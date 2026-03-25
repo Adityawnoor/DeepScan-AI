@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -20,7 +19,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -40,8 +39,8 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
-  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc")) : null, [db])
+  const datasetsQuery = useMemoFirebase(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
+  const scansQuery = useMemoFirebase(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc")) : null, [db])
   
   const { data: datasets } = useCollection(datasetsQuery)
   const { data: scans } = useCollection(scansQuery)
@@ -52,7 +51,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   }, []);
 
   const chartData = React.useMemo(() => {
-    const evaluatedScans = [...scans].reverse().filter(s => s.userFeedback !== undefined)
+    const evaluatedScans = [...(scans || [])].reverse().filter(s => s.userFeedback !== undefined)
     if (evaluatedScans.length === 0) return []
     let correctCount = 0
     let evaluatedCount = 0
@@ -69,13 +68,13 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   const currentAccuracy = chartData.length > 0 ? chartData[chartData.length - 1].accuracy : 85
 
   const novelPatterns = React.useMemo(() => {
-    return datasets.filter(d => d.status === 'learned' || d.modelSignature === 'Unknown Novel Source')
+    return (datasets || []).filter(d => d.status === 'learned' || d.modelSignature === 'Unknown Novel Source')
   }, [datasets])
 
   const learnedFactsSummary = React.useMemo(() => {
     let summary = "### NEURAL INTELLIGENCE LOG (PATTERN DATABASE) ###\n\n"
-    datasets.forEach(ds => summary += `[PATTERN]: ${ds.fileName}. Signature: ${ds.modelSignature || 'Generic'}. Origin: ${ds.status === 'learned' ? 'In-Field Scan' : 'Manual Upload'}.\n`)
-    scans.filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT]: Case ${s.id.substring(0, 4)} confirmed ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}. Artifacts: ${s.userComment || 'None'}\n`)
+    ;(datasets || []).forEach(ds => summary += `[PATTERN]: ${ds.fileName}. Signature: ${ds.modelSignature || 'Generic'}. Origin: ${ds.status === 'learned' ? 'In-Field Scan' : 'Manual Upload'}.\n`)
+    ;(scans || []).filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT]: Case ${s.id.substring(0, 4)} confirmed ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}. Artifacts: ${s.userComment || 'None'}\n`)
     return summary || "No forensic patterns learned yet."
   }, [datasets, scans])
 
@@ -108,9 +107,9 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
           authority: "DeepScan AI Forensic Engine",
           version: "V3.1.0",
           timestamp: new Date().toISOString(),
-          totalPatterns: datasets.length
+          totalPatterns: (datasets || []).length
         },
-        patterns: datasets.map(d => ({
+        patterns: (datasets || []).map(d => ({
           signature: d.modelSignature,
           label: d.label,
           notes: d.notes,
@@ -230,7 +229,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {datasets.length === 0 ? (
+                      {(!datasets || datasets.length === 0) ? (
                         <TableRow><TableCell colSpan={4} className="text-center py-8 text-[10px] font-bold text-muted-foreground uppercase opacity-30">No forensic signatures learned yet.</TableCell></TableRow>
                       ) : (
                         datasets.map((item) => (

@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -16,7 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -38,7 +37,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
   const photoInputRefs = [React.useRef<HTMLInputElement>(null), React.useRef<HTMLInputElement>(null), React.useRef<HTMLInputElement>(null)]
   const audioInputRef = React.useRef<HTMLInputElement>(null)
 
-  const identitiesQuery = React.useMemo(() => db ? query(collection(db, "identities"), orderBy("enrolledAt", "desc")) : null, [db])
+  const identitiesQuery = useMemoFirebase(() => db ? query(collection(db, "identities"), orderBy("enrolledAt", "desc")) : null, [db])
   const { data: identities } = useCollection(identitiesQuery)
 
   const handlePhotoUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +122,7 @@ export function AuthenticityShield({ vaultHandle }: AuthenticityShieldProps) {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
-               {identities.length === 0 ? (
+               {(!identities || identities.length === 0) ? (
                  <div className="p-8 text-center border-2 border-dashed rounded-xl bg-muted/20 opacity-40">
                     <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-[10px] font-black uppercase tracking-widest">No Master Profiles Enrolled</p>

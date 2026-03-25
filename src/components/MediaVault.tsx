@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -12,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, deleteDoc, doc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -22,14 +21,14 @@ export function MediaVault({ onReverify }: { onReverify: (id: string) => void })
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = React.useState("")
 
-  const ledgerQuery = React.useMemo(() => 
+  const ledgerQuery = useMemoFirebase(() => 
     db ? query(collection(db, "ledger"), orderBy("timestamp", "desc")) : null, 
   [db])
   
   const { data: entries } = useCollection(ledgerQuery)
 
   const filteredEntries = React.useMemo(() => 
-    entries.filter(e => 
+    (entries || []).filter(e => 
       e.hash.toLowerCase().includes(searchTerm.toLowerCase()) || 
       e.txId?.toLowerCase().includes(searchTerm.toLowerCase())
     ),

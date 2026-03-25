@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -29,7 +28,7 @@ import {
   BrainCircuit, WifiOff, CloudOff, Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, useFirebase, useMemoFirebase } from "@/firebase"
 import { collection, doc, setDoc, query, orderBy, limit, getDoc } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -37,6 +36,7 @@ import { FirestorePermissionError } from "@/firebase/errors"
 export default function DeepScanHome() {
   const { toast } = useToast()
   const db = useFirestore()
+  const { isCloudActive } = useFirebase()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
@@ -44,9 +44,9 @@ export default function DeepScanHome() {
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [localIntelligence, setLocalIntelligence] = React.useState<string>("")
 
-  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
-  const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
-  const alertsQuery = React.useMemo(() => db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db])
+  const scansQuery = useMemoFirebase(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
+  const datasetsQuery = useMemoFirebase(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
+  const alertsQuery = useMemoFirebase(() => db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db])
   
   const { data: scans } = useCollection(scansQuery)
   const { data: datasets } = useCollection(datasetsQuery)
@@ -176,7 +176,16 @@ export default function DeepScanHome() {
         setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
       }
       
-      // Pattern Novelty Alert
+      // Mirror to PC Vault automatically if connected
+      if (localFolderHandle) {
+        const fileName = `SCAN_${scanId.substring(0, 8)}.json`
+        const fileHandle = await localFolderHandle.getFileHandle(fileName, { create: true })
+        const writable = await (fileHandle as any).createWritable()
+        await writable.write(JSON.stringify({ id: scanId, output, timestamp: new Date().toISOString() }, null, 2))
+        await writable.close()
+        toast({ title: "PC Vault Sync", description: "Forensic record mirrored to your physical database." })
+      }
+
       if (output.isDeepfake && (!output.neuralAncestry?.likelyModel || output.neuralAncestry.likelyModel === "Unknown")) {
         toast({ 
           variant: "destructive", 
@@ -184,7 +193,7 @@ export default function DeepScanHome() {
           description: "This signature does not match any known families. Committed to Pattern Learning Hub." 
         })
       } else {
-        toast({ title: "Analysis Complete", description: db ? "Intelligence synced to Neural Ledger." : "Forensic result generated (Local Mode)." })
+        toast({ title: "Analysis Complete", description: db ? "Intelligence synced to Neural Ledger & Vault." : "Forensic result generated (Offline Vault Mode)." })
       }
 
     } catch (e: any) {
@@ -239,7 +248,7 @@ export default function DeepScanHome() {
           <div className="flex items-center gap-8">
             <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2">
-                {db ? (
+                {isCloudActive ? (
                   <>
                     <Globe className="w-3.5 h-3.5 text-primary animate-pulse" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">NEURAL LEDGER: <span className="text-foreground">ACTIVE</span></span>
@@ -262,15 +271,15 @@ export default function DeepScanHome() {
       </header>
 
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
-        {!db && (
+        {!isCloudActive && (
           <div className="mb-8 p-6 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                <Info className="w-6 h-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h4 className="text-[12px] font-black uppercase tracking-widest text-primary mb-1">Upgrade to Cloud Intelligence</h4>
+              <h4 className="text-[12px] font-black uppercase tracking-widest text-primary mb-1">Hybrid Forensic Mode Active</h4>
               <p className="text-[11px] font-medium text-muted-foreground leading-relaxed">
-                You are currently in **Offline Forensic Mode**. To enable the **Sentinel Monitoring Bot** (viral deepfake alerts) and the **Neural Ledger** (blockchain notarization), please link your Firebase Project in the configuration.
+                You are currently in **Offline Forensic Mode**. Investigations are powered by local AI and stored in your **PC Vault**. Connect to the cloud to enable **Global Sentinel Monitoring** and **Blockchain Notarization**.
               </p>
             </div>
             <Button 
@@ -279,7 +288,7 @@ export default function DeepScanHome() {
               className="h-10 px-6 text-[10px] font-black uppercase border-primary/30 text-primary hover:bg-primary/10" 
               onClick={() => setActiveTab("datasets")}
             >
-              Connect Now
+              Configure Cloud
             </Button>
           </div>
         )}
@@ -342,10 +351,10 @@ export default function DeepScanHome() {
                 <TabsTrigger value="vault" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Target className="w-3.5 h-3.5" /> VAULT
                 </TabsTrigger>
-                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!db}>
+                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!isCloudActive}>
                   <LineChart className="w-3.5 h-3.5" /> EVOLUTION
                 </TabsTrigger>
-                <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!db}>
+                <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!isCloudActive}>
                   <Radio className="w-3.5 h-3.5" /> SENTINEL
                 </TabsTrigger>
                 <TabsTrigger value="protect" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
@@ -426,7 +435,7 @@ export default function DeepScanHome() {
             <a href="#" className="hover:text-primary transition-colors">Privacy</a>
             <a href="#" className="hover:text-primary transition-colors">Immune Protocol</a>
           </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">V3.1.0 FORENSIC ENGINE ACTIVE</div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">V3.1.0 HYBRID FORENSIC ENGINE</div>
         </div>
       </footer>
     </div>

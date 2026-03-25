@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -16,17 +15,17 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, limit } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
 export function ModelEvolutionTracker() {
   const db = useFirestore()
-  const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "asc")) : null, [db])
+  const scansQuery = useMemoFirebase(() => db ? query(collection(db, "scans"), orderBy("timestamp", "asc")) : null, [db])
   const { data: scans } = useCollection(scansQuery)
 
   const evolutionData = React.useMemo(() => {
-    if (scans.length === 0) return []
+    if (!scans || scans.length === 0) return []
     
     // Group scans by date (day)
     const days: Record<string, any> = {}
@@ -64,7 +63,7 @@ export function ModelEvolutionTracker() {
   const modelStats = React.useMemo(() => {
     const stats: Record<string, { count: number, avgConfidence: number, latestConfidence: number }> = {}
     
-    scans.forEach(scan => {
+    ;(scans || []).forEach(scan => {
       const model = scan.neuralAncestry?.likelyModel || "Unknown"
       if (!stats[model]) stats[model] = { count: 0, avgConfidence: 0, latestConfidence: 0 }
       stats[model].count++

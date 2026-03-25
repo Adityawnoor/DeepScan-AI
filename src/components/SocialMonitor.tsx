@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useCollection } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc, setDoc, query, orderBy, limit } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
@@ -22,11 +21,11 @@ export function SocialMonitor() {
   const db = useFirestore()
   const [isScanning, setIsScanning] = React.useState(false)
   
-  const alertsQuery = React.useMemo(() => 
+  const alertsQuery = useMemoFirebase(() => 
     db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(20)) : null, 
   [db])
 
-  const identitiesQuery = React.useMemo(() => 
+  const identitiesQuery = useMemoFirebase(() => 
     db ? query(collection(db, "identities")) : null, 
   [db])
   
@@ -63,7 +62,7 @@ export function SocialMonitor() {
     ]
 
     // Simulate identity theft detection
-    if (identities.length > 0) {
+    if (identities && identities.length > 0) {
       const targetId = identities[0]
       mockAlerts.push({
         id: crypto.randomUUID(),
@@ -84,7 +83,7 @@ export function SocialMonitor() {
       }
       toast({ 
         title: "Sentinel Scan Complete", 
-        description: identities.length > 0 ? "Potential identity misuse detected in trending feeds." : "Viral deepfakes identified and synced." 
+        description: (identities && identities.length > 0) ? "Potential identity misuse detected in trending feeds." : "Viral deepfakes identified and synced." 
       })
     } catch (e) {
       console.error(e)
@@ -128,11 +127,11 @@ export function SocialMonitor() {
             <div className="space-y-4">
               <div className="flex justify-between items-end mb-2">
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">Identity Vault Sync</p>
-                <span className="text-xl font-black">{identities.length} Profiles</span>
+                <span className="text-xl font-black">{identities?.length || 0} Profiles</span>
               </div>
-              <Progress value={identities.length > 0 ? 100 : 0} className="h-2" />
+              <Progress value={(identities && identities.length > 0) ? 100 : 0} className="h-2" />
               <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
-                Sentinel cross-references {identities.length} enrolled identities against viral content every 5 minutes.
+                Sentinel cross-references {identities?.length || 0} enrolled identities against viral content every 5 minutes.
               </p>
             </div>
 
@@ -159,12 +158,12 @@ export function SocialMonitor() {
             <TrendingUp className="w-5 h-5 text-primary" /> SENTINEL FEED
           </h2>
           <Badge variant="outline" className="text-[10px] font-black px-3 rounded-lg border-primary/20">
-            {alerts.length} ALERTS ACTIVE
+            {alerts?.length || 0} ALERTS ACTIVE
           </Badge>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          {alerts.length === 0 ? (
+          {(!alerts || alerts.length === 0) ? (
             <div className="p-20 text-center border-2 border-dashed rounded-2xl bg-muted/20 opacity-40">
                <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-primary" />
                <p className="text-xs font-black uppercase tracking-widest">No viral deepfakes detected in current cycle.</p>
