@@ -28,7 +28,7 @@ import {
   BrainCircuit, WifiOff, CloudOff, Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection, useFirebase, useMemoFirebase } from "@/firebase"
+import { useFirestore, useCollection, useFirebase, useMemoFirebase, useAuth, useUser, initiateAnonymousSignIn } from "@/firebase"
 import { collection, doc, setDoc, query, orderBy, limit, getDoc } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -36,6 +36,8 @@ import { FirestorePermissionError } from "@/firebase/errors"
 export default function DeepScanHome() {
   const { toast } = useToast()
   const db = useFirestore()
+  const auth = useAuth()
+  const { user } = useUser()
   const { isCloudActive } = useFirebase()
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
@@ -44,9 +46,17 @@ export default function DeepScanHome() {
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
   const [localIntelligence, setLocalIntelligence] = React.useState<string>("")
 
-  const scansQuery = useMemoFirebase(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
-  const datasetsQuery = useMemoFirebase(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
-  const alertsQuery = useMemoFirebase(() => db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db])
+  // Auto-authentication for Neural Ledger access
+  React.useEffect(() => {
+    if (auth && !user) {
+      initiateAnonymousSignIn(auth)
+    }
+  }, [auth, user])
+
+  // Queries only fire when DB and User session are active
+  const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db, user])
+  const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
+  const alertsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db, user])
   
   const { data: scans } = useCollection(scansQuery)
   const { data: datasets } = useCollection(datasetsQuery)
@@ -73,8 +83,8 @@ export default function DeepScanHome() {
   }
 
   const runQuickVerify = async (dataUri: string) => {
-    if (!db) {
-      toast({ variant: "destructive", title: "Cloud Offline", description: "Blockchain verification requires a cloud connection." })
+    if (!db || !user) {
+      toast({ variant: "destructive", title: "Authentication Required", description: "Ledger verification requires a valid forensic session." })
       return
     }
     setIsAnalyzing(true)
@@ -152,7 +162,7 @@ export default function DeepScanHome() {
       const mediaType = dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image'
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
-      if (db) {
+      if (db && user) {
         const scanRef = doc(db, "scans", scanId)
         const scanData = {
           timestamp: new Date().toISOString(),
@@ -170,7 +180,8 @@ export default function DeepScanHome() {
           suspiciousSegments: output.suspiciousSegments || null,
           sourceOrigin: output.sourceOrigin || null,
           originalContext: output.originalContext || null,
-          mediaHash: await calculateMediaHash(dataUri)
+          mediaHash: await calculateMediaHash(dataUri),
+          userId: user.uid
         }
 
         setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))

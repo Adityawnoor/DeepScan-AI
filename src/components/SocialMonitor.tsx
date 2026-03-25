@@ -12,28 +12,32 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
 import { collection, doc, setDoc, query, orderBy, limit } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 
 export function SocialMonitor() {
   const { toast } = useToast()
   const db = useFirestore()
+  const { user } = useUser()
   const [isScanning, setIsScanning] = React.useState(false)
   
   const alertsQuery = useMemoFirebase(() => 
-    db ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(20)) : null, 
-  [db])
+    (db && user) ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(20)) : null, 
+  [db, user])
 
   const identitiesQuery = useMemoFirebase(() => 
-    db ? query(collection(db, "identities")) : null, 
-  [db])
+    (db && user) ? query(collection(db, "identities")) : null, 
+  [db, user])
   
   const { data: alerts } = useCollection(alertsQuery)
   const { data: identities } = useCollection(identitiesQuery)
 
   const runSentinelScan = async () => {
-    if (!db) return
+    if (!db || !user) {
+      toast({ variant: "destructive", title: "Authentication Required", description: "Sentinel scans require a valid forensic session." })
+      return
+    }
     setIsScanning(true)
     
     await new Promise(r => setTimeout(r, 2500))

@@ -3,91 +3,59 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * DeepScan AI Security Rules
+     * DeepScan AI Security Rules - V3.2 (Hybrid Resilience)
      *
      * CORE PHILOSOPHY:
-     * This ruleset implements a strict User-Ownership model. Access to data is tied directly to the 
-     * Firebase Authentication UID. The architecture prioritizes "Authorization Independence," 
-     * meaning rules verify access using path variables (like {userId}) to avoid expensive 
-     * cross-document lookups (get() calls).
-     *
-     * DATA STRUCTURE:
-     * Data is organized hierarchically under /users/{userId}. 
-     * - User profiles are stored at /users/{userId}/profile.
-     * - Media uploads are stored in the /mediaFiles subcollection.
-     * - Analysis results are nested under their respective media files.
-     *
-     * KEY SECURITY DECISIONS:
-     * 1. Strict Ownership: Users can only read, list, or write data within their own path.
-     * 2. No Public Access: There are no public collections; all operations require authentication.
-     * 3. Relational Integrity: On creation, documents must include a field that matches the path 
-     *    ID to ensure consistency between the document data and its location.
-     * 4. State Safety: Update and delete operations require the document to exist (resource != null).
-     *
-     * DENORMALIZATION FOR AUTHORIZATION:
-     * To ensure fast rules, the 'userId' and 'mediaFileId' are present in both the path and the 
-     * document data. Rules enforce that these values remain consistent and immutable.
+     * Strict User-Ownership for private data, and Authenticated-Access for global intelligence.
+     * All operations require Firebase Authentication.
      */
 
     // --- Helper Functions ---
 
-    /** @description Checks if the request is from an authenticated user. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Checks if the authenticated user matches the provided userId. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** @description Checks if the user is the owner and the document exists (for updates/deletes). */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
+    // --- Global Intelligence Collections (Shared Patterns & Sentinel) ---
+
+    match /alerts/{alertId} {
+      allow read, write: if isSignedIn();
     }
 
-    // --- Collection Rules ---
+    match /datasets/{datasetId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /ledger/{hash} {
+      allow read, write: if isSignedIn();
+    }
+
+    // --- Workspace Collections (For Prototype Simplicity) ---
+
+    match /scans/{scanId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /identities/{identityId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // --- Hierarchical User Data (Private Settings) ---
 
     match /users/{userId} {
-      
-      /**
-       * @description Rules for the user's private settings and preferences.
-       * @path /users/{userId}/profile
-       * @allow (get) If request.auth.uid is 'user_123' and path is /users/user_123/profile.
-       * @deny (list) If request.auth.uid is 'user_456' trying to list 'user_123' profiles.
-       * @principle Restricts access to a user's own data tree.
-       */
       match /profile {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update, delete: if isExistingOwner(userId);
+        allow get, list, create, update, delete: if isOwner(userId);
       }
-
-      /**
-       * @description Rules for media files uploaded by the user.
-       * @path /users/{userId}/mediaFiles/{mediaFileId}
-       * @allow (create) If the userId in the document data matches the userId in the path.
-       * @deny (update) If the request attempts to change the internal 'userId' field.
-       * @principle Enforces document ownership and relational integrity.
-       */
+      
       match /mediaFiles/{mediaFileId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isExistingOwner(userId);
-
-        /**
-         * @description Rules for deepfake detection results linked to specific media.
-         * @path /users/{userId}/mediaFiles/{mediaFileId}/detectionResults/{detectionResultId}
-         * @allow (create) If the mediaFileId in the data matches the mediaFileId in the path.
-         * @deny (get) If an unauthenticated user tries to access the result.
-         * @principle Authorization independence using path-based verification.
-         */
-        match /detectionResults/{detectionResultId} {
-          allow get, list: if isOwner(userId);
-          allow create: if isOwner(userId) && request.resource.data.mediaFileId == mediaFileId;
-          allow update: if isExistingOwner(userId) && request.resource.data.mediaFileId == resource.data.mediaFileId;
-          allow delete: if isExistingOwner(userId);
+        allow get, list, create, update, delete: if isOwner(userId);
+        
+        match /detectionResults/{resultId} {
+          allow get, list, create, update, delete: if isOwner(userId);
         }
       }
     }
