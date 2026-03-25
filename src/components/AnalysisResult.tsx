@@ -7,7 +7,8 @@ import {
   Target,
   Gavel,
   ShieldX, Activity, Globe,
-  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History, Frame, Printer, ShieldAlert
+  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History, Frame, Printer, ShieldAlert,
+  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -36,7 +37,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const db = useFirestore()
   const [feedbackSubmitted, setFeedbackSubmitted] = React.useState<boolean | null>(null)
   const [userComment, setUserComment] = React.useState("")
-  const [showSpectralMode, setShowSpectralMode] = React.useState(false)
   const [activeHighlight, setActiveHighlight] = React.useState<number | null>(null)
   const [isNotarizing, setIsNotarizing] = React.useState(false)
   const [ledgerStatus, setLedgerStatus] = React.useState<'authentic' | 'synthetic' | 'unverified' | null>(null)
@@ -173,7 +173,6 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         await writable.close()
         toast({ title: "Evidence Exported", description: `Legal exhibit saved to your PC vault.` })
       } else {
-        // Fallback: Copy to clipboard if no vault linked
         await navigator.clipboard.writeText(JSON.stringify(evidence, null, 2))
         toast({ title: "JSON LD Copied", description: "Evidence metadata copied for legal intake." })
       }
@@ -183,6 +182,23 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       setIsGeneratingLegal(false)
     }
   }
+
+  const advisoryActions = React.useMemo(() => {
+    if (isFake) {
+      return [
+        { icon: AlertOctagon, title: "QUARANTINE PROTOCOL", desc: "Do not share or redistribute this content. It contains high-confidence synthetic artifacts.", variant: "destructive" },
+        { icon: FileWarning, title: "REPORT TO PLATFORM", desc: "Use the report function on X, Meta, or YT. Flag as 'Misleading AI Generated Content'.", variant: "warning" },
+        { icon: Lock, title: "NOTARIZE AS FAKE", desc: "Sync this hash to the Neural Ledger to prevent its future use as an 'original'.", variant: "primary" },
+        { icon: Search, title: "TRACE PROVENANCE", desc: "Use the Provenance tab to identify the original un-manipulated source material.", variant: "outline" }
+      ]
+    }
+    return [
+      { icon: ShieldCheck, title: "AUTHORITATIVE TAG", desc: "This media shows high biometric consistency. It is safe for archival.", variant: "success" },
+      { icon: Zap, title: "LEDGER NOTARIZATION", desc: "Notarize this original now to prevent future deepfake versions from gaining credibility.", variant: "primary" },
+      { icon: History, title: "VAULT MIRRORING", desc: "Mirror this authentic version to your physical PC vault for long-term provenance.", variant: "outline" },
+      { icon: Globe, title: "NEURAL DNA SYNC", desc: "If this is your face, sync it with your Identity Vault to protect against future breaches.", variant: "outline" }
+    ]
+  }, [isFake])
 
   return (
     <div className="space-y-6">
@@ -225,24 +241,59 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
               <Progress value={confidence} className={cn("h-4 rounded-xl bg-muted", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
             </div>
 
-            <Tabs defaultValue="provenance" className="w-full">
-              <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-xl h-11 border print:hidden">
-                <TabsTrigger value="provenance" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+            <Tabs defaultValue="advisory" className="w-full">
+              <TabsList className="grid grid-cols-6 bg-muted/50 p-1 rounded-xl h-11 border print:hidden overflow-x-auto no-scrollbar">
+                <TabsTrigger value="advisory" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-2">
+                  <ShieldQuestion className="w-3 h-3" /> Advisory
+                </TabsTrigger>
+                <TabsTrigger value="provenance" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-2">
                   <Search className="w-3 h-3" /> Origin
                 </TabsTrigger>
-                <TabsTrigger value="timeline" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                <TabsTrigger value="timeline" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-2">
                   <Clock className="w-3 h-3" /> Timeline
                 </TabsTrigger>
-                <TabsTrigger value="biometrics" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                <TabsTrigger value="biometrics" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-2">
                   <Activity className="w-3 h-3" /> Behavior
                 </TabsTrigger>
-                <TabsTrigger value="ancestry" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                <TabsTrigger value="ancestry" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-2">
                   <Fingerprint className="w-3 h-3" /> DNA
                 </TabsTrigger>
-                <TabsTrigger value="legal" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                <TabsTrigger value="legal" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-2">
                   <Gavel className="w-3 h-3" /> Evidence
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="advisory" className="pt-6 space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3">
+                     <Info className="w-5 h-5 text-primary" />
+                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">AI Advisory Protocol Active</p>
+                  </div>
+                  {advisoryActions.map((action, i) => (
+                    <div key={i} className={cn(
+                      "p-4 rounded-xl border flex gap-4 transition-all hover:scale-[1.02]",
+                      action.variant === 'destructive' ? "bg-destructive/5 border-destructive/20" : 
+                      action.variant === 'warning' ? "bg-orange-500/5 border-orange-500/20" :
+                      action.variant === 'success' ? "bg-green-500/5 border-green-500/20" :
+                      "bg-primary/5 border-primary/10"
+                    )}>
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                        action.variant === 'destructive' ? "bg-destructive/10 text-destructive" :
+                        action.variant === 'warning' ? "bg-orange-500/10 text-orange-600" :
+                        action.variant === 'success' ? "bg-green-500/10 text-green-600" :
+                        "bg-primary/10 text-primary"
+                      )}>
+                        <action.icon className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-black uppercase tracking-tighter text-foreground">{action.title}</p>
+                        <p className="text-[10px] font-medium leading-relaxed text-muted-foreground">{action.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
 
               <TabsContent value="provenance" className="pt-6 space-y-4">
                 <div className="p-6 rounded-xl bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden">
