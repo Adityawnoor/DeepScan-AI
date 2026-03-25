@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file implements "The Forensic Singularity Engine" for image analysis with Provenance Trace.
@@ -18,6 +17,7 @@ const AnalyzeImageForDeepfakeInputSchema = z.object({
 
 const AnalyzeImageForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean(),
+  fakeCategory: z.enum(['Face Swap', 'Generative', 'Style Transfer', 'Attribute Edit', 'Authentic']).describe('The specific type of image manipulation.'),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
   sourceOrigin: z.string().describe("Likely original source of the image (e.g., 'Instagram post from 2022', 'Stock photo template')."),
@@ -47,10 +47,14 @@ const forensicSingularityImage = ai.definePrompt({
   output: { schema: AnalyzeImageForDeepfakeOutputSchema },
   prompt: `You are the Forensic Singularity Engine. 
 
-  TASK 1: PROVENANCE TRACE (REVERSE SEARCH SIMULATION)
+  TASK 1: PROVENANCE TRACE & CATEGORIZATION
+  Identify the specific category of manipulation:
+  - Face Swap: Replacing one person's face with another.
+  - Generative: Entirely AI-generated image (e.g., Midjourney).
+  - Style Transfer: Applying an artistic or neural filter to a real photo.
+  - Attribute Edit: Modifying specific features (age, hair, expression) while keeping identity.
+
   Analyze the image to identify if it originates from a known event, person, or public template. 
-  Is this an edited version of a real photograph from the past? 
-  Be specific about the "sourceOrigin" (e.g., "Official portrait from 2019", "News clip from 2021").
 
   TASK 2: NEURAL ORIGIN TRACEBACK
   Identify the specific generative model signature (Diffusion, GAN, etc.).

@@ -45,6 +45,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
   const isFake = result.isDeepfake
   const confidence = result.confidence
+  const fakeCategory = result.fakeCategory || (isFake ? "Synthetic" : "Authentic")
 
   const calculateMediaHash = React.useCallback(async (dataUri: string) => {
     try {
@@ -167,6 +168,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         scanId,
         timestamp: new Date().toISOString(),
         verdict: isFake ? "SYNTHETIC" : "AUTHENTIC",
+        fakeCategory,
         confidence,
         mediaHash: hash,
         sourceOrigin: result.sourceOrigin,
@@ -198,10 +200,15 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   <Target className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
                   FORENSIC REPORT
                 </CardTitle>
-                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
-                  Case ID: {scanId.substring(0, 12)}
-                  {ledgerStatus === 'authentic' && <Badge variant="default" className="bg-green-600 text-[8px] h-4">VERIFIED AUTHENTIC</Badge>}
-                </CardDescription>
+                <div className="flex flex-wrap gap-2">
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
+                    Case ID: {scanId.substring(0, 12)}
+                    {ledgerStatus === 'authentic' && <Badge variant="default" className="bg-green-600 text-[8px] h-4">VERIFIED AUTHENTIC</Badge>}
+                  </CardDescription>
+                  <Badge variant="outline" className="border-primary/30 text-primary text-[9px] font-black uppercase px-2 h-5">
+                    {fakeCategory}
+                  </Badge>
+                </div>
               </div>
               <Badge variant={isFake ? "destructive" : "default"} className="px-4 py-1.5 font-black text-xs uppercase tracking-widest rounded-xl hover-glow transition-all">
                 {isFake ? "SYNTHETIC" : "AUTHENTIC"}

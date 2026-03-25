@@ -108,6 +108,7 @@ export default function DeepScanHome() {
           mediaType: dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image',
           output: {
             isDeepfake: data.status === 'synthetic',
+            fakeCategory: data.status === 'synthetic' ? 'Blockchain Verified Synthetic' : 'Authentic',
             confidence: 100,
             explanation: `IMMUTABLE PROOF: This file hash (${hash.substring(0, 16)}...) was notarized on ${new Date(data.timestamp).toLocaleString()}. Verdict: ${data.status.toUpperCase()}.`,
             neuralAncestry: { modelFamily: "On-Chain Notarized", likelyModel: "Authoritative Record", fingerprintConfidence: 100 }
@@ -169,6 +170,7 @@ export default function DeepScanHome() {
       const scanData = {
         timestamp: new Date().toISOString(),
         mediaType,
+        fakeCategory: output.fakeCategory || (output.isDeepfake ? "Synthetic" : "Authentic"),
         aiVerdict: output.isDeepfake,
         aiConfidence: output.confidence,
         explanation: output.explanation,
@@ -236,7 +238,7 @@ export default function DeepScanHome() {
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  DeepScan utilizes **Temporal Neural Synergy** and **Behavior-Based Detection** to detect ocular inconsistencies and frame-level motion glitches. Investigate the unseen.
+                  DeepScan utilizes **Temporal Neural Synergy** and **Style Transfer Detection** to identify Face Swapping, Lip Syncing, and AI filters. Investigate the unseen.
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
@@ -330,7 +332,7 @@ export default function DeepScanHome() {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousSegments: scan.suspiciousSegments, behavioralBiometrics: scan.behavioralBiometrics, sourceOrigin: scan.sourceOrigin, originalContext: scan.originalContext }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, fakeCategory: scan.fakeCategory, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousSegments: scan.suspiciousSegments, behavioralBiometrics: scan.behavioralBiometrics, sourceOrigin: scan.sourceOrigin, originalContext: scan.originalContext }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>

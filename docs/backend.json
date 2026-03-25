@@ -8,6 +8,7 @@
         "id": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" },
         "mediaType": { "type": "string", "enum": ["image", "audio", "video"] },
+        "fakeCategory": { "type": "string", "description": "The specific type of manipulation (e.g., Face Swap, Voice Clone, Style Transfer)." },
         "aiVerdict": { "type": "boolean", "description": "True if AI thought it was a deepfake" },
         "aiConfidence": { "type": "number" },
         "explanation": { "type": "string" },

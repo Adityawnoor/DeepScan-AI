@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for analyzing audio to detect deepfakes using rhythmic behavior and neural ancestry signatures.
@@ -20,6 +19,7 @@ const AnalyzeAudioForDeepfakeInputSchema = z.object({
 
 const AnalyzeAudioForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean().describe('True if the audio is detected as a deepfake, false otherwise.'),
+  fakeCategory: z.enum(['Voice Cloning', 'Text-To-Speech', 'Audio Conversion', 'Authentic']).describe('The specific type of audio manipulation.'),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
   neuralAncestry: z.object({
@@ -54,8 +54,11 @@ Incorporate these user-verified observations and known tool signatures to identi
 {{{learnedContext}}}
 {{/if}}
 
-TASK 1: NEURAL ANCESTRY TRACEBACK
-Identify the specific tool used to clone the voice. Look for signatures of popular vocoders (e.g., ElevenLabs' specific artifacts or RVC's frequency aliasing).
+TASK 1: NEURAL ANCESTRY TRACEBACK & CATEGORIZATION
+Identify the specific tool used to clone the voice. Categorize the manipulation:
+- Voice Cloning: Cloning a specific person's voice.
+- Text-To-Speech: Generating speech from text using generic models.
+- Audio Conversion: Changing the style or speaker of an existing recording.
 
 TASK 2: SPEECH RHYTHM (PROSODY)
 Analyze the cadence. Are the pauses natural or "too perfect"?
