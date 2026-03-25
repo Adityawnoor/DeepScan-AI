@@ -1,122 +1,209 @@
-
 {
   "entities": {
-    "ScanResult": {
-      "title": "Scan Result",
-      "description": "Stored results of a deepfake scan including user feedback and neural ancestry tracking.",
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
       "type": "object",
+      "description": "Stores user-specific preferences and settings, excluding authentication data.",
       "properties": {
-        "id": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "mediaType": { "type": "string", "enum": ["image", "audio", "video"] },
-        "fakeCategory": { "type": "string", "description": "The specific type of manipulation (e.g., Face Swap, Voice Clone, Style Transfer)." },
-        "aiVerdict": { "type": "boolean", "description": "True if AI thought it was a deepfake" },
-        "aiConfidence": { "type": "number" },
-        "explanation": { "type": "string" },
-        "userFeedback": { "type": "boolean", "description": "The actual truth provided by the user" },
-        "userComment": { "type": "string", "description": "Detailed text feedback from the user" },
-        "isCorrect": { "type": "boolean", "description": "Whether the AI was correct" },
-        "mediaUrl": { "type": "string" },
-        "mediaHash": { "type": "string", "description": "SHA-256 fingerprint for blockchain notarization." },
-        "blockchainTxId": { "type": "string", "description": "Mock blockchain transaction identifier." },
-        "sourceOrigin": { "type": "string", "description": "The likely original source of the media." },
-        "originalContext": { "type": "string", "description": "Detailed notes on the identified original clip." },
-        "neuralAncestry": {
-          "type": "object",
-          "properties": {
-            "modelFamily": { "type": "string" },
-            "likelyModel": { "type": "string" },
-            "fingerprintConfidence": { "type": "number" }
-          }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
         },
-        "behavioralBiometrics": {
-          "type": "object",
-          "properties": {
-            "blinkConsistency": { "type": "number" },
-            "headMovementFluidity": { "type": "number" },
-            "temporalStability": { "type": "number", "description": "Score of frame-to-frame coherence (0-100)." },
-            "notes": { "type": "string" }
-          }
+        "themePreference": {
+          "type": "string",
+          "description": "User's chosen theme preference (e.g., 'light' or 'dark').",
+          "format": "string"
         },
-        "suspiciousSegments": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "startTime": { "type": "number" },
-              "endTime": { "type": "number" },
-              "isSynthetic": { "type": "boolean" },
-              "description": { "type": "string" }
-            }
-          }
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was last updated.",
+          "format": "date-time"
         }
       },
-      "required": ["timestamp", "mediaType", "aiVerdict"]
+      "required": [
+        "id",
+        "themePreference",
+        "createdAt",
+        "updatedAt"
+      ]
     },
-    "ProtectedIdentity": {
-      "title": "Protected Identity",
-      "description": "User's enrolled biometric fingerprint for proactive monitoring.",
+    "MediaFile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MediaFile",
       "type": "object",
+      "description": "Represents an uploaded or captured media file for deepfake analysis.",
       "properties": {
-        "id": { "type": "string" },
-        "enrolledAt": { "type": "string", "format": "date-time" },
-        "identityName": { "type": "string" },
-        "faceSignatures": { "type": "array", "items": { "type": "string" }, "description": "Neural fingerprints of the 3 enrolled photos." },
-        "voiceSignature": { "type": "string", "description": "Neural fingerprint of the enrolled audio." },
-        "status": { "type": "string", "enum": ["active", "alert", "archived"] }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MediaFile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who uploaded or captured this media file. (Relationship: UserProfile 1:N MediaFile)"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original name of the uploaded media file."
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The MIME type of the media file (e.g., 'image/jpeg', 'video/mp4')."
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "The size of the media file in bytes."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "A URI or path indicating where the media file is stored (e.g., cloud storage URL, local path).",
+          "format": "uri"
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Timestamp when the media file was uploaded or captured.",
+          "format": "date-time"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "Optional URL to a thumbnail image for preview purposes.",
+          "format": "uri"
+        }
       },
-      "required": ["identityName", "faceSignatures", "voiceSignature"]
+      "required": [
+        "id",
+        "userId",
+        "fileName",
+        "fileType",
+        "fileSize",
+        "storagePath",
+        "uploadDate"
+      ]
     },
-    "ViralAlert": {
-      "title": "Viral Alert",
-      "description": "Real-time monitoring record of a detected deepfake trending on social platforms.",
+    "DetectionResult": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DetectionResult",
       "type": "object",
+      "description": "Stores the outcome of a deepfake analysis performed on a MediaFile.",
       "properties": {
-        "id": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "platform": { "type": "string", "enum": ["X", "YouTube", "Instagram", "TikTok"] },
-        "contentSnippet": { "type": "string" },
-        "viralVelocity": { "type": "number" },
-        "forensicRisk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
-        "matchedIdentityId": { "type": "string", "description": "ID of a ProtectedIdentity if a breach is detected." },
-        "status": { "type": "string", "enum": ["monitoring", "verified_fake", "identity_theft"] }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DetectionResult entity."
+        },
+        "mediaFileId": {
+          "type": "string",
+          "description": "Reference to the MediaFile that was analyzed. (Relationship: MediaFile 1:N DetectionResult)"
+        },
+        "analysisDate": {
+          "type": "string",
+          "description": "Timestamp when the deepfake analysis was performed.",
+          "format": "date-time"
+        },
+        "confidenceScore": {
+          "type": "number",
+          "description": "The AI's confidence score for the detection, typically between 0.0 and 1.0."
+        },
+        "verdict": {
+          "type": "string",
+          "description": "The final verdict of the analysis (e.g., 'real', 'fake', 'inconclusive')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the analysis (e.g., 'pending', 'analyzing', 'completed', 'failed')."
+        },
+        "areaOfInterestData": {
+          "type": "string",
+          "description": "Data representing the simulated area of interest, potentially a JSON string with coordinates or a URL to an overlay image. This field is for highlighting potentially manipulated regions."
+        },
+        "errorMessage": {
+          "type": "string",
+          "description": "Optional error message if the analysis failed."
+        }
       },
-      "required": ["timestamp", "platform", "contentSnippet", "forensicRisk"]
-    },
-    "LedgerEntry": {
-      "title": "Ledger Entry",
-      "description": "An immutable record of media authenticity notarized on the Neural Ledger.",
-      "type": "object",
-      "properties": {
-        "hash": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["authentic", "synthetic"] },
-        "txId": { "type": "string" },
-        "notarizedBy": { "type": "string" },
-        "forensicCaseId": { "type": "string" }
-      },
-      "required": ["hash", "timestamp", "status"]
+      "required": [
+        "id",
+        "mediaFileId",
+        "analysisDate",
+        "confidenceScore",
+        "verdict",
+        "status"
+      ]
     }
   },
   "auth": {
-    "providers": ["google.com"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/scans/{scanId}": {
-      "schema": "ScanResult",
-      "description": "Collection of analyzed media."
-    },
-    "/identities/{identityId}": {
-      "schema": "ProtectedIdentity",
-      "description": "User's enrolled biometric profiles for monitoring."
-    },
-    "/alerts/{alertId}": {
-      "schema": "ViralAlert",
-      "description": "Trending deepfake alerts from social monitoring."
-    },
-    "/ledger/{hash}": {
-      "schema": "LedgerEntry",
-      "description": "Global immutable registry of media hashes."
-    }
+    "structure": [
+      {
+        "path": "/users/{userId}/profile",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user-specific preferences and settings, such as theme choice. Each user has a single profile document, with its ID matching the userId. Authorized directly by `request.auth.uid == userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/mediaFiles/{mediaFileId}",
+        "definition": {
+          "entityName": "MediaFile",
+          "schema": {
+            "$ref": "#/backend/entities/MediaFile"
+          },
+          "description": "Stores metadata for media files uploaded by a specific user. This collection enables easy retrieval of all files for a user. The 'userId' is part of the path for authorization independence, and also present in the document for consistency. Authorized directly by `request.auth.uid == userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who uploaded the media file."
+            },
+            {
+              "name": "mediaFileId",
+              "description": "The unique identifier for the specific media file."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/mediaFiles/{mediaFileId}/detectionResults/{detectionResultId}",
+        "definition": {
+          "entityName": "DetectionResult",
+          "schema": {
+            "$ref": "#/backend/entities/DetectionResult"
+          },
+          "description": "Stores the deepfake analysis outcomes for a specific media file belonging to a user. This path inherently includes 'userId' and 'mediaFileId' for authorization independence, allowing rules to directly verify `request.auth.uid == userId` without fetching parent documents, and enabling secure `list` operations.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent media file."
+            },
+            {
+              "name": "mediaFileId",
+              "description": "The unique identifier for the parent media file that was analyzed."
+            },
+            {
+              "name": "detectionResultId",
+              "description": "The unique identifier for this specific deepfake detection result."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The proposed Firestore data structure prioritizes security, scalability, and debuggability by adhering to the core design principles and mandates. \n\n**Authorization Independence (CRITICAL):** The design explicitly avoids hierarchical authorization dependencies that would require `get()` calls in security rules. Every document's authorization context is self-contained or explicitly available in its direct path. For example, `MediaFile` documents are stored under `/users/{userId}/mediaFiles/{mediaFileId}`, directly embedding the `userId` (owner) in the path. Similarly, `DetectionResult` documents are nested further under `/users/{userId}/mediaFiles/{mediaFileId}/detectionResults/{detectionResultId}`. This ensures that a security rule for a `DetectionResult` can directly check `request.auth.uid == userId` without needing to fetch the parent `MediaFile` document to determine ownership. This allows for atomic writes (e.g., creating a `MediaFile` and its first `DetectionResult` in a batch) and greatly simplifies rule logic, making it more robust and less prone to errors.\n\n**QAPs (Rules are not Filters):** The structural segregation and path-based ownership directly support secure `list` operations. Since all `UserProfile`, `MediaFile`, and `DetectionResult` documents are nested under `/users/{userId}/...`, any `list` query initiated by a user (`request.auth.uid`) will automatically be restricted to their own data by the Firestore security rules. For example, a query to `/users/{request.auth.uid}/mediaFiles` will only return media files belonging to the authenticated user. There is no need for client-side filtering or complex rule logic to prevent cross-user data access. All documents within these collections share the same security posture (owned by the `userId` in the path), fulfilling the 'Structural Segregation' mandate.\n\n**Addressing Local Development & Offline Needs:** While the data structure itself doesn't directly configure offline capabilities or local development, this structure is fully compatible with Firestore's built-in offline persistence features for client-side SDKs. By enabling persistence, the application can cache data locally ('my pc database') and continue to function during network disconnections, transparently syncing once connectivity is restored. For local development, this structure works seamlessly with the Firebase Emulator Suite, allowing developers to run a full local environment that mimics the production database, ensuring consistency between localhost and deployed environments.\n\n**Overall:** This design results in clear, concise security rules (e.g., `allow read, write: if request.auth.uid == userId;`), making the system highly debuggable and secure. It directly addresses the need for user-specific data management in the DeepScan AI application, from user profiles to media uploads and their subsequent analysis results."
   }
 }
