@@ -8,7 +8,7 @@ import {
   Target,
   Gavel,
   ShieldX, Activity, Globe,
-  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint
+  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -154,7 +154,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
 
   const exportEvidence = async () => {
     if (!vaultHandle) {
-      toast({ variant: "destructive", title: "PC Vault Required", description: "Select a folder in the TRAINING tab to save physical evidence." })
+      toast({ variant: "destructive", title: "PC Vault Required", description: "Select a folder in the TRAINING tab." })
       return
     }
 
@@ -170,11 +170,11 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         verdict: isFake ? "SYNTHETIC" : "AUTHENTIC",
         confidence,
         mediaHash: hash,
+        sourceOrigin: result.sourceOrigin,
+        originalContext: result.originalContext,
         neuralDNA: result.neuralAncestry,
         biometrics: result.biometricVitals,
         crossModal: result.crossModalSync,
-        behavioral: result.behavioralBiometrics,
-        timeline: result.suspiciousSegments,
         humanVerification: feedbackSubmitted,
         userComment
       }
@@ -223,71 +223,82 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
               <Progress value={confidence} className={cn("h-4 rounded-xl bg-muted", isFake ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} />
             </div>
 
-            <Tabs defaultValue="timeline" className="w-full">
+            <Tabs defaultValue="provenance" className="w-full">
               <TabsList className="grid grid-cols-5 bg-muted/50 p-1 rounded-xl h-11 border">
-                <TabsTrigger value="timeline" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <Clock className="w-3.5 h-3.5" /> Timeline
+                <TabsTrigger value="provenance" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <History className="w-3 h-3" /> Provenance
                 </TabsTrigger>
-                <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <Activity className="w-3.5 h-3.5" /> Behavior
+                <TabsTrigger value="timeline" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <Clock className="w-3 h-3" /> Timeline
                 </TabsTrigger>
-                <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <Fingerprint className="w-3.5 h-3.5" /> DNA
+                <TabsTrigger value="biometrics" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <Activity className="w-3 h-3" /> Behavior
                 </TabsTrigger>
-                <TabsTrigger value="audit" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Audit
+                <TabsTrigger value="ancestry" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <Fingerprint className="w-3 h-3" /> DNA
                 </TabsTrigger>
-                <TabsTrigger value="actions" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <Gavel className="w-3.5 h-3.5" /> Action
+                <TabsTrigger value="audit" className="text-[8px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
+                  <ShieldCheck className="w-3 h-3" /> Audit
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="timeline" className="pt-6 space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
-                      <h3 className="text-[11px] font-black uppercase tracking-widest">TEMPORAL BREAKDOWN</h3>
+              <TabsContent value="provenance" className="pt-6 space-y-4">
+                <div className="p-6 rounded-xl bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden">
+                  <div className="absolute right-4 top-4 opacity-10"><Globe className="w-12 h-12" /></div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Search className="w-4 h-4 text-primary" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-primary">Neural Provenance Trace</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Likely Original Source</p>
+                      <p className="text-[13px] font-black text-foreground uppercase tracking-tight">
+                        {result.sourceOrigin || "NO PUBLIC MATCH FOUND"}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-background/50 rounded-xl border border-dashed">
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Evidence & Context</p>
+                      <p className="text-[11px] leading-relaxed font-medium italic">
+                        {result.originalContext || "No identifying metadata found in public registries."}
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
-                    {result.suspiciousSegments?.length > 0 ? (
-                      result.suspiciousSegments.map((segment: any, i: number) => (
-                        <div key={i} className={cn(
-                          "p-4 border rounded-xl flex items-center justify-between transition-all group relative overflow-hidden",
-                          segment.isSynthetic ? "bg-destructive/5 border-destructive/20" : "bg-green-500/5 border-green-500/20"
-                        )}>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="timeline" className="pt-6 space-y-4">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                  {result.suspiciousSegments?.length > 0 ? (
+                    result.suspiciousSegments.map((segment: any, i: number) => (
+                      <div key={i} className={cn(
+                        "p-4 border rounded-xl flex items-center justify-between transition-all group relative overflow-hidden",
+                        segment.isSynthetic ? "bg-destructive/5 border-destructive/20" : "bg-green-500/5 border-green-500/20"
+                      )}>
+                        <div className="flex items-center gap-4">
                           <div className={cn(
-                            "absolute left-0 top-0 bottom-0 w-1 opacity-20",
-                            segment.isSynthetic ? "bg-destructive" : "bg-green-600"
-                          )} />
-                          <div className="flex items-center gap-4">
-                            <div className={cn(
-                              "w-10 h-10 rounded-full flex items-center justify-center shadow-sm",
-                              segment.isSynthetic ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-600"
-                            )}>
-                              {segment.isSynthetic ? <XCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                            </div>
-                            <div className="space-y-0.5">
-                              <p className="text-[12px] font-black uppercase tracking-tighter text-foreground flex items-center gap-1.5">
-                                <span className="text-muted-foreground/50">[{segment.startTime.toFixed(2)}s - {segment.endTime.toFixed(2)}s]</span>
-                                <span className={cn("ml-2", segment.isSynthetic ? "text-destructive" : "text-green-600")}>
-                                  {segment.isSynthetic ? "FAKE" : "REAL"}
-                                </span>
-                              </p>
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase leading-tight">{segment.description}</p>
-                            </div>
+                            "w-10 h-10 rounded-full flex items-center justify-center shadow-sm",
+                            segment.isSynthetic ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-600"
+                          )}>
+                            {segment.isSynthetic ? <XCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[12px] font-black uppercase tracking-tighter text-foreground flex items-center gap-1.5">
+                              <span className="text-muted-foreground/50">[{segment.startTime.toFixed(2)}s - {segment.endTime.toFixed(2)}s]</span>
+                              <span className={cn("ml-2", segment.isSynthetic ? "text-destructive" : "text-green-600")}>
+                                {segment.isSynthetic ? "FAKE" : "REAL"}
+                              </span>
+                            </p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase leading-tight">{segment.description}</p>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-8 border rounded-xl bg-muted/10 border-dashed text-center space-y-3">
-                         <Scan className="w-6 h-6 text-primary mx-auto" />
-                         <p className="text-xs font-medium text-foreground/80 leading-relaxed px-4">{result.explanation}</p>
                       </div>
-                    )}
-                  </div>
+                    ))
+                  ) : (
+                    <div className="p-8 border rounded-xl bg-muted/10 border-dashed text-center space-y-3">
+                       <Scan className="w-6 h-6 text-primary mx-auto" />
+                       <p className="text-xs font-medium text-foreground/80 leading-relaxed px-4">{result.explanation}</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -295,28 +306,15 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 <div className="space-y-6">
                   {result.behavioralBiometrics ? (
                     <>
-                      {result.behavioralBiometrics.blinkConsistency !== undefined && (
-                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                          <div className="flex justify-between items-center mb-2">
-                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                              <Eye className="w-3 h-3" /> Blink Frequency Pattern
-                            </Label>
-                            <span className="text-xs font-black">{result.behavioralBiometrics.blinkConsistency}% Natural</span>
-                          </div>
-                          <Progress value={result.behavioralBiometrics.blinkConsistency} className="h-1.5" />
+                      <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                            <Eye className="w-3 h-3" /> Blink Frequency
+                          </Label>
+                          <span className="text-xs font-black">{result.behavioralBiometrics.blinkConsistency}% Natural</span>
                         </div>
-                      )}
-                      {result.behavioralBiometrics.headMovementFluidity !== undefined && (
-                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                          <div className="flex justify-between items-center mb-2">
-                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                              <Move className="w-3 h-3" /> head Movement Fluidity
-                            </Label>
-                            <span className="text-xs font-black">{result.behavioralBiometrics.headMovementFluidity}% Natural</span>
-                          </div>
-                          <Progress value={result.behavioralBiometrics.headMovementFluidity} className="h-1.5" />
-                        </div>
-                      )}
+                        <Progress value={result.behavioralBiometrics.blinkConsistency} className="h-1.5" />
+                      </div>
                       <div className="p-4 bg-muted/30 rounded-xl border border-dashed">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block mb-1">PHYSIOLOGICAL NOTES</span>
                         <p className="text-[11px] font-medium leading-relaxed italic">{result.behavioralBiometrics.notes}</p>
@@ -325,7 +323,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   ) : (
                     <div className="p-8 text-center bg-muted/20 rounded-xl border border-dashed">
                        <Activity className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
-                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Behavioral biometrics unavailable for static assets.</p>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Biometrics unavailable for static assets.</p>
                     </div>
                   )}
                 </div>
@@ -337,7 +335,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                     <div className="space-y-4 p-4 bg-background border rounded-xl shadow-inner">
                       <div className="flex items-center gap-2 mb-2">
                         <Cpu className="w-4 h-4 text-primary" />
-                        <h4 className="text-[11px] font-black uppercase tracking-widest">NEURAL SIGNATURE IDENTIFIED</h4>
+                        <h4 className="text-[11px] font-black uppercase tracking-widest">NEURAL SIGNATURE</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
@@ -345,94 +343,42 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                           <p className="text-[10px] font-black text-foreground uppercase">{result.neuralAncestry.modelFamily}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[8px] font-bold text-muted-foreground uppercase">likely Tool</p>
+                          <p className="text-[8px] font-bold text-muted-foreground uppercase">Likely Tool</p>
                           <p className="text-[10px] font-black text-primary uppercase">{result.neuralAncestry.likelyModel}</p>
                         </div>
                       </div>
-                      <div className="space-y-2 pt-2">
-                        <div className="flex justify-between text-[8px] font-black uppercase">
-                          <span>Signature Match</span>
-                          <span>{result.neuralAncestry.fingerprintConfidence}%</span>
-                        </div>
-                        <Progress value={result.neuralAncestry.fingerprintConfidence} className="h-1 bg-muted [&>div]:bg-primary" />
-                      </div>
                     </div>
                   )}
-
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Blockchain Notarization</Label>
-                      {ledgerStatus ? (
-                        <Badge className={cn("text-[9px] font-black uppercase", ledgerStatus === 'authentic' ? "bg-green-600" : "bg-destructive")}>
-                          {ledgerStatus.toUpperCase()} ON-CHAIN
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] font-black uppercase">UNVERIFIED</Badge>
-                      )}
-                    </div>
-                    {!ledgerStatus && (
-                      <Button 
-                        onClick={notarizeOnBlockchain} 
-                        disabled={isNotarizing}
-                        className="w-full h-12 bg-primary/20 text-primary border border-primary/20 rounded-xl font-black uppercase text-[10px] hover:bg-primary/30 transition-all"
-                      >
-                        {isNotarizing ? "SYNCING TO LEDGER..." : "NOTARIZE ON NEURAL CHAIN"}
-                      </Button>
-                    )}
-                  </div>
+                  <Button 
+                    onClick={notarizeOnBlockchain} 
+                    disabled={isNotarizing || !!ledgerStatus}
+                    className="w-full h-12 bg-primary/20 text-primary border border-primary/20 rounded-xl font-black uppercase text-[10px]"
+                  >
+                    {isNotarizing ? "SYNCING..." : ledgerStatus ? "NOTARIZED" : "NOTARIZE ON NEURAL CHAIN"}
+                  </Button>
                 </div>
               </TabsContent>
 
               <TabsContent value="audit" className="pt-6 space-y-4">
                 <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-6">
-                  {feedbackSubmitted === null ? (
-                    <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Human Observation Audit</Label>
-                      <Textarea 
-                        placeholder="Explain model-specific artifacts found..."
-                        className="text-xs bg-background/50 rounded-xl min-h-[100px]"
-                        value={userComment}
-                        onChange={(e) => setUserComment(e.target.value)}
-                      />
-                      <div className="flex gap-4">
-                        <Button variant="outline" className="flex-1 rounded-xl border-green-500/30 text-green-600 font-black uppercase text-[10px] h-11" onClick={() => handleFeedback(true)}>
-                          Correct
-                        </Button>
-                        <Button variant="outline" className="flex-1 rounded-xl border-destructive/30 text-destructive font-black uppercase text-[10px] h-11" onClick={() => handleFeedback(false)}>
-                          Incorrect
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 text-center py-4">
-                      <CheckCircle2 className="w-12 h-12 rounded-full bg-green-500/10 p-3 text-green-600 mx-auto" />
-                      <p className="text-[11px] font-black text-foreground uppercase tracking-widest">Audit synced to Global Brain ✓</p>
-                      {!isPromoted && (
-                        <Button className="w-full h-12 bg-primary/20 text-primary border-primary/20 rounded-xl font-black uppercase text-[10px]" onClick={promoteToDataset}>
-                          Promote to Persistent Dataset
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                  <Textarea 
+                    placeholder="Audit notes..."
+                    className="text-xs bg-background/50 rounded-xl min-h-[100px]"
+                    value={userComment}
+                    onChange={(e) => setUserComment(e.target.value)}
+                  />
+                  <div className="flex gap-4">
+                    <Button variant="outline" className="flex-1 font-black uppercase text-[10px]" onClick={() => handleFeedback(true)}>Correct</Button>
+                    <Button variant="outline" className="flex-1 font-black uppercase text-[10px]" onClick={() => handleFeedback(false)}>Incorrect</Button>
+                  </div>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="actions" className="pt-6 space-y-4">
-                <Button variant="outline" className="w-full h-12 font-black uppercase tracking-widest rounded-xl" onClick={() => setShowSpectralMode(!showSpectralMode)}>
-                  <Scan className="w-4 h-4 mr-2" /> {showSpectralMode ? "Disable" : "Enable"} Spectral DNA View
-                </Button>
-                {isFake && (
-                  <Button className="w-full h-12 bg-destructive hover:bg-destructive/90 font-black uppercase tracking-widest rounded-xl text-white" onClick={() => setShowTakedown(!showTakedown)}>
-                    <ShieldX className="w-4 h-4 mr-2" /> Generate Takedown Notice
-                  </Button>
-                )}
               </TabsContent>
             </Tabs>
           </CardContent>
 
           <CardFooter className="border-t p-6 bg-muted/5 gap-3">
             <Button className="flex-1 h-12 font-black uppercase tracking-widest rounded-xl" onClick={exportEvidence}>
-              <FileJson className="w-4 h-4 mr-2" /> Export Persistent Backup
+              <FileJson className="w-4 h-4 mr-2" /> Export Case Evidence
             </Button>
             <Button variant="outline" className="h-12 w-12 rounded-xl" onClick={() => window.print()}>
               <Download className="w-5 h-5" />
@@ -470,6 +416,14 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
               </div>
             )}
           </div>
+          {result.sourceOrigin && (
+            <div className="absolute bottom-6 left-6 right-6 p-4 bg-black/80 backdrop-blur-md border border-primary/30 rounded-xl z-40 animate-in fade-in slide-in-from-bottom-4">
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-2">
+                <Search className="w-3 h-3" /> Origin Match Found
+              </p>
+              <p className="text-xs font-bold text-white uppercase">{result.sourceOrigin}</p>
+            </div>
+          )}
         </Card>
       </div>
     </div>

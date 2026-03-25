@@ -18,6 +18,8 @@
         "mediaUrl": { "type": "string" },
         "mediaHash": { "type": "string", "description": "SHA-256 fingerprint for blockchain notarization." },
         "blockchainTxId": { "type": "string", "description": "Mock blockchain transaction identifier." },
+        "sourceOrigin": { "type": "string", "description": "The likely original source of the media (e.g., '2021 TED Talk')." },
+        "originalContext": { "type": "string", "description": "Detailed notes on the identified original clip or event." },
         "neuralAncestry": {
           "type": "object",
           "properties": {
@@ -29,9 +31,9 @@
         "behavioralBiometrics": {
           "type": "object",
           "properties": {
-            "blinkConsistency": { "type": "number", "description": "Score 0-100 for natural blinking" },
-            "headMovementFluidity": { "type": "number", "description": "Score 0-100 for natural movement" },
-            "speechProsody": { "type": "number", "description": "Score 0-100 for natural speech rhythm" },
+            "blinkConsistency": { "type": "number" },
+            "headMovementFluidity": { "type": "number" },
+            "speechProsody": { "type": "number" },
             "notes": { "type": "string" }
           }
         },
@@ -88,8 +90,8 @@
         "fileType": { "type": "string" },
         "status": { "type": "string", "enum": ["queued", "processed", "failed"] },
         "label": { "type": "string", "enum": ["real", "fake", "mixed", "unlabeled"] },
-        "modelSignature": { "type": "string", "description": "The specific deepfake tool signature being trained (e.g., 'GAN-StyleA', 'Diffusion-XL')." },
-        "notes": { "type": "string", "description": "User-provided description or notes for the dataset." }
+        "modelSignature": { "type": "string" },
+        "notes": { "type": "string" }
       },
       "required": ["fileName", "uploadDate", "size", "label"]
     }

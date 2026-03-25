@@ -1,9 +1,9 @@
 
 'use server';
 /**
- * @fileOverview This file implements "Temporal Neural Synergy" for video analysis with Behavior-Based Detection and Signature Traceback.
+ * @fileOverview This file implements "Temporal Neural Synergy" with Reverse Search Provenance.
  * 
- * - analyzeVideoForDeepfake - Performs cross-modal synchronization and behavioral coherence checks.
+ * - analyzeVideoForDeepfake - Performs cross-modal synchronization and source origin identification.
  */
 
 import { ai } from '@/ai/genkit';
@@ -13,37 +13,35 @@ const AnalyzeVideoForDeepfakeInputSchema = z.object({
   videoDataUri: z
     .string()
     .describe("The video to analyze as a data URI."),
-  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context from private vault and cloud base.'),
+  learnedContext: z.string().optional().describe('MANDATORY Ground Truth context.'),
 });
 
 const AnalyzeVideoForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean(),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
+  sourceOrigin: z.string().describe("Identified original source (e.g., '2018 Interview with BBC', 'Viral TikTok clip')."),
+  originalContext: z.string().describe("Forensic evidence of original source identification."),
   neuralAncestry: z.object({
-    modelFamily: z.string().describe("e.g., FaceSwap, Lipsync-only, Diffusion-Video"),
-    likelyModel: z.string().describe("e.g., DeepFaceLab, HeyGen, Wav2Lip"),
+    modelFamily: z.string(),
+    likelyModel: z.string(),
     fingerprintConfidence: z.number(),
-  }).optional(),
+  }),
   behavioralBiometrics: z.object({
-    blinkConsistency: z.number().describe("Score of how natural the eye blinking pattern is (0-100)."),
-    headMovementFluidity: z.number().describe("Score of how natural and jitter-free head movement is (0-100)."),
+    blinkConsistency: z.number(),
+    headMovementFluidity: z.number(),
     notes: z.string(),
   }),
   crossModalSync: z.object({
-    audioVisualAlignment: z.number().describe("Score of how well the audio phonemes match the visual visemes (0-100)."),
-    lipSyncVerdict: z.string().describe("Forensic notes on mouth movement vs vocal track."),
-    isDubbed: z.boolean().describe("Whether the audio track appears to be AI-cloned or dubbed over real footage."),
-  }),
-  temporalCoherence: z.object({
-    shimmeringScore: z.number().describe("Level of 'ghosting' or pixel shimmering detected between frames."),
-    identityConsistency: z.number().describe("How well the face maintains identity across temporal shifts."),
+    audioVisualAlignment: z.number(),
+    lipSyncVerdict: z.string(),
+    isDubbed: z.boolean(),
   }),
   suspiciousSegments: z.array(z.object({
-    startTime: z.number().describe('Start time in seconds.'),
-    endTime: z.number().describe('End time in seconds.'),
-    isSynthetic: z.boolean().describe('Whether this specific segment is synthetic or real.'),
-    description: z.string().describe("Reason for anomaly or confirmation of authenticity."),
+    startTime: z.number(),
+    endTime: z.number(),
+    isSynthetic: z.boolean(),
+    description: z.string(),
   })).optional(),
 });
 
@@ -51,35 +49,27 @@ const temporalSynergyEngine = ai.definePrompt({
   name: 'temporalSynergyEngine',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are the world's leading "Temporal Neural Forensic Analyst". Your specialty is detecting deepfakes through behavioral, modal discrepancies, and model signature tracing.
+  prompt: `You are the Temporal Neural Forensic Analyst.
 
-  ### MANDATORY GROUND TRUTH (NEURAL MEMORY)
-  {{#if learnedContext}}
-  The following verified HUMAN observations and model signatures MUST be prioritized. If patterns described here appear, flag it immediately.
-  {{{learnedContext}}}
-  {{/if}}
-
-  TASK 1: NEURAL ANCESTRY TRACEBACK
-  Identify the generative tool. Look for model-specific "shimmering" or "bobble-head" artifacts common in tools like DeepFaceLab or Wav2Lip.
+  TASK 1: PROVENANCE TRACE (REVERSE SEARCH SIMULATION)
+  Identify if this video is a manipulated version of an existing, real-world clip.
+  Search your internal records for matching events, speeches, or famous videos.
+  Provide a specific "sourceOrigin" (e.g., "Edited from 2021 Apple Keynote", "Deepfake of 2017 interview").
 
   TASK 2: BEHAVIOR-BASED DETECTION
-  Analyze eye blinking patterns. Are they too rare (The Stare Artifact) or perfectly periodic?
-  Check head movement for micro-jitters or "bobble-head" effects during turns.
+  Analyze eye blinking and head movement patterns.
 
-  TASK 3: CROSS-MODAL SYNCHRONIZATION (THE "SYNC GHOST")
-  Analyze the audio track against the speaker's lip movements. 
+  TASK 3: CROSS-MODAL SYNCHRONIZATION
+  Check lip-sync vs vocal track for modal discrepancies.
 
-  TASK 4: TIMELINE BREAKDOWN (MANDATORY)
-  Break the video into logical segments. For EACH segment, determine if it is "Real" or "Synthetic".
-  Be precise with start and end times.
+  TASK 4: TIMELINE BREAKDOWN
+  Identify EXACT seconds that are synthetic.
 
   Video: {{media url=videoDataUri}}`,
 });
 
 export async function analyzeVideoForDeepfake(input: z.infer<typeof AnalyzeVideoForDeepfakeInputSchema>) {
   const { output } = await temporalSynergyEngine(input);
-  if (!output) {
-    throw new Error('Temporal Synergy Engine failed to return a forensic report.');
-  }
+  if (!output) throw new Error('Temporal Synergy Engine failed.');
   return output;
 }
