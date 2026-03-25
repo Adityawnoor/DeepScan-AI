@@ -6,7 +6,7 @@ import {
   Database, HardDrive, BrainCircuit, 
   Trash2, Upload, Gauge, Activity, Sparkles, Save, Info,
   AlertTriangle, Fingerprint, Zap, Brain, Download, Loader2,
-  ShieldCheck, Globe, CheckCircle2, ChevronRight
+  ShieldCheck, Globe, CheckCircle2, ChevronRight, FlaskConical
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   const [modelSignature, setModelSignature] = React.useState<string>("")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const [isSyncing, setIsSyncing] = React.useState(false)
+  const [isSeeding, setIsSeeding] = React.useState(false)
   const [syncStep, setSyncStep] = React.useState<string>("")
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -94,6 +95,55 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
     }
   }
 
+  const seedMockForensicData = async () => {
+    if (!db || !user) return
+    setIsSeeding(true)
+    try {
+      // Mock Patterns
+      const patterns = [
+        { id: 'mock-p-1', title: 'GAN Facial Jitter', model: 'StyleGAN3', desc: 'Identified micro-shifts in ocular alignment during 12fps rendering.' },
+        { id: 'mock-p-2', title: 'RVC Vocal Echo', model: 'RVC v2', desc: 'Spectral gaps detected in mid-frequency vocal ranges characteristic of voice cloning.' }
+      ]
+
+      for (const p of patterns) {
+        await setDoc(doc(db, "datasets", p.id), {
+          id: p.id,
+          fileName: p.title,
+          uploadDate: new Date().toISOString(),
+          label: "fake",
+          modelSignature: p.model,
+          notes: p.desc,
+          status: "learned",
+          isPattern: true
+        })
+      }
+
+      // Mock Alerts
+      const alerts = [
+        { id: 'mock-a-1', platform: 'X', snippet: 'Viral AI-generated endorsement of unlicensed product.', risk: 'high' }
+      ]
+
+      for (const a of alerts) {
+        await setDoc(doc(db, "alerts", a.id), {
+          id: a.id,
+          timestamp: new Date().toISOString(),
+          platform: a.platform,
+          contentSnippet: a.snippet,
+          viralVelocity: 75,
+          forensicRisk: a.risk,
+          originalSource: "Unknown AI Bot",
+          status: "monitoring"
+        })
+      }
+
+      toast({ title: "Intelligence Seeded", description: "Sample forensic data committed to the Cloud Intelligence Base." })
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Seeding Failed", description: e.message })
+    } finally {
+      setIsSeeding(false)
+    }
+  }
+
   const syncCloudToPCVault = async () => {
     if (!vaultHandle) {
       toast({ variant: "destructive", title: "Vault Unlinked", description: "You must connect your PC database folder first." })
@@ -124,27 +174,22 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
         }
       }
 
-      // Step 1: Datasets (Patterns)
       setSyncStep("Extracting Global Patterns...")
       const dsSnap = await getDocs(collection(db, "datasets"))
       backup.collections.patterns = dsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-      // Step 2: Alerts
       setSyncStep("Extracting Sentinel Alerts...")
       const alSnap = await getDocs(collection(db, "alerts"))
       backup.collections.sentinelAlerts = alSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-      // Step 3: Ledger
       setSyncStep("Extracting Forensic Ledger...")
       const ldSnap = await getDocs(collection(db, "ledger"))
       backup.collections.forensicLedger = ldSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-      // Step 4: User Scans
       setSyncStep("Extracting Private Investigation Casefiles...")
       const scSnap = await getDocs(collection(db, "users", user.uid, "mediaFiles"))
       backup.collections.personalScans = scSnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
-      // Step 5: Write to Physical Vault
       setSyncStep(`Writing ${backup.collections.personalScans.length + backup.collections.patterns.length} records to PC disk...`)
       const fileName = `DEEPSCAN_SNAPSHOT_${new Date().toISOString().replace(/:/g, '-')}.json`
       const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
@@ -264,6 +309,16 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
                    >
                     {isSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                     {isSyncing ? "Transferring..." : "Download Cloud DB to PC"}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="rounded-xl font-black text-[10px] uppercase gap-2 h-10 px-6 hover:bg-primary/10 text-primary" 
+                    onClick={seedMockForensicData}
+                    disabled={isSeeding}
+                  >
+                    {isSeeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FlaskConical className="w-3.5 h-3.5" />}
+                    Seed Forensic Data
                   </Button>
                 </div>
             </CardHeader>
