@@ -18,9 +18,9 @@ const FirebaseContext = createContext<FirebaseContextProps>({
 });
 
 export const FirebaseProvider: React.FC<{
-  app: FirebaseApp;
-  db: Firestore;
-  auth: Auth;
+  app: FirebaseApp | null;
+  db: Firestore | null;
+  auth: Auth | null;
   children: React.ReactNode;
 }> = ({ app, db, auth, children }) => {
   return (

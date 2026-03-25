@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -26,7 +25,7 @@ import {
   ShieldCheck as ShieldIcon,
   Fingerprint, Eye, Video, Waves, Radio,
   Frame, BarChart3, LineChart, Target,
-  BrainCircuit
+  BrainCircuit, WifiOff, CloudOff
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -73,7 +72,10 @@ export default function DeepScanHome() {
   }
 
   const runQuickVerify = async (dataUri: string) => {
-    if (!db) return
+    if (!db) {
+      toast({ variant: "destructive", title: "Cloud Offline", description: "Blockchain verification requires a cloud connection." })
+      return
+    }
     setIsAnalyzing(true)
     try {
       const hash = await calculateMediaHash(dataUri)
@@ -110,7 +112,6 @@ export default function DeepScanHome() {
   }
 
   const runAnalysis = async (dataUri: string) => {
-    if (!db) return
     setIsAnalyzing(true)
     try {
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
@@ -150,27 +151,29 @@ export default function DeepScanHome() {
       const mediaType = dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image'
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
-      const scanRef = doc(db, "scans", scanId)
-      const scanData = {
-        timestamp: new Date().toISOString(),
-        mediaType,
-        fakeCategory: output.fakeCategory || (output.isDeepfake ? "Synthetic" : "Authentic"),
-        aiVerdict: output.isDeepfake,
-        aiConfidence: output.confidence,
-        explanation: output.explanation,
-        mediaUrl: "Protected in Vault",
-        neuralAncestry: output.neuralAncestry || null,
-        biometricVitals: output.biometricVitals || null,
-        behavioralBiometrics: output.behavioralBiometrics || null,
-        crossModalSync: output.crossModalSync || null,
-        highlightedRegions: output.highlightedRegions || null,
-        suspiciousSegments: output.suspiciousSegments || null,
-        sourceOrigin: output.sourceOrigin || null,
-        originalContext: output.originalContext || null,
-        mediaHash: await calculateMediaHash(dataUri)
-      }
+      if (db) {
+        const scanRef = doc(db, "scans", scanId)
+        const scanData = {
+          timestamp: new Date().toISOString(),
+          mediaType,
+          fakeCategory: output.fakeCategory || (output.isDeepfake ? "Synthetic" : "Authentic"),
+          aiVerdict: output.isDeepfake,
+          aiConfidence: output.confidence,
+          explanation: output.explanation,
+          mediaUrl: "Protected in Vault",
+          neuralAncestry: output.neuralAncestry || null,
+          biometricVitals: output.biometricVitals || null,
+          behavioralBiometrics: output.behavioralBiometrics || null,
+          crossModalSync: output.crossModalSync || null,
+          highlightedRegions: output.highlightedRegions || null,
+          suspiciousSegments: output.suspiciousSegments || null,
+          sourceOrigin: output.sourceOrigin || null,
+          originalContext: output.originalContext || null,
+          mediaHash: await calculateMediaHash(dataUri)
+        }
 
-      setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
+        setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
+      }
       
       // Pattern Novelty Alert
       if (output.isDeepfake && (!output.neuralAncestry?.likelyModel || output.neuralAncestry.likelyModel === "Unknown")) {
@@ -180,7 +183,7 @@ export default function DeepScanHome() {
           description: "This signature does not match any known families. Committed to Pattern Learning Hub." 
         })
       } else {
-        toast({ title: "Analysis Complete", description: "Intelligence synced to Neural Ledger." })
+        toast({ title: "Analysis Complete", description: db ? "Intelligence synced to Neural Ledger." : "Forensic result generated (Local Mode)." })
       }
 
     } catch (e: any) {
@@ -235,8 +238,17 @@ export default function DeepScanHome() {
           <div className="flex items-center gap-8">
             <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <Globe className="w-3.5 h-3.5 text-primary animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">NEURAL LEDGER: <span className="text-foreground">ACTIVE</span></span>
+                {db ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5 text-primary animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">NEURAL LEDGER: <span className="text-foreground">ACTIVE</span></span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3.5 h-3.5 text-destructive" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">MODE: <span className="text-destructive">OFFLINE VAULT</span></span>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Network className={cn("w-3.5 h-3.5", localFolderHandle ? "text-primary" : "text-muted-foreground/50")} />
@@ -249,6 +261,19 @@ export default function DeepScanHome() {
       </header>
 
       <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
+        {!db && (
+          <div className="mb-8 p-4 bg-destructive/5 border border-destructive/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <CloudOff className="w-5 h-5 text-destructive" />
+            <div className="flex-1">
+              <p className="text-[11px] font-black uppercase tracking-widest text-destructive">Firebase Disconnected / Misconfigured</p>
+              <p className="text-[10px] font-medium text-muted-foreground">The "Global Brain" is currently offline. You are in **Offline Forensic Mode**. Patterns will be mirror-saved only to your local PC Vault.</p>
+            </div>
+            <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase border-destructive/20 text-destructive hover:bg-destructive/10" onClick={() => window.location.reload()}>
+              Retry Connection
+            </Button>
+          </div>
+        )}
+
         <div className="flex flex-col gap-12">
           <section>
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift preserve-3d">
@@ -307,10 +332,10 @@ export default function DeepScanHome() {
                 <TabsTrigger value="vault" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
                   <Target className="w-3.5 h-3.5" /> VAULT
                 </TabsTrigger>
-                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
+                <TabsTrigger value="evolution" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!db}>
                   <LineChart className="w-3.5 h-3.5" /> EVOLUTION
                 </TabsTrigger>
-                <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
+                <TabsTrigger value="sentinel" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2" disabled={!db}>
                   <Radio className="w-3.5 h-3.5" /> SENTINEL
                 </TabsTrigger>
                 <TabsTrigger value="protect" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
