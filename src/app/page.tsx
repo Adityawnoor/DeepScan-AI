@@ -28,16 +28,11 @@ import {
   BrainCircuit, WifiOff, CloudOff, Info
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useFirestore, useCollection, useFirebase, useMemoFirebase, useAuth, useUser, initiateAnonymousSignIn } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser, useFirebase, initiateAnonymousSignIn } from "@/firebase"
 import { collection, doc, setDoc, query, orderBy, limit, getDoc } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
-/**
- * @section Training Step 3: Contextual Reasoning
- * DeepScan uses In-Context Learning (ICL). This component gathers all 'learned' data
- * from the Cloud/Local Hub and injects it into the GenAI prompt for every scan.
- */
 export default function DeepScanHome() {
   const { toast } = useToast()
   const db = useFirestore()
@@ -50,14 +45,12 @@ export default function DeepScanHome() {
   
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
 
-  // Auto-authentication for Neural Ledger access
   React.useEffect(() => {
     if (auth && !user) {
       initiateAnonymousSignIn(auth)
     }
   }, [auth, user])
 
-  // Hybrid Queries: Pulling Neural Memory from Cloud
   const scansQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "users", user.uid, "mediaFiles"), orderBy("timestamp", "desc"), limit(100)) : null, [db, user])
   const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
   const alertsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "alerts"), orderBy("timestamp", "desc"), limit(5)) : null, [db, user])
@@ -86,12 +79,9 @@ export default function DeepScanHome() {
     }
   }
 
-  // HYBRID NEURAL SYSTEM: runAnalysis
   const runAnalysis = async (dataUri: string) => {
     setIsAnalyzing(true)
     try {
-      // Step 1: Context Injection (The Neural Memory Sync)
-      // This is where the 'Training' results are applied.
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
       
       const verifiedScans = scans?.filter(s => s.userFeedback !== undefined && s.aiVerdict === true) || []
@@ -118,7 +108,6 @@ export default function DeepScanHome() {
         })
       }
 
-      // Step 2: AI Execution with Context
       let output
       if (dataUri.startsWith('data:image/')) {
         output = await analyzeImageForDeepfake({ imageDataUri: dataUri, learnedContext: context })
@@ -132,7 +121,6 @@ export default function DeepScanHome() {
       const mediaType = dataUri.includes('video') ? 'video' : dataUri.includes('audio') ? 'audio' : 'image'
       setCurrentResult({ id: scanId, output, mediaUrl: dataUri, mediaType: mediaType as any })
       
-      // Step 3: Dual Persistence Loop (Cloud + PC)
       if (db && user) {
         const scanRef = doc(db, "users", user.uid, "mediaFiles", scanId)
         const scanData = {
@@ -162,7 +150,6 @@ export default function DeepScanHome() {
         })
       }
       
-      // Automatic PC Vault Sync
       if (localFolderHandle) {
         const fileName = `SCAN_${scanId.substring(0, 8)}.json`
         const fileHandle = await localFolderHandle.getFileHandle(fileName, { create: true })
@@ -226,8 +213,7 @@ export default function DeepScanHome() {
   } as HistoryItem)), [scans])
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden perspective-1000">
-      <div className="perspective-grid" />
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <header className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
           <DeepScanLogo />
@@ -273,7 +259,7 @@ export default function DeepScanHome() {
 
         <div className="flex flex-col gap-12">
           <section>
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift preserve-3d">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
                   <Activity className="w-3.5 h-3.5" /> HYBRID NEURAL SYSTEM

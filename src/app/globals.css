@@ -61,7 +61,6 @@
   body {
     @apply bg-background text-foreground antialiased overflow-x-hidden font-body;
     font-feature-settings: "rlig" 1, "calt" 1;
-    perspective: 1200px;
   }
 }
 
@@ -90,7 +89,7 @@
   }
 
   .spatial-lift:hover {
-    transform: translateZ(30px) translateY(-5px);
+    transform: translateY(-5px);
     box-shadow: 
       0 25px 50px -12px rgba(0, 0, 0, 0.25),
       0 0 30px rgba(0, 123, 255, 0.15);
