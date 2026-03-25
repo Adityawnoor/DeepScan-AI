@@ -25,7 +25,8 @@ import {
   Network, Loader2, Globe,
   ShieldCheck as ShieldIcon,
   Fingerprint, Eye, Video, Waves, Radio,
-  Frame, BarChart3, LineChart, Target
+  Frame, BarChart3, LineChart, Target,
+  BrainCircuit
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -170,7 +171,18 @@ export default function DeepScanHome() {
       }
 
       setDoc(scanRef, scanData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: scanRef.path, operation: 'create', requestResourceData: scanData })))
-      toast({ title: "Analysis Complete", description: "Intelligence synced to Neural Ledger." })
+      
+      // Pattern Novelty Alert
+      if (output.isDeepfake && (!output.neuralAncestry?.likelyModel || output.neuralAncestry.likelyModel === "Unknown")) {
+        toast({ 
+          variant: "destructive", 
+          title: "NEW DEEPFAKE STYLE DETECTED", 
+          description: "This signature does not match any known families. Committed to Pattern Learning Hub." 
+        })
+      } else {
+        toast({ title: "Analysis Complete", description: "Intelligence synced to Neural Ledger." })
+      }
+
     } catch (e: any) {
       toast({ variant: "destructive", title: "Scan Failed", description: e.message })
     } finally {
@@ -276,7 +288,7 @@ export default function DeepScanHome() {
                 </Button>
                 <div className="flex gap-4">
                    <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("vault")}>
-                     <ShieldIcon className="w-5 h-5 text-primary" /> VAULT
+                     <Target className="w-5 h-5 text-primary" /> VAULT
                    </Button>
                    <Button variant="outline" className="flex-1 h-14 rounded-xl font-black uppercase tracking-widest border-2 gap-3" onClick={() => setActiveTab("evolution")}>
                      <BarChart3 className="w-5 h-5 text-primary" /> EVOLUTION
@@ -308,7 +320,7 @@ export default function DeepScanHome() {
                   <Clock className="w-3.5 h-3.5" /> HISTORY
                 </TabsTrigger>
                 <TabsTrigger value="datasets" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary font-bold uppercase text-[10px] tracking-widest px-0 pb-4 h-auto gap-2">
-                  <Database className="w-3.5 h-3.5" /> TRAINING
+                  <BrainCircuit className="w-3.5 h-3.5" /> PATTERN HUB
                 </TabsTrigger>
               </TabsList>
 

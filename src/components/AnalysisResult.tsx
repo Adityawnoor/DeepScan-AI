@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -8,7 +9,7 @@ import {
   Gavel,
   ShieldX, Activity, Globe,
   Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History, Frame, Printer, ShieldAlert,
-  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock
+  ShieldQuestion, Share2, AlertOctagon, Info, FileWarning, Lock, BrainCircuit
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -39,6 +40,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
   const [userComment, setUserComment] = React.useState("")
   const [activeHighlight, setActiveHighlight] = React.useState<number | null>(null)
   const [isNotarizing, setIsNotarizing] = React.useState(false)
+  const [isLearning, setIsLearning] = React.useState(false)
   const [ledgerStatus, setLedgerStatus] = React.useState<'authentic' | 'synthetic' | 'unverified' | null>(null)
   const [isGeneratingLegal, setIsGeneratingLegal] = React.useState(false)
 
@@ -107,6 +109,33 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
       toast({ variant: "destructive", title: "Notarization Failed", description: e.message })
     } finally {
       setIsNotarizing(false)
+    }
+  }
+
+  const learnPatternToHub = async () => {
+    if (!db || !result.neuralAncestry) return
+    setIsLearning(true)
+    try {
+      const patternId = crypto.randomUUID()
+      const datasetRef = doc(db, "datasets", patternId)
+      const patternData = {
+        id: patternId,
+        fileName: `Pattern_from_${scanId.substring(0, 6)}`,
+        uploadDate: new Date().toISOString(),
+        label: isFake ? "fake" : "real",
+        modelSignature: result.neuralAncestry.likelyModel || "Unknown Novel Source",
+        notes: `Extracted from Case ${scanId}: ${result.explanation}. Category: ${fakeCategory}. Confidence: ${confidence}%.`,
+        status: "learned",
+        isPattern: true,
+        behavioralFingerprint: result.behavioralBiometrics || null
+      }
+
+      await setDoc(datasetRef, patternData)
+      toast({ title: "Pattern Learned", description: "Forensic signature added to Global Pattern Learning Hub." })
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Learning Failed", description: e.message })
+    } finally {
+      setIsLearning(false)
     }
   }
 
@@ -423,13 +452,23 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                       </div>
                     </div>
                   )}
-                  <Button 
-                    onClick={notarizeOnBlockchain} 
-                    disabled={isNotarizing || !!ledgerStatus}
-                    className="w-full h-12 bg-primary/20 text-primary border border-primary/20 rounded-xl font-black uppercase text-[10px] tracking-widest"
-                  >
-                    {isNotarizing ? "NOTARIZING..." : ledgerStatus ? "IMMUTABLE LEDGER SYNCED" : "NOTARIZE ON NEURAL LEDGER"}
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Button 
+                      onClick={notarizeOnBlockchain} 
+                      disabled={isNotarizing || !!ledgerStatus}
+                      className="h-12 bg-primary/20 text-primary border border-primary/20 rounded-xl font-black uppercase text-[10px] tracking-widest"
+                    >
+                      {isNotarizing ? "NOTARIZING..." : ledgerStatus ? "LEDGER SYNCED" : "NOTARIZE ON LEDGER"}
+                    </Button>
+                    <Button 
+                      onClick={learnPatternToHub} 
+                      disabled={isLearning || !isFake}
+                      className="h-12 bg-primary/20 text-primary border border-primary/20 rounded-xl font-black uppercase text-[10px] tracking-widest gap-2"
+                    >
+                      {isLearning ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
+                      LEARN PATTERN
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
 
