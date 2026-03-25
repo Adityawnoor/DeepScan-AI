@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -8,7 +7,7 @@ import {
   Target,
   Gavel,
   ShieldX, Activity, Globe,
-  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History
+  Waves, Zap, Eye, Move, Clock, CheckCircle2, AlertTriangle, ChevronRight, XCircle, AlertCircle, Scan, Cpu, Fingerprint, Search, History, Frame
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -173,7 +172,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         sourceOrigin: result.sourceOrigin,
         originalContext: result.originalContext,
         neuralDNA: result.neuralAncestry,
-        biometrics: result.biometricVitals,
+        biometrics: result.behavioralBiometrics,
         crossModal: result.crossModalSync,
         humanVerification: feedbackSubmitted,
         userComment
@@ -305,25 +304,48 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
               <TabsContent value="biometrics" className="pt-6 space-y-6">
                 <div className="space-y-6">
                   {result.behavioralBiometrics ? (
-                    <>
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                         <div className="flex justify-between items-center mb-2">
                           <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
                             <Eye className="w-3 h-3" /> Blink Frequency
                           </Label>
-                          <span className="text-xs font-black">{result.behavioralBiometrics.blinkConsistency}% Natural</span>
+                          <span className="text-xs font-black">{result.behavioralBiometrics.blinkConsistency}%</span>
                         </div>
                         <Progress value={result.behavioralBiometrics.blinkConsistency} className="h-1.5" />
                       </div>
+                      
+                      {result.behavioralBiometrics.temporalStability !== undefined && (
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                          <div className="flex justify-between items-center mb-2">
+                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <Frame className="w-3 h-3" /> Temporal Synergy
+                            </Label>
+                            <span className="text-xs font-black">{result.behavioralBiometrics.temporalStability}%</span>
+                          </div>
+                          <Progress value={result.behavioralBiometrics.temporalStability} className="h-1.5" />
+                        </div>
+                      )}
+
+                      <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                            <Move className="w-3 h-3" /> Movement Fluidity
+                          </Label>
+                          <span className="text-xs font-black">{result.behavioralBiometrics.headMovementFluidity}%</span>
+                        </div>
+                        <Progress value={result.behavioralBiometrics.headMovementFluidity} className="h-1.5" />
+                      </div>
+
                       <div className="p-4 bg-muted/30 rounded-xl border border-dashed">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block mb-1">PHYSIOLOGICAL NOTES</span>
                         <p className="text-[11px] font-medium leading-relaxed italic">{result.behavioralBiometrics.notes}</p>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <div className="p-8 text-center bg-muted/20 rounded-xl border border-dashed">
                        <Activity className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
-                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Biometrics unavailable for static assets.</p>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Biometrics unavailable for this media type.</p>
                     </div>
                   )}
                 </div>

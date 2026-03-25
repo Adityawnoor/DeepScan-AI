@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -22,7 +21,8 @@ import {
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, Globe,
   ShieldCheck as ShieldIcon,
-  Fingerprint, Eye, Video, Waves, Radio
+  Fingerprint, Eye, Video, Waves, Radio,
+  Frame
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -236,14 +236,14 @@ export default function DeepScanHome() {
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  DeepScan utilizes **Behavior-Based Detection** and **Temporal Neural Fingerprinting** to detect ocular inconsistencies and rhythmic prosody mismatches. Investigate the unseen.
+                  DeepScan utilizes **Temporal Neural Synergy** and **Behavior-Based Detection** to detect ocular inconsistencies and frame-level motion glitches. Investigate the unseen.
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                   {[
-                    { icon: Eye, text: "Blink Frequency" },
-                    { icon: Video, text: "Head Movement" },
-                    { icon: Waves, text: "Speech Rhythm" },
+                    { icon: Eye, text: "Ocular Biometrics" },
+                    { icon: Frame, text: "Temporal Synergy" },
+                    { icon: Waves, text: "Prosody Analysis" },
                     { icon: Fingerprint, text: "Neural Traceback" }
                   ].map((cap, i) => (
                     <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background border shadow-sm border-primary/5">

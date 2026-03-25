@@ -1,9 +1,8 @@
-
 'use server';
 /**
  * @fileOverview This file implements "Temporal Neural Synergy" with Reverse Search Provenance.
  * 
- * - analyzeVideoForDeepfake - Performs cross-modal synchronization and source origin identification.
+ * - analyzeVideoForDeepfake - Performs cross-modal synchronization, temporal consistency checks, and source origin identification.
  */
 
 import { ai } from '@/ai/genkit';
@@ -28,8 +27,9 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
     fingerprintConfidence: z.number(),
   }),
   behavioralBiometrics: z.object({
-    blinkConsistency: z.number(),
-    headMovementFluidity: z.number(),
+    blinkConsistency: z.number().describe("Score of eye blinking naturalness (0-100)."),
+    headMovementFluidity: z.number().describe("Score of head movement naturalness (0-100)."),
+    temporalStability: z.number().describe("Score of frame-to-frame consistency and absence of face-shifts (0-100)."),
     notes: z.string(),
   }),
   crossModalSync: z.object({
@@ -51,19 +51,27 @@ const temporalSynergyEngine = ai.definePrompt({
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
   prompt: `You are the Temporal Neural Forensic Analyst.
 
-  TASK 1: PROVENANCE TRACE (REVERSE SEARCH SIMULATION)
+  TASK 1: TEMPORAL CONSISTENCY AI (CRITICAL)
+  Analyze the video for frame-to-frame coherence. 
+  Look specifically for:
+  - Sudden face shifts or "mask jumps" during rotation.
+  - Frame glitches or resolution mismatches in the facial region vs the background.
+  - Motion inconsistencies (jitter) that break physical laws.
+  Provide a "temporalStability" score.
+
+  TASK 2: PROVENANCE TRACE (REVERSE SEARCH SIMULATION)
   Identify if this video is a manipulated version of an existing, real-world clip.
   Search your internal records for matching events, speeches, or famous videos.
   Provide a specific "sourceOrigin" (e.g., "Edited from 2021 Apple Keynote", "Deepfake of 2017 interview").
 
-  TASK 2: BEHAVIOR-BASED DETECTION
-  Analyze eye blinking and head movement patterns.
+  TASK 3: BEHAVIOR-BASED DETECTION
+  Analyze eye blinking patterns (frequency/duration) and head movement fluidity.
 
-  TASK 3: CROSS-MODAL SYNCHRONIZATION
-  Check lip-sync vs vocal track for modal discrepancies.
+  TASK 4: CROSS-MODAL SYNCHRONIZATION
+  Check lip-sync vs vocal track for modal discrepancies (phoneme-viseme alignment).
 
-  TASK 4: TIMELINE BREAKDOWN
-  Identify EXACT seconds that are synthetic.
+  TASK 5: TIMELINE BREAKDOWN (MANDATORY)
+  Identify EXACT seconds that are synthetic or real.
 
   Video: {{media url=videoDataUri}}`,
 });
