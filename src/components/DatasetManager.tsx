@@ -1,11 +1,10 @@
-
 "use client"
 
 import * as React from "react"
 import { 
   Database, HardDrive, BrainCircuit, 
   Trash2, Upload, Gauge, Activity, Sparkles, Save, Info,
-  AlertTriangle, Fingerprint, Zap, Brain
+  AlertTriangle, Fingerprint, Zap, Brain, Download, Loader2
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,7 +20,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase"
-import { collection, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { collection, doc, setDoc, deleteDoc, query, orderBy, getDocs } from "firebase/firestore"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
@@ -39,6 +38,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
   const [modelSignature, setModelSignature] = React.useState<string>("")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
+  const [isSyncing, setIsSyncing] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const datasetsQuery = useMemoFirebase(() => (db && user) ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db, user])
@@ -92,6 +92,61 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       toast({ variant: "destructive", title: "Vault Blocked", description: err.message })
+    }
+  }
+
+  const syncCloudToPCVault = async () => {
+    if (!vaultHandle || !db || !user) {
+      toast({ variant: "destructive", title: "Sync Blocked", description: "Connect PC Vault and ensure Cloud Session is active." })
+      return
+    }
+    
+    setIsSyncing(true)
+    try {
+      const backup: any = {
+        meta: {
+          timestamp: new Date().toISOString(),
+          authority: "DeepScan AI Forensic Engine",
+          userId: user.uid,
+          version: "V3.1.0"
+        },
+        collections: {
+          datasets: [],
+          alerts: [],
+          userMediaFiles: [],
+          ledger: []
+        }
+      }
+
+      // Fetch Global Intelligence
+      const dsSnap = await getDocs(collection(db, "datasets"))
+      backup.collections.datasets = dsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      const alSnap = await getDocs(collection(db, "alerts"))
+      backup.collections.alerts = alSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      const ldSnap = await getDocs(collection(db, "ledger"))
+      backup.collections.ledger = ldSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      // Fetch User Scans
+      const scSnap = await getDocs(collection(db, "users", user.uid, "mediaFiles"))
+      backup.collections.userMediaFiles = scSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      // Write to PC database
+      const fileName = `FULL_INTELLIGENCE_BACKUP_${new Date().toISOString().split('T')[0]}_${crypto.randomUUID().substring(0, 4)}.json`
+      const fileHandle = await vaultHandle.getFileHandle(fileName, { create: true })
+      const writable = await (fileHandle as any).createWritable()
+      await writable.write(JSON.stringify(backup, null, 2))
+      await writable.close()
+
+      toast({ 
+        title: "Database Transferred", 
+        description: `Full cloud snapshot (${backup.collections.datasets.length + backup.collections.userMediaFiles.length} records) saved to PC database.` 
+      })
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Transfer Failed", description: e.message })
+    } finally {
+      setIsSyncing(false)
     }
   }
 
@@ -190,18 +245,26 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
            <Card className="shadow-none border border-border rounded-xl overflow-hidden volumetric-shadow">
-            <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
-               <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
-                  <Activity className="w-5 h-5 text-primary" /> Neural Pattern Hub
-                </CardTitle>
-                <div className="flex gap-2">
-                   {novelPatterns.length > 0 && (
-                     <Badge variant="destructive" className="animate-pulse rounded-lg text-[8px] font-black uppercase">
-                       {novelPatterns.length} NOVEL STYLES
-                     </Badge>
-                   )}
+            <CardHeader className="bg-muted/30 pb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+               <div>
+                  <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tighter">
+                    <Activity className="w-5 h-5 text-primary" /> Neural Pattern Hub
+                  </CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Shared AI Forensic Intelligence</CardDescription>
+               </div>
+                <div className="flex flex-wrap gap-2">
+                   <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-xl font-black text-[10px] uppercase gap-2 border-primary text-primary hover:bg-primary/10" 
+                    onClick={syncCloudToPCVault}
+                    disabled={isSyncing || !vaultHandle}
+                   >
+                    {isSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    Download Cloud DB to PC
+                  </Button>
                    <Button variant="outline" size="sm" className="rounded-xl font-black text-[10px] uppercase gap-2" onClick={exportForensicSignaturePack}>
-                    <Save className="w-3.5 h-3.5" /> Mirror Patterns to Vault
+                    <Save className="w-3.5 h-3.5" /> Mirror Patterns
                   </Button>
                 </div>
             </CardHeader>
