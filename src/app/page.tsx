@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -21,7 +20,7 @@ import {
   Brain, Activity, Shield, Sparkles, Clock,
   Network, Loader2, LogOut, ShieldCheck as ShieldIcon,
   Cpu, Fingerprint, Layers, CheckCircle2, HardDrive, Globe,
-  ShieldAlert, Lock
+  ShieldAlert, Lock, Waves, Eye
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection } from "@/firebase"
@@ -36,12 +35,9 @@ export default function DeepScanHome() {
   const [currentResult, setCurrentResult] = React.useState<{ id: string, output: any, mediaUrl: string, mediaType: 'image' | 'audio' | 'video' } | null>(null)
   const [activeTab, setActiveTab] = React.useState("analyze")
   
-  // Persistence states for PC Vault
   const [localFolderHandle, setLocalFolderHandle] = React.useState<FileSystemDirectoryHandle | null>(null)
-  const [vaultPermissionStatus, setVaultPermissionStatus] = React.useState<'granted' | 'denied' | 'prompt' >('prompt')
   const [localIntelligence, setLocalIntelligence] = React.useState<string>("")
 
-  // Real-time Neural Cloud Sync
   const scansQuery = React.useMemo(() => db ? query(collection(db, "scans"), orderBy("timestamp", "desc"), limit(100)) : null, [db])
   const datasetsQuery = React.useMemo(() => db ? query(collection(db, "datasets"), orderBy("uploadDate", "desc")) : null, [db])
   
@@ -49,38 +45,6 @@ export default function DeepScanHome() {
   const { data: datasets } = useCollection(datasetsQuery)
 
   const workstationRef = React.useRef<HTMLDivElement>(null)
-
-  const loadVaultFromMemory = React.useCallback(async () => {
-    if (typeof window === 'undefined') return
-    try {
-      const dbRequest = indexedDB.open("DeepScanVaultDB", 1)
-      dbRequest.onsuccess = () => {
-        const idb = dbRequest.result
-        if (!idb.objectStoreNames.contains("vaultStore")) {
-          // Store might not exist yet
-          return
-        }
-        const transaction = idb.transaction("vaultStore", "readonly")
-        const store = transaction.objectStore("vaultStore")
-        const getRequest = store.get("localFolderHandle")
-        getRequest.onsuccess = async () => {
-          if (getRequest.result) {
-            const handle = getRequest.result as FileSystemDirectoryHandle
-            setLocalFolderHandle(handle)
-            const permission = await handle.queryPermission({ mode: 'readwrite' })
-            setVaultPermissionStatus(permission)
-            if (permission === 'granted') readLocalIntelligence(handle)
-          }
-        }
-      }
-      dbRequest.onupgradeneeded = () => {
-        const idb = dbRequest.result
-        if (!idb.objectStoreNames.contains("vaultStore")) {
-          idb.createObjectStore("vaultStore")
-        }
-      }
-    } catch (e) {}
-  }, [])
 
   const readLocalIntelligence = async (handle: FileSystemDirectoryHandle) => {
     let context = ""
@@ -100,10 +64,6 @@ export default function DeepScanHome() {
       setLocalIntelligence(context)
     } catch (e) {}
   }
-
-  React.useEffect(() => {
-    loadVaultFromMemory()
-  }, [loadVaultFromMemory])
 
   const knowledgeCount = React.useMemo(() => {
     const datasetCount = datasets.length
@@ -190,6 +150,7 @@ export default function DeepScanHome() {
         mediaUrl: "Protected in Vault",
         neuralAncestry: output.neuralAncestry || null,
         biometricVitals: output.biometricVitals || null,
+        crossModalSync: output.crossModalSync || null,
         highlightedRegions: output.highlightedRegions || null,
         suspiciousTimestamps: output.suspiciousTimestamps || null,
         mediaHash: await calculateMediaHash(dataUri)
@@ -241,18 +202,27 @@ export default function DeepScanHome() {
             <div className="flex flex-col lg:flex-row items-center justify-between gap-12 p-10 bg-white/50 dark:bg-card/50 backdrop-blur-sm border border-border volumetric-shadow rounded-2xl spatial-lift preserve-3d">
               <div className="flex-1 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-full">
-                  <Activity className="w-3.5 h-3.5" /> ADVANCED NEURAL FORENSICS
+                  <Activity className="w-3.5 h-3.5" /> MULTI-MODAL FORENSICS
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-foreground uppercase">
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  DeepScan utilizes the **Neural Ledger Protocol** and **Adversarial Identity Vaccination** to notarize and protect your media. Investigate the unseen.
+                  DeepScan utilizes **Cross-Modal Synergy Analysis** and **Temporal Neural Fingerprinting** to detect discrepancies between audio visemes and visual phonemes. Investigate the unseen.
                 </p>
-                <div className="flex gap-4 pt-4">
-                  <div className="flex items-center gap-2 px-4 py-2 border border-primary/10 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl">
-                    <Globe className="w-3 h-3" /> IMMUTABLE LEDGER SYNCED
-                  </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+                  {[
+                    { icon: Eye, text: "Image Forensics" },
+                    { icon: Video, text: "Video Sync" },
+                    { icon: Waves, text: "Audio Vocoder" },
+                    { icon: Fingerprint, text: "Neural Traceback" }
+                  ].map((cap, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background border shadow-sm border-primary/5">
+                      <cap.icon className="w-4 h-4 text-primary" />
+                      <span className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground text-center">{cap.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
               <div className="w-full lg:w-auto flex flex-col gap-4">
@@ -318,7 +288,7 @@ export default function DeepScanHome() {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, highlightedRegions: scan.highlightedRegions, suspiciousTimestamps: scan.suspiciousTimestamps }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousTimestamps: scan.suspiciousTimestamps }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>
