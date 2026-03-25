@@ -42,7 +42,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
   const db = useFirestore()
   const { user } = useUser()
   const [datasetNotes, setDatasetNotes] = React.useState<string>("")
-  const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake">("fake")
+  const [trainingLabel, setTrainingLabel] = React.useState<"real" | "fake" | "mixed">("fake")
   const [modelSignature, setModelSignature] = React.useState<string>("")
   const [showBrainViewer, setShowBrainViewer] = React.useState(false)
   const [isSyncing, setIsSyncing] = React.useState(false)
@@ -84,7 +84,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
     let summary = "### NEURAL INTELLIGENCE LOG (PATTERN DATABASE) ###\n\n"
     if ((datasets || []).length === 0 && (scans || []).length === 0) return "Cloud Intelligence Base is currently empty. Start investigations or seed data."
     
-    ;(datasets || []).forEach(ds => summary += `[PATTERN]: ${ds.fileName}. Signature: ${ds.modelSignature || 'Generic'}. Origin: ${ds.status === 'learned' ? 'In-Field Scan' : 'Manual Upload'}.\n`)
+    ;(datasets || []).forEach(ds => summary += `[PATTERN]: ${ds.fileName}. Label: ${ds.label.toUpperCase()}. Signature: ${ds.modelSignature || 'Generic'}. Origin: ${ds.status === 'learned' ? 'In-Field Scan' : 'Manual Upload'}.\n`)
     ;(scans || []).filter(s => s.userFeedback !== undefined).forEach(s => summary += `[AUDIT]: Case ${s.id.substring(0, 4)} confirmed ${s.userFeedback ? 'SYNTHETIC' : 'AUTHENTIC'}. Artifacts: ${s.userComment || 'None'}\n`)
     return summary
   }, [datasets, scans])
@@ -112,9 +112,9 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
     setIsSeeding(true)
     try {
       const patterns = [
-        { id: 'p-gan-jitter', title: 'GAN Facial Jitter Signature', model: 'StyleGAN3', desc: 'Identified micro-shifts in ocular alignment during 12fps rendering.' },
-        { id: 'p-rvc-vocal', title: 'RVC Vocal Ghosting', model: 'RVC v2', desc: 'Spectral gaps detected in mid-frequency vocal ranges characteristic of voice cloning.' },
-        { id: 'p-diffusion-artifacts', title: 'Latent Diffusion Residue', model: 'Stable Diffusion XL', desc: 'High-frequency noise patterns identified in background gradients.' }
+        { id: 'p-gan-jitter', title: 'GAN Facial Jitter Signature', model: 'StyleGAN3', desc: 'Identified micro-shifts in ocular alignment during 12fps rendering.', label: "fake" },
+        { id: 'p-rvc-vocal', title: 'RVC Vocal Ghosting', model: 'RVC v2', desc: 'Spectral gaps detected in mid-frequency vocal ranges characteristic of voice cloning.', label: "fake" },
+        { id: 'p-mixed-hybrid-01', title: 'Mixed Forensic Sample (FaceSwap)', model: 'Roop / DeepFaceLab', desc: 'Hybrid content where the face is synthetic but the body and environment are real.', label: "mixed" }
       ]
 
       for (const p of patterns) {
@@ -122,7 +122,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
           id: p.id,
           fileName: p.title,
           uploadDate: new Date().toISOString(),
-          label: "fake",
+          label: p.label,
           modelSignature: p.model,
           notes: p.desc,
           status: "learned",
@@ -508,6 +508,7 @@ export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: D
                   <SelectContent className="rounded-xl border-primary/20">
                     <SelectItem value="real" className="text-[10px] font-black uppercase">Authentic</SelectItem>
                     <SelectItem value="fake" className="text-[10px] font-black uppercase text-destructive">Synthetic (Deepfake)</SelectItem>
+                    <SelectItem value="mixed" className="text-[10px] font-black uppercase text-amber-500">Mixed (Hybrid Content)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
