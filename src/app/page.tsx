@@ -256,7 +256,7 @@ export default function DeepScanHome() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10 preserve-3d">
+      <main className="flex-1 container mx-auto max-w-7xl px-4 py-12 z-10">
         {!isCloudActive && (
           <div className="mb-8 p-6 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
