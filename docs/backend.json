@@ -18,6 +18,15 @@
         "mediaUrl": { "type": "string" },
         "mediaHash": { "type": "string", "description": "SHA-256 fingerprint for blockchain notarization." },
         "blockchainTxId": { "type": "string", "description": "Mock blockchain transaction identifier." },
+        "behavioralBiometrics": {
+          "type": "object",
+          "properties": {
+            "blinkConsistency": { "type": "number", "description": "Score 0-100 for natural blinking" },
+            "headMovementFluidity": { "type": "number", "description": "Score 0-100 for natural movement" },
+            "speechProsody": { "type": "number", "description": "Score 0-100 for natural speech rhythm" },
+            "notes": { "type": "string" }
+          }
+        },
         "highlightedRegions": {
           "type": "array",
           "items": {

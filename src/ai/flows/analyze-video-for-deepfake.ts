@@ -1,8 +1,9 @@
+
 'use server';
 /**
- * @fileOverview This file implements "Temporal Neural Synergy" for video analysis.
+ * @fileOverview This file implements "Temporal Neural Synergy" for video analysis with Behavior-Based Detection.
  * 
- * - analyzeVideoForDeepfake - Performs cross-modal synchronization and temporal coherence checks.
+ * - analyzeVideoForDeepfake - Performs cross-modal synchronization and behavioral coherence checks.
  */
 
 import { ai } from '@/ai/genkit';
@@ -19,6 +20,11 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean(),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
+  behavioralBiometrics: z.object({
+    blinkConsistency: z.number().describe("Score of how natural the eye blinking pattern is (0-100)."),
+    headMovementFluidity: z.number().describe("Score of how natural and jitter-free head movement is (0-100)."),
+    notes: z.string(),
+  }),
   crossModalSync: z.object({
     audioVisualAlignment: z.number().describe("Score of how well the audio phonemes match the visual visemes (0-100)."),
     lipSyncVerdict: z.string().describe("Forensic notes on mouth movement vs vocal track."),
@@ -30,7 +36,7 @@ const AnalyzeVideoForDeepfakeOutputSchema = z.object({
   }),
   suspiciousTimestamps: z.array(z.object({
     timestamp: z.number().describe('Timestamp in seconds.'),
-    description: z.string().describe("Reason for anomaly (e.g., 'Face warping', 'Sync lag')."),
+    description: z.string().describe("Reason for anomaly (e.g., 'Blink frequency unnatural', 'Face warping', 'Sync lag')."),
   })).optional(),
 });
 
@@ -38,7 +44,7 @@ const temporalSynergyEngine = ai.definePrompt({
   name: 'temporalSynergyEngine',
   input: { schema: AnalyzeVideoForDeepfakeInputSchema },
   output: { schema: AnalyzeVideoForDeepfakeOutputSchema },
-  prompt: `You are the world's leading "Temporal Neural Forensic Analyst". Your specialty is detecting cross-modal discrepancies in video.
+  prompt: `You are the world's leading "Temporal Neural Forensic Analyst". Your specialty is detecting deepfakes through behavioral and modal discrepancies.
 
   ### MANDATORY GROUND TRUTH (NEURAL MEMORY)
   {{#if learnedContext}}
@@ -46,19 +52,20 @@ const temporalSynergyEngine = ai.definePrompt({
   {{{learnedContext}}}
   {{/if}}
 
-  TASK 1: CROSS-MODAL SYNCHRONIZATION (THE "SYNC GHOST")
+  TASK 1: BEHAVIOR-BASED DETECTION
+  Analyze eye blinking patterns. Are they too rare (The Stare Artifact) or perfectly periodic?
+  Check head movement for micro-jitters or "bobble-head" effects during turns.
+  Does the bone structure align with movement?
+
+  TASK 2: CROSS-MODAL SYNCHRONIZATION (THE "SYNC GHOST")
   Analyze the audio track against the speaker's lip movements. 
   Look for:
   - Latency: Is the audio arriving 2-3 frames before the viseme?
   - Phoneme Mismatch: Does an 'M' sound occur while the lips are open?
-  - Voice Fingerprint: Does the vocal texture have neural vocoder artifacts (robotic resonance)?
+  - Voice Fingerprint: Does the vocal texture have neural vocoder artifacts?
 
-  TASK 2: TEMPORAL COHERENCE
-  Identify "Neural Shimmer" - pixel-level inconsistencies that appear during rapid movement or head turns.
-  Check for "Face Popping" - where the deepfake mask momentarily detaches from the subject's skull.
-
-  TASK 3: IDENTITY STABILITY
-  Does the subject's bone structure or eye color shift subtly over time?
+  TASK 3: TEMPORAL COHERENCE
+  Identify "Neural Shimmer" - pixel-level inconsistencies during head turns.
 
   Video: {{media url=videoDataUri}}`,
 });

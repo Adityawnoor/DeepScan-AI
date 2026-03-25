@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -150,6 +151,7 @@ export default function DeepScanHome() {
         mediaUrl: "Protected in Vault",
         neuralAncestry: output.neuralAncestry || null,
         biometricVitals: output.biometricVitals || null,
+        behavioralBiometrics: output.behavioralBiometrics || null,
         crossModalSync: output.crossModalSync || null,
         highlightedRegions: output.highlightedRegions || null,
         suspiciousTimestamps: output.suspiciousTimestamps || null,
@@ -208,14 +210,14 @@ export default function DeepScanHome() {
                   STOP THE <span className="text-primary italic">AI GHOST.</span>
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl leading-relaxed font-medium">
-                  DeepScan utilizes **Cross-Modal Synergy Analysis** and **Temporal Neural Fingerprinting** to detect discrepancies between audio visemes and visual phonemes. Investigate the unseen.
+                  DeepScan utilizes **Behavior-Based Detection** and **Temporal Neural Fingerprinting** to detect ocular inconsistencies and rhythmic prosody mismatches. Investigate the unseen.
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                   {[
-                    { icon: Eye, text: "Image Forensics" },
-                    { icon: Video, text: "Video Sync" },
-                    { icon: Waves, text: "Audio Vocoder" },
+                    { icon: Eye, text: "Blink Frequency" },
+                    { icon: Video, text: "Head Movement" },
+                    { icon: Waves, text: "Speech Rhythm" },
                     { icon: Fingerprint, text: "Neural Traceback" }
                   ].map((cap, i) => (
                     <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background border shadow-sm border-primary/5">
@@ -288,7 +290,7 @@ export default function DeepScanHome() {
                   const scan = scans.find(s => s.id === id)
                   if (scan) {
                     setActiveTab("analyze")
-                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousTimestamps: scan.suspiciousTimestamps }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
+                    setCurrentResult({ id: scan.id, output: { isDeepfake: scan.aiVerdict, confidence: scan.aiConfidence, explanation: scan.explanation, neuralAncestry: scan.neuralAncestry, biometricVitals: scan.biometricVitals, crossModalSync: scan.crossModalSync, highlightedRegions: scan.highlightedRegions, suspiciousTimestamps: scan.suspiciousTimestamps, behavioralBiometrics: scan.behavioralBiometrics }, mediaUrl: scan.mediaUrl || "", mediaType: scan.mediaType })
                   }
                 }} />
               </TabsContent>

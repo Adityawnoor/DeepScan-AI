@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This file implements a Genkit flow for analyzing audio to detect deepfakes.
+ * @fileOverview This file implements a Genkit flow for analyzing audio to detect deepfakes using rhythmic behavior.
  *
  * - analyzeAudioForDeepfake - A function that handles the deepfake detection process for audio files.
  */
@@ -22,6 +22,11 @@ const AnalyzeAudioForDeepfakeOutputSchema = z.object({
   isDeepfake: z.boolean().describe('True if the audio is detected as a deepfake, false otherwise.'),
   confidence: z.number().min(0).max(100),
   explanation: z.string(),
+  behavioralBiometrics: z.object({
+    speechProsody: z.number().describe("Score of how natural the speech rhythm and cadence is (0-100)."),
+    breathAlignment: z.number().describe("Score of how well pauses align with human lung capacity (0-100)."),
+    notes: z.string(),
+  }).optional(),
   suspiciousSegments: z.array(
     z.object({
       startTime: z.number().describe('Start time in seconds.'),
@@ -35,18 +40,23 @@ const audioDeepfakeDetectionPrompt = ai.definePrompt({
   name: 'audioDeepfakeDetectionPrompt',
   input: { schema: AnalyzeAudioForDeepfakeInputSchema },
   output: { schema: AnalyzeAudioForDeepfakeOutputSchema },
-  prompt: `You are an elite vocal forensics expert. Your task is to detect AI-synthesized speech.
+  prompt: `You are an elite vocal forensics expert specializing in Behavioral Speech Analysis.
 
 {{#if learnedContext}}
 ### LEARNED KNOWLEDGE BASE (MANDATORY)
-Incorporate the following user-verified observations into your analysis. These observations represent ground truth:
+Incorporate these user-verified observations:
 {{{learnedContext}}}
 {{/if}}
 
-Search for:
-1. **Neural Vocoder Artifacts**: Metallic textures or robotic resonances.
-2. **Prosodic Unnaturalness**: Micro-fluctuations in pitch that don't align with human breath.
-3. **Spectral Noise Floor**: Identify if the silence between words is "too clean" or contains latent generative noise.
+TASK 1: SPEECH RHYTHM (PROSODY)
+Analyze the cadence. Are the pauses natural or "too perfect"?
+Look for micro-stutters or "breathless" sentences where the speaker doesn't pause for oxygen.
+
+TASK 2: NEURAL VOCODER ARTIFACTS
+Search for metallic textures or latent generative noise in the floor.
+
+TASK 3: SPECTRAL ANALYSIS
+Identify if the silence between words contains synthetic noise floor "dither".
 
 Audio to analyze: {{media url=audioDataUri}}`,
 });

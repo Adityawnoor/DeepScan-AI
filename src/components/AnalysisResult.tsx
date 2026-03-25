@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -8,7 +9,7 @@ import {
   Map as MapIcon, Gavel,
   ShieldX, Copy, Activity, Cpu, Layers, MessageSquare,
   Database, AlertCircle, Scan, Link, Globe, Shield,
-  Waves, Zap
+  Waves, Zap, Eye, Move
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -172,6 +173,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
         neuralDNA: result.neuralAncestry,
         biometrics: result.biometricVitals,
         crossModal: result.crossModalSync,
+        behavioral: result.behavioralBiometrics,
         humanVerification: feedbackSubmitted,
         userComment
       }
@@ -226,7 +228,7 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                   <Info className="w-3.5 h-3.5" /> Why?
                 </TabsTrigger>
                 <TabsTrigger value="biometrics" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
-                  <HeartPulse className="w-3.5 h-3.5" /> {mediaType === 'video' ? 'Synergy' : 'Vital'}
+                  <Activity className="w-3.5 h-3.5" /> Behavior
                 </TabsTrigger>
                 <TabsTrigger value="ancestry" className="text-[9px] font-black uppercase tracking-tighter gap-1 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg">
                   <Globe className="w-3.5 h-3.5" /> Ledger
@@ -292,35 +294,55 @@ export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandl
                 </div>
               </TabsContent>
 
-              <TabsContent value="biometrics" className="pt-6 space-y-4">
-                {mediaType === 'video' && result.crossModalSync ? (
-                  <div className="space-y-6">
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                      <div className="flex justify-between items-center mb-2">
-                         <Label className="text-[10px] font-black uppercase text-primary tracking-widest">Audio-Visual Synergy</Label>
-                         <span className="text-sm font-black">{result.crossModalSync.audioVisualAlignment}% Match</span>
-                      </div>
-                      <Progress value={result.crossModalSync.audioVisualAlignment} className="h-2" />
-                    </div>
-                    <div className="space-y-2 p-4 bg-muted/30 rounded-xl border border-dashed">
-                      <div className="flex items-center gap-2 text-primary">
-                        <Waves className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">LIP-SYNC VERDICT</span>
-                      </div>
-                      <p className="text-xs font-medium text-muted-foreground italic leading-relaxed">
-                        {result.crossModalSync.lipSyncVerdict}
-                      </p>
-                      {result.crossModalSync.isDubbed && (
-                        <Badge variant="destructive" className="mt-2 text-[8px] font-black uppercase">NEURAL VOICE CLONE DETECTED</Badge>
+              <TabsContent value="biometrics" className="pt-6 space-y-6">
+                <div className="space-y-6">
+                  {result.behavioralBiometrics ? (
+                    <>
+                      {result.behavioralBiometrics.blinkConsistency !== undefined && (
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                          <div className="flex justify-between items-center mb-2">
+                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <Eye className="w-3 h-3" /> Blink Consistency
+                            </Label>
+                            <span className="text-xs font-black">{result.behavioralBiometrics.blinkConsistency}% Natural</span>
+                          </div>
+                          <Progress value={result.behavioralBiometrics.blinkConsistency} className="h-1.5" />
+                        </div>
                       )}
+                      {result.behavioralBiometrics.headMovementFluidity !== undefined && (
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                          <div className="flex justify-between items-center mb-2">
+                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <Move className="w-3 h-3" /> Movement Fluidity
+                            </Label>
+                            <span className="text-xs font-black">{result.behavioralBiometrics.headMovementFluidity}% Natural</span>
+                          </div>
+                          <Progress value={result.behavioralBiometrics.headMovementFluidity} className="h-1.5" />
+                        </div>
+                      )}
+                      {result.behavioralBiometrics.speechProsody !== undefined && (
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                          <div className="flex justify-between items-center mb-2">
+                            <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <Waves className="w-3 h-3" /> Speech Rhythm (Prosody)
+                            </Label>
+                            <span className="text-xs font-black">{result.behavioralBiometrics.speechProsody}% Natural</span>
+                          </div>
+                          <Progress value={result.behavioralBiometrics.speechProsody} className="h-1.5" />
+                        </div>
+                      )}
+                      <div className="p-4 bg-muted/30 rounded-xl border border-dashed">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block mb-1">FORENSIC BEHAVIORAL NOTES</span>
+                        <p className="text-[11px] font-medium leading-relaxed italic">{result.behavioralBiometrics.notes}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-8 text-center bg-muted/20 rounded-xl border border-dashed">
+                       <Activity className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Behavioral patterns unavailable for this format.</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="p-6 rounded-xl bg-muted/30 border border-dashed space-y-4 text-center">
-                    <HeartPulse className="w-8 h-8 text-primary mx-auto opacity-30" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Biometric Vital Sign Extractions active for Image formats.</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="ancestry" className="pt-6 space-y-4">
