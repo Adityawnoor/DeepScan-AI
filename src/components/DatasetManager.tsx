@@ -33,6 +33,11 @@ interface DatasetManagerProps {
   vaultHandle?: FileSystemDirectoryHandle | null
 }
 
+/**
+ * @section Training Step 1: The Dataset Manager
+ * This component acts as the 'Teacher' for the AI. It allows users to ingest ground-truth data
+ * which is then used as 'learnedContext' in future forensic scans.
+ */
 export function DatasetManager({ knowledgeCount, onVaultChange, vaultHandle }: DatasetManagerProps) {
   const { toast } = useToast()
   const db = useFirestore()

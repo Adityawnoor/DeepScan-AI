@@ -34,6 +34,11 @@ import { collection, doc, setDoc, query, orderBy, limit, getDoc } from "firebase
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 
+/**
+ * @section Training Step 3: Contextual Reasoning
+ * DeepScan uses In-Context Learning (ICL). This component gathers all 'learned' data
+ * from the Cloud/Local Hub and injects it into the GenAI prompt for every scan.
+ */
 export default function DeepScanHome() {
   const { toast } = useToast()
   const db = useFirestore()
@@ -88,6 +93,7 @@ export default function DeepScanHome() {
     setIsAnalyzing(true)
     try {
       // Step 1: Context Injection (The Neural Memory Sync)
+      // This is where the 'Training' results are applied.
       let context = `NEURAL SIGNATURE DATABASE (KNOWLEDGE BASE):\n`
       
       const verifiedScans = scans?.filter(s => s.userFeedback !== undefined && s.aiVerdict === true) || []

@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -32,6 +33,11 @@ interface AnalysisResultProps {
   vaultHandle?: FileSystemDirectoryHandle | null
 }
 
+/**
+ * @section Training Step 2: Reinforcement
+ * This component handles the feedback loop. Human audits (Correction/Verdict) are saved
+ * back to the cloud to refine the AI's future contextual briefings.
+ */
 export function AnalysisResult({ scanId, result, mediaUrl, mediaType, vaultHandle }: AnalysisResultProps) {
   const { toast } = useToast()
   const db = useFirestore()
